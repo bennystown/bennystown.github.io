@@ -497,6 +497,7 @@ function drawTownHall() {
   const [dx, dy] = [lerp(b.A[0], b.B[0], .5), lerp(b.A[1], b.B[1], .5)]; ctx.fillStyle = '#6b4a33'; ctx.fillRect(dx - 6 * z, dy - 22 * z, 12 * z, 22 * z);
   if (z > .45) tag(tx, top - 96 * z, '🏛️ TOWN HALL', '#3c5a99', 1);
 }
+function drawSiteTent(u, v) { const z = cam.z, [x, y] = uvS(u, v), s = z * .42; ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ellipse(ctx, 10, 10, 120, 30, 'rgba(0,0,0,.28)'); poly(ctx, [[-10, -150], [110, -110], [130, 10], [0, 40]], '#c75f1d', OUT, 5); poly(ctx, [[-110, 10], [0, 40], [-10, -150]], '#ff8a3d', OUT, 5); poly(ctx, [[-62, 22], [-12, 36], [-18, -62]], '#3a2416', OUT, 4); ctx.restore(); }
 function drawMarketStall(u, v, col) { const z = cam.z, [x, y] = uvS(u, v); ctx.fillStyle = '#b07a46'; ctx.fillRect(x - 13 * z, y - 12 * z, 26 * z, 12 * z); line(ctx, x - 12 * z, y - 12 * z, x - 12 * z, y - 30 * z, '#6b4a2e', 2 * z); line(ctx, x + 12 * z, y - 12 * z, x + 12 * z, y - 30 * z, '#6b4a2e', 2 * z); for (let k = 0; k < 4; k++) { ctx.fillStyle = k % 2 ? '#fff4e0' : col; ctx.fillRect(x - 16 * z + k * 8 * z, y - 36 * z, 8 * z, 7 * z); } }
 function drawPlazaGround() {
   const z = cam.z, c = SQUARE.u0, d = SQUARE.u1;
@@ -563,9 +564,9 @@ function tag(x, y, label, col, alpha, prog) {
 /* ---- DATA: update this block every day (move-in order = tenant number) ---- */
 const TOWN = {
   day: 2,
-  milestones: { park: true, townHall: false },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
+  milestones: { park: true, townHall: true, tent: true },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
   startDate: '2026-11-14',   // date of Day 1 (move-in dates are counted from here)
-  bankCents: 43020,         // Benny's bank in cents (e.g. 210 = €2.10)
+  bankCents: 37520,         // Benny's bank in cents (e.g. 210 = €2.10)
   ogLimit: 100,           // first X tenants get the OG crown
   tiktokUrl: 'https://www.tiktok.com/@bennys.town',
   // optional per tenant: color: cream | lightblue | pink | mint | sand | grey | yellowpurple | blue | red | lavender | peach | white
@@ -2813,7 +2814,8 @@ function draw() {
   for (const [u, v, kind] of PARK_TREES) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, kind) }); }
   objs.push({ d: 21, f: () => drawPlayground(14.0, 7.2) }); objs.push({ d: 21.6, f: () => drawBench(15.4, 6.6) }); objs.push({ d: 20.2, f: () => drawBench(17.3, 3.0) });
   objs.push({ d: 18.5, f: drawTownHall });
-  if (TOWN.milestones.townHall) [[1.5, 13.3, '#e2483a'], [3, 13.2, '#3ddc84'], [4.5, 13.3, '#4da3ff']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
+  if (TOWN.milestones.tent) objs.push({ d: 7.15, f: () => drawSiteTent(4.75, 2.4) });
+  if (TOWN.milestones.townHall) [[0.95, 16.95, '#ff8a3d'], [2.0, 16.95, '#4da3ff'], [4.1, 16.95, '#3ddc84'], [5.15, 16.95, '#e2483a']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
   objs.push({ d: 6, f: () => drawBench(1.9, 4.2) }); objs.push({ d: 6, f: () => drawBench(4.2, 1.9) });
   for (const [u, v] of [[1.4, 4.6], [4.6, 1.4], [1.4, 1.4]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
   objs.push({ d: 7.15, f: () => {
@@ -2963,7 +2965,7 @@ function goBenny() {
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
-  $('cardMsg').textContent = 'Still sleeping on cardboard. Vote on TikTok for what he buys next 👇';
+  $('cardMsg').textContent = (TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
 let hintT = 0;
