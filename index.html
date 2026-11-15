@@ -167,7 +167,7 @@ const mod2 = n => ((n % 2) + 2) % 2, mod6 = n => ((n % 6) + 6) % 6;
 // layout: every house stands alone on its own plot. Streets run along i (every 2nd row) and cross streets every 6th row;
 // the rows in between are garden strips, so no house is ever hidden behind its neighbour.
 const isRoad = (i, j) => mod2(i) === 0 || mod2(j) === 0;
-const isPlaza = (i, j) => i >= 1 && i <= 2 && j >= 1 && j <= 2;
+const isPlaza = (i, j) => i >= -1 && i <= 4 && j >= -1 && j <= 4;   // Benny's square + ring road, no houses here
 const LOTS = [];
 (function () {
   const N = 78;
@@ -240,7 +240,7 @@ function drawHouse(c, x, y, s, v, o) {
   const hw = TW / 2 * s, hh = TH / 2 * s;
   const ol = 'rgba(27,23,40,.6)', olw = Math.max(.6, 1.3 * s);
   if (o.yard) {
-    poly(c, [[x - hw * .94, y], [x, y + hh * .94], [x + hw * .94, y], [x, y - hh * .94]], '#4f985c', '#3c7d49', Math.max(.6, 1.5 * s));
+    poly(c, [[x - hw * .94, y], [x, y + hh * .94], [x + hw * .94, y], [x, y - hh * .94]], '#4f985c');
     circle(c, x - hw * .74, y + hh * .04, 5.5 * s, '#2e7a3f'); circle(c, x + hw * .72, y + hh * .02, 5.5 * s, '#2e7a3f');
   }
   const f = st.f;
@@ -393,13 +393,17 @@ function drawCar(car) {
   box(lu * .55, lv * .8, 5 * z, hg, '#2b3350', '#3b4670', '#232a45');
 }
 function drawPlazaGround() {
-  const z = cam.z;
-  poly(ctx, [uvS(.5, .5), uvS(2.5, .5), uvS(2.5, 2.5), uvS(.5, 2.5)], '#a49d8c', '#7f796b', 2 * z);
+  const z = cam.z, a = -1.38, b = 4.38, c = -.5, d = 3.5;
+  poly(ctx, [uvS(a, a), uvS(b, a), uvS(b, b), uvS(a, b)], '#464b63');
+  if (z > .3) { ctx.save(); ctx.setLineDash([12 * z, 12 * z]); ctx.strokeStyle = 'rgba(255,210,90,.6)'; ctx.lineWidth = Math.max(1, 2.4 * z); const m = (a + c) / 2, n = (b + d) / 2; ctx.beginPath(); for (const p of [[m, m], [n, m], [n, n], [m, n], [m, m]]) { const q = uvS(p[0], p[1]); ctx.lineTo(q[0], q[1]); } ctx.stroke(); ctx.restore(); }
+  poly(ctx, [uvS(c - .08, c - .08), uvS(d + .08, c - .08), uvS(d + .08, d + .08), uvS(c - .08, d + .08)], '#7f796b');
+  poly(ctx, [uvS(c, c), uvS(d, c), uvS(d, d), uvS(c, d)], '#a49d8c', '#7f796b', 2 * z);
   if (z > .3) {
     ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1.2 * z; ctx.beginPath();
-    for (let k = 1; k < 4; k++) { const t = .5 + k * .5; let a = uvS(t, .5), b = uvS(t, 2.5); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); a = uvS(.5, t); b = uvS(2.5, t); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+    for (let k = 1; k < 8; k++) { const t = c + k * .5; let p = uvS(t, c), q = uvS(t, d); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); p = uvS(c, t); q = uvS(d, t); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
     ctx.stroke();
   }
+  for (const [u, v] of [[-.2, -.2], [3.2, -.2], [-.2, 3.2], [3.2, 3.2]]) { const [x, y] = uvS(u, v); ellipse(ctx, x, y, 22 * z, 11 * z, '#4f985c', '#3c7d49', 1.2 * z); }
   const [fx, fy] = uvS(1.5, 1.5);
   ellipse(ctx, fx, fy, 48 * z, 24 * z, '#7d7769'); ellipse(ctx, fx, fy - 5 * z, 48 * z, 24 * z, '#9a9383'); ellipse(ctx, fx, fy - 5 * z, 39 * z, 19.5 * z, '#4fa3d9');
   ellipse(ctx, fx, fy - 5 * z, 26 * z + Math.sin(S.T * 3) * 4 * z, 13 * z + Math.sin(S.T * 3) * 2 * z, null, 'rgba(255,255,255,.35)', 1.5 * z);
@@ -1482,7 +1486,7 @@ function draw() {
   const Tp = uvS(A0, A0), Rp = uvS(A1, A0), Bp = uvS(A1, A1), Lp = uvS(A0, A1), th = 40 * z;
   poly(ctx, [Lp, Bp, [Bp[0], Bp[1] + th], [Lp[0], Lp[1] + th]], '#3a2a20');
   poly(ctx, [Bp, Rp, [Rp[0], Rp[1] + th], [Bp[0], Bp[1] + th]], '#2b1f18');
-  poly(ctx, [Tp, Rp, Bp, Lp], '#2f6b45');
+  poly(ctx, [Tp, Rp, Bp, Lp], '#4f985c');
   for (let k = A0 + .5; k <= A1 - .5 + 1e-6; k += 2) {
     poly(ctx, [uvS(k - .38, A0), uvS(k + .38, A0), uvS(k + .38, A1), uvS(k - .38, A1)], '#464b63');
     if (mod6(k) === 0) poly(ctx, [uvS(A0, k - .38), uvS(A1, k - .38), uvS(A1, k + .38), uvS(A0, k + .38)], '#464b63');
@@ -1501,8 +1505,9 @@ function draw() {
     if (idx < N + 40) objs.push({ d: L.i + L.j, f: () => drawSignPost(sx, sy, z) });
     if (L.h % 4 === 0) { const [tx, ty] = uvS(L.i + .36, L.j - .36); objs.push({ d: L.i + L.j - .1, f: () => drawTree(ctx, tx, ty, z * .85, (L.h >> 5) & 1) }); }
   }
-  objs.push({ d: 3.0, f: () => drawLamp(2.3, .7) });
-  objs.push({ d: 3.0, f: () => drawBench(.8, 2.2) });
+  for (const [u, v] of [[3.3, .2], [.2, 3.3], [-.3, -.3]]) objs.push({ d: u + v, f: () => drawLamp(u, v) });
+  objs.push({ d: 3.0, f: () => drawBench(.6, 2.6) }); objs.push({ d: 3.0, f: () => drawBench(2.6, .6) });
+  for (const [u, v] of [[-.2, 3.2], [3.2, -.2]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
   objs.push({ d: 4.15, f: () => {
     const [x, y] = uvS(2.0, 2.15);
     poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z);
@@ -1728,7 +1733,7 @@ function open3D(h) {
       const cam3 = new T.PerspectiveCamera(40, 1, .1, 100);
       sc.add(new T.HemisphereLight('#bcd2ff', '#2b2f45', .75));
       const sun = new T.DirectionalLight('#fff1d6', .95); sun.position.set(6, 12, 8); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); sc.add(sun);
-      const ground = new T.Mesh(new T.PlaneGeometry(80, 80), new T.MeshStandardMaterial({ color: '#2f6b45', roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.31; ground.receiveShadow = true; sc.add(ground);
+      const ground = new T.Mesh(new T.PlaneGeometry(80, 80), new T.MeshStandardMaterial({ color: '#5aa868', roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.31; ground.receiveShadow = true; sc.add(ground);
       const stars = new T.Group(); const sg = new T.SphereGeometry(.06, 6, 6), smat = new T.MeshBasicMaterial({ color: '#ffffff' }); const rr = seeded(3); for (let k = 0; k < 160; k++) { const m = new T.Mesh(sg, smat); const a = rr() * Math.PI * 2, e = .25 + rr() * 1.1; m.position.set(Math.cos(a) * 38 * Math.cos(e), 38 * Math.sin(e), Math.sin(a) * 38 * Math.cos(e)); stars.add(m); } sc.add(stars);
       V3 = { r, sc, cam: cam3, yaw: .7, pitch: .42, dist: 14, auto: true, house: null, t0: performance.now() };
       const cv3 = $('c3d'), pts = new Map(); let pd = null;
