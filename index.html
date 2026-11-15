@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Poppins,system-ui,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;position:fixed;inset:0;width:100%;background:#060919;font-family:Poppins,system-ui,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}
 #c{position:fixed;inset:0;touch-action:none;display:block}
 .top{position:fixed;left:0;right:0;top:0;padding:12px 12px 0;display:flex;flex-direction:column;gap:10px;pointer-events:none;z-index:3}
 .brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -2833,20 +2833,34 @@ function flyTo(h) {
 function overview() { target.x = PX; target.y = PY + 10; target.z = fitZoom(); }
 
 /* ---- input: drag, pinch, wheel, tap ---- */
-const ptrs = new Map(); let dragging = false, moved = 0, pinch0 = null;
-cv.addEventListener('pointerdown', e => { touched = true; hideHint(); cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); dragging = true; moved = 0; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: cam.z }; } });
-cv.addEventListener('pointermove', e => {
-  if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId), dx = e.clientX - p[0], dy = e.clientY - p[1]; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
-  if (ptrs.size === 1) { cam.x -= dx / cam.z; cam.y -= dy / cam.z; moved += Math.abs(dx) + Math.abs(dy); }
-  else if (ptrs.size === 2 && pinch0) { const [a, b] = [...ptrs.values()]; cam.z = clamp(pinch0.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch0.d, .08, 3); moved += 99; }
-  target.x = cam.x; target.y = cam.y; target.z = cam.z;
-});
-function up(e) {
-  const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = null;
-  if (!ptrs.size) { dragging = false; if (moved < 8 && p) tapAt(p[0], p[1]); }
-}
-cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-cv.addEventListener('wheel', e => { e.preventDefault(); cam.z = clamp(cam.z * Math.exp(-e.deltaY * .0015), .08, 3); target.z = cam.z; target.x = cam.x; target.y = cam.y; }, { passive: false });
+let dragging = false, moved = 0, pinch0 = null, last1 = null, startXY = null;
+function clampCam() { const [cx, cy] = isoW(CEN, CEN), R = (A1 - A0) * TW * .36; cam.x = clamp(cam.x, cx - R, cx + R); cam.y = clamp(cam.y, cy - R * .5, cy + R * .5); }
+function panBy(dx, dy) { cam.x -= dx / cam.z; cam.y -= dy / cam.z; clampCam(); moved += Math.abs(dx) + Math.abs(dy); target.x = cam.x; target.y = cam.y; target.z = cam.z; }
+function zoomAround(x, y, nz) { const wx = (x - FX) / cam.z + cam.x, wy = (y - FY) / cam.z + cam.y; cam.z = clamp(nz, .08, 3); cam.x = wx - (x - FX) / cam.z; cam.y = wy - (y - FY) / cam.z; clampCam(); target.x = cam.x; target.y = cam.y; target.z = cam.z; }
+// touch (phones, TikTok in-app browser): claim every gesture so the browser never takes over
+const tp = t => [t.clientX, t.clientY];
+cv.addEventListener('touchstart', e => {
+  e.preventDefault(); touched = true; hideHint(); dragging = true;
+  if (e.touches.length === 1) { last1 = tp(e.touches[0]); startXY = last1; moved = 0; pinch0 = null; }
+  else if (e.touches.length >= 2) { const a = tp(e.touches[0]), b2 = tp(e.touches[1]); pinch0 = { d: Math.hypot(a[0] - b2[0], a[1] - b2[1]), z: cam.z, m: [(a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2] }; moved += 99; }
+}, { passive: false });
+cv.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && last1 && !pinch0) { const p = tp(e.touches[0]); panBy(p[0] - last1[0], p[1] - last1[1]); last1 = p; }
+  else if (e.touches.length >= 2 && pinch0) { const a = tp(e.touches[0]), b2 = tp(e.touches[1]), m = [(a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2]; panBy(m[0] - pinch0.m[0], m[1] - pinch0.m[1]); pinch0.m = m; zoomAround(m[0], m[1], pinch0.z * Math.hypot(a[0] - b2[0], a[1] - b2[1]) / pinch0.d); }
+}, { passive: false });
+cv.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) { last1 = tp(e.touches[0]); pinch0 = null; return; }   // one finger left after a pinch: keep panning from here, no jump
+  if (!e.touches.length) { dragging = false; if (moved < 10 && startXY && !pinch0) tapAt(startXY[0], startXY[1]); last1 = null; pinch0 = null; }
+}, { passive: false });
+cv.addEventListener('touchcancel', () => { dragging = false; last1 = null; pinch0 = null; });   // cancelled gesture is never a tap
+// mouse (desktop)
+let mdown = null;
+cv.addEventListener('mousedown', e => { mdown = [e.clientX, e.clientY]; startXY = mdown; moved = 0; dragging = true; hideHint(); touched = true; });
+addEventListener('mousemove', e => { if (!mdown) return; panBy(e.clientX - mdown[0], e.clientY - mdown[1]); mdown = [e.clientX, e.clientY]; });
+addEventListener('mouseup', () => { if (!mdown) return; mdown = null; dragging = false; if (moved < 6 && startXY) tapAt(startXY[0], startXY[1]); });
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomAround(e.clientX, e.clientY, cam.z * Math.exp(-e.deltaY * .0015)); }, { passive: false });
 function tapAt(x, y) {
   let best = null, bd = 1e9;
   for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j), d = Math.hypot(sx - x, (sy - 40 * cam.z) - y); if (d < bd) { bd = d; best = h; } }
