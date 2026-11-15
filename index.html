@@ -49,6 +49,17 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #cardMeta{font-size:13px;color:#9aa3c7;margin-top:2px}
 #cardOg{display:none;align-items:center;gap:4px;margin-top:8px;font-size:12px;font-weight:800;color:#1b1728;background:#ffd23f;border-radius:10px;padding:3px 9px}
 #cardMsg{font-size:14px;margin-top:8px;line-height:1.35}
+#cardStats{display:none;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+#cardStats.on{display:grid}
+#cardStats div{background:rgba(255,255,255,.06);border-radius:12px;padding:7px 4px;text-align:center}
+#cardStats b{display:block;font-size:16px;line-height:1.15}
+#cardStats span{font-size:10px;color:#9aa3c7;letter-spacing:.3px}
+#cardUp{display:none;margin-top:10px;font-size:12px;color:#c3c9e4}
+#cardUp.on{display:block}
+#cardUp .bar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
+#cardUp .bar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#ffd23f);border-radius:5px}
+#bennyBtn{position:fixed;right:12px;top:150px;z-index:3;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:6px 11px 6px 8px;cursor:pointer;display:flex;align-items:center;gap:5px}
+#bennyBtn i{font-style:normal;font-size:16px}
 #close{position:absolute;right:10px;top:8px;font-size:22px;color:#9aa3c7;background:none;border:0;cursor:pointer}
 #demo{display:none;position:fixed;right:10px;top:132px;z-index:3;font-size:11px;font-weight:700;color:#1b1728;background:#ffd23f;border-radius:8px;padding:3px 8px}
 @media (max-width:380px){.logo{font-size:16px;padding:6px 10px}.chip{min-width:50px;padding:4px 6px}.chip b{font-size:13px}}
@@ -69,7 +80,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
   <div class="sugg" id="sugg"></div>
   <div class="hint" id="hint">Drag to look around · pinch or scroll to zoom · tap a house</div>
 </div>
-<div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardMsg"></div></div>
+<div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardStats"></div><div id="cardUp"></div><div id="cardMsg"></div></div>
+<button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>
 <div class="bottom">
   <div id="recent"></div>
   <div class="cta"><p>Every TikTok follower gets a <b>free house</b> in Benny's Town 🏠</p><div class="btns"><a id="follow" target="_blank" rel="noopener">Follow</a><button id="all">Whole town</button></div></div>
@@ -425,6 +437,7 @@ function tag(x, y, label, col, alpha, prog) {
 /* ---- DATA: update this block every day (move-in order = tenant number) ---- */
 const TOWN = {
   day: 2,
+  startDate: '2026-11-14',   // date of Day 1 (move-in dates are counted from here)
   bankCents: 9510,         // Benny's bank in cents (e.g. 210 = €2.10)
   ogLimit: 100,           // first X tenants get the OG crown
   tiktokUrl: 'https://www.tiktok.com/@bennys.town',
@@ -1527,14 +1540,30 @@ cv.addEventListener('wheel', e => { e.preventDefault(); cam.z = clamp(cam.z * Ma
 function tapAt(x, y) {
   let best = null, bd = 1e9;
   for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j), d = Math.hypot(sx - x, (sy - 40 * cam.z) - y); if (d < bd) { bd = d; best = h; } }
+  if (cam.z < .9) { const [wx, wy] = [(x - FX) / cam.z + cam.x, (y - FY) / cam.z + cam.y]; target.x = wx; target.y = wy; target.z = 1.4; selected = null; hideCard(); return; }
   if (best && bd < Math.max(40, 70 * cam.z)) flyTo(best); else { selected = null; hideCard(); }
 }
 
 /* ---- UI ---- */
 const $ = id => document.getElementById(id);
+const DAYMS = 864e5;
+const UPGRADES = [[3, '🌷 Flowers'], [7, '🏡 Fence + garden'], [14, '💡 Lantern + balcony'], [30, '⭐ Second floor'], [90, '🏊 Pool']];
+function moveDate(day) { return new Date(new Date(TOWN.startDate + 'T00:00:00').getTime() + (day - 1) * DAYMS); }
+function daysFollowing(h) { return Math.max(0, Math.floor((Date.now() - moveDate(h.day).getTime()) / DAYMS)); }
+function sundaysSince(d) { let n = 0; for (let t = new Date(d.getTime() + DAYMS); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function showCard(h) {
+  const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, gifts = TOWN.tenants[h.idx].gifts || 0;
+  const tiles = [['#' + (h.idx + 1), 'TENANT'], [dF === 0 ? 'today' : dF + (dF === 1 ? ' day' : ' days'), 'FOLLOWING'], ['Day ' + h.day, 'MOVED IN'],
+    ['€' + (rent / 100).toFixed(2), 'RENT PAID'], ['€' + ((10 + rent) / 100).toFixed(2), 'GAVE BENNY'], [String(gifts), 'LIVE GIFTS 🎁']];
+  $('cardStats').innerHTML = tiles.map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
+  $('cardStats').classList.add('on');
+  const next = UPGRADES.find(u => u[0] > dF), prev = [...UPGRADES].reverse().find(u => u[0] <= dF);
+  $('cardUp').innerHTML = (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.round(100 * dF / next[0]) + '%"></i></div>' : 'All upgrades unlocked 🏆');
+  $('cardUp').classList.add('on');
+
   $('cardTitle').textContent = '@' + h.name;
-  $('cardMeta').textContent = 'Tenant #' + (h.idx + 1) + ' · moved in on Day ' + h.day;
+  $('cardMeta').textContent = 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '');
   $('cardOg').style.display = h.og ? 'inline-flex' : 'none';
   $('cardMsg').textContent = (h.stand ? 'Runs a ' + h.stand[0] + ' ' + h.stand[1] + ' in front of the house. Benny might shop here! ' : '') + (h.og ? 'OG tenants get upgraded first when Benny gets rich 👑' : 'Welcome to Benny\'s Town 🏠');
   $('card').classList.add('on'); $('card').classList.remove('miss');
@@ -1543,6 +1572,7 @@ function showMiss(name) {
   $('cardTitle').textContent = name ? '@' + name : 'Type your @name';
   $('cardMeta').textContent = name ? 'No house yet 😢' : '';
   $('cardOg').style.display = 'none';
+  $('cardStats').classList.remove('on'); $('cardUp').classList.remove('on');
   $('cardMsg').textContent = name ? 'Follow Benny on TikTok and your house gets built in the next update. New houses are added every day.' : '';
   $('card').classList.add('on', 'miss');
 }
@@ -1570,7 +1600,17 @@ function suggest() {
   }
   box.classList.add('on');
 }
+function goBenny() {
+  selected = null; const [wx, wy] = isoW(2.0, 2.15); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
+  $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · sleeps on the street';
+  $('cardOg').style.display = 'none';
+  $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
+  $('cardStats').classList.add('on'); $('cardUp').classList.remove('on');
+  $('cardMsg').textContent = 'Still sleeping on cardboard. Vote on TikTok for what he buys next 👇';
+  $('card').classList.add('on'); $('card').classList.remove('miss');
+}
 function initUI() {
+  $('bennyBtn').addEventListener('click', goBenny);
   $('q').addEventListener('input', suggest);
   $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2);
   $('sTen').textContent = N.toLocaleString('en-US');
