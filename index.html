@@ -507,7 +507,7 @@ const TOWN = {
   day: 2,
   milestones: { park: true, townHall: false },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
   startDate: '2026-11-14',   // date of Day 1 (move-in dates are counted from here)
-  bankCents: 21800,         // Benny's bank in cents (e.g. 210 = €2.10)
+  bankCents: 43020,         // Benny's bank in cents (e.g. 210 = €2.10)
   ogLimit: 100,           // first X tenants get the OG crown
   tiktokUrl: 'https://www.tiktok.com/@bennys.town',
   // optional per tenant: color: cream | lightblue | pink | mint | sand | grey | yellowpurple | blue | red | lavender | peach | white
@@ -2820,7 +2820,7 @@ const DAYMS = 864e5;
 const UPGRADES = [[3, '🌷 Flowers'], [7, '🏡 Fence + garden'], [14, '💡 Lantern + balcony'], [30, '⭐ Second floor'], [90, '🏊 Pool']];
 function moveDate(day) { return new Date(new Date(TOWN.startDate + 'T00:00:00').getTime() + (day - 1) * DAYMS); }
 function daysFollowing(h) { return Math.max(0, Math.floor((Date.now() - moveDate(h.day).getTime()) / DAYMS)); }
-function sundaysSince(d) { let n = 0; for (let t = new Date(d.getTime() + DAYMS); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
+function sundaysSince(d) { let n = 0; for (let t = new Date(d); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function showCard(h) {
   const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, gifts = TOWN.tenants[h.idx].gifts || 0;
