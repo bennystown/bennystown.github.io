@@ -58,6 +58,19 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #cardUp.on{display:block}
 #cardUp .bar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
 #cardUp .bar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#ffd23f);border-radius:5px}
+#v3d{position:fixed;inset:0;z-index:10;display:none;background:#1b2049}
+#v3d.on{display:block}
+#c3d{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.v3top{position:absolute;left:12px;right:12px;top:12px;display:flex;flex-direction:column;gap:2px;pointer-events:none;text-shadow:0 2px 8px #000}
+#v3name{font-size:22px;font-weight:800;word-break:break-all;padding-right:44px}
+#v3sub{font-size:13px;color:#ffd23f}
+#v3close{position:absolute;right:12px;top:10px;width:38px;height:38px;border-radius:19px;border:0;background:rgba(10,12,26,.85);color:#fff;font-size:22px;cursor:pointer;z-index:2}
+.v3bot{position:absolute;left:12px;right:12px;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#v3tier{font-size:13px;font-weight:700;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 12px}
+.v3hint{font-size:11px;color:#c3c9e4}
+#v3load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;color:#c3c9e4}
+#view3d{display:none;margin-top:10px;width:100%;font:800 14px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:12px;padding:10px;cursor:pointer}
+#view3d.on{display:block}
 #bennyBtn{position:fixed;right:12px;top:150px;z-index:3;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:6px 11px 6px 8px;cursor:pointer;display:flex;align-items:center;gap:5px}
 #bennyBtn i{font-style:normal;font-size:16px}
 #close{position:absolute;right:10px;top:8px;font-size:22px;color:#9aa3c7;background:none;border:0;cursor:pointer}
@@ -80,8 +93,9 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
   <div class="sugg" id="sugg"></div>
   <div class="hint" id="hint">Drag to look around · pinch or scroll to zoom · tap a house</div>
 </div>
-<div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardStats"></div><div id="cardUp"></div><div id="cardMsg"></div></div>
+<div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardStats"></div><div id="cardUp"></div><button id="view3d">🔍 View house in 3D</button><div id="cardMsg"></div></div>
 <button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>
+<div id="v3d"><canvas id="c3d"></canvas><div class="v3top"><span id="v3name"></span><span id="v3sub"></span></div><button id="v3close" aria-label="Close 3D view">×</button><div id="v3load">Building your house…</div><div class="v3bot"><div id="v3tier"></div><div class="v3hint">Drag to turn · pinch or scroll to zoom</div></div></div>
 <div class="bottom">
   <div id="recent"></div>
   <div class="cta"><p>Every TikTok follower gets a <b>free house</b> in Benny's Town 🏠</p><div class="btns"><a id="follow" target="_blank" rel="noopener">Follow</a><button id="all">Whole town</button></div></div>
@@ -149,7 +163,10 @@ function wrapText(s, x, y, sz, maxW, col) {
 
 /* ------------------------------------------------------------- city grid */
 const mod3 = n => ((n % 3) + 3) % 3;
-const isRoad = (i, j) => mod3(i) === 0 || mod3(j) === 0;
+const mod2 = n => ((n % 2) + 2) % 2, mod6 = n => ((n % 6) + 6) % 6;
+// layout: every house stands alone on its own plot. Streets run along i (every 2nd row) and cross streets every 6th row;
+// the rows in between are garden strips, so no house is ever hidden behind its neighbour.
+const isRoad = (i, j) => mod2(i) === 0 || mod2(j) === 0;
 const isPlaza = (i, j) => i >= 1 && i <= 2 && j >= 1 && j <= 2;
 const LOTS = [];
 (function () {
@@ -169,7 +186,7 @@ const lotW = lot => { const L = lotUV(lot); return isoW(L.i, L.j); };
 
 /* ---------------------------------------------------------------- houses */
 const STY = [
-  { f: .62, wall: 30, roofH: 24, roof: 'gable' },   // cottage
+  { f: .5, wall: 28, roofH: 22, roof: 'gable' },    // cottage (every house)
   { f: .62, wall: 56, roofH: 24, roof: 'gable' },   // two-storey
   { f: .70, wall: 42, roofH: 0, roof: 'flat' },     // modern
   { f: .50, wall: 112, roofH: 0, roof: 'flat' },    // tower
@@ -1426,7 +1443,7 @@ const BY_LOT = new Map(HOUSES.map(h => [h.i + ':' + h.j, h]));
 const BY_NAME = new Map(HOUSES.map(h => [norm(h.name), h]));
 const N = HOUSES.length;
 const R_CITY = N ? LOTS[Math.min(N - 1, LOTS.length - 1)].d + 1.2 : 3;
-const A0 = 3 * Math.floor((CEN - R_CITY - 1.5) / 3) - .5, A1 = 3 * Math.ceil((CEN + R_CITY + 1.5) / 3) + .5;
+const A0 = 6 * Math.floor((CEN - R_CITY - 1.5) / 6) - .5, A1 = 6 * Math.ceil((CEN + R_CITY + 1.5) / 6) + .5;
 
 let DPR = 1, VW = 390, VH = 844;
 function resize() {
@@ -1466,18 +1483,18 @@ function draw() {
   poly(ctx, [Lp, Bp, [Bp[0], Bp[1] + th], [Lp[0], Lp[1] + th]], '#3a2a20');
   poly(ctx, [Bp, Rp, [Rp[0], Rp[1] + th], [Bp[0], Bp[1] + th]], '#2b1f18');
   poly(ctx, [Tp, Rp, Bp, Lp], '#2f6b45');
-  for (let k = A0 + .5; k <= A1 - .5 + 1e-6; k += 3) {
-    poly(ctx, [uvS(k - .5, A0), uvS(k + .5, A0), uvS(k + .5, A1), uvS(k - .5, A1)], '#464b63');
-    poly(ctx, [uvS(A0, k - .5), uvS(A1, k - .5), uvS(A1, k + .5), uvS(A0, k + .5)], '#464b63');
+  for (let k = A0 + .5; k <= A1 - .5 + 1e-6; k += 2) {
+    poly(ctx, [uvS(k - .38, A0), uvS(k + .38, A0), uvS(k + .38, A1), uvS(k - .38, A1)], '#464b63');
+    if (mod6(k) === 0) poly(ctx, [uvS(A0, k - .38), uvS(A1, k - .38), uvS(A1, k + .38), uvS(A0, k + .38)], '#464b63');
   }
   if (z > .3) {
     ctx.save(); ctx.setLineDash([12 * z, 12 * z]); ctx.strokeStyle = 'rgba(255,210,90,.6)'; ctx.lineWidth = Math.max(1, 2.4 * z); ctx.beginPath();
-    for (let k = A0 + .5; k <= A1 - .5 + 1e-6; k += 3) { let p = uvS(k, A0), q = uvS(k, A1); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); p = uvS(A0, k); q = uvS(A1, k); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+    for (let k = A0 + .5; k <= A1 - .5 + 1e-6; k += 2) { let p = uvS(k, A0), q = uvS(k, A1); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); if (mod6(k) !== 0) continue; p = uvS(A0, k); q = uvS(A1, k); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
     ctx.stroke(); ctx.restore();
   }
   drawPlazaGround();
   const objs = [], lo = z < .6, maxD = (A1 - CEN) * 1.45;
-  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = mod3(h.i) === 2 ? h.i + .66 : mod3(h.j) === 2 ? h.i : h.i - .66, sv = mod3(h.i) === 2 ? h.j : mod3(h.j) === 2 ? h.j + .66 : h.j; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), k = z / sp_.sc; ctx.drawImage(sp_.c, sx - sp_.ax * k, sy - sp_.ay * k, sp_.c.width * k, sp_.c.height * k); } }); }
+  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), k = z / sp_.sc; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * k, sy - sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.globalAlpha = 1; } }); }
   for (let idx = N; idx < LOTS.length && LOTS[idx].d <= maxD; idx++) {
     const L = LOTS[idx]; if (L.i < A0 + .5 || L.i > A1 - .5 || L.j < A0 + .5 || L.j > A1 - .5) continue;
     const [sx, sy] = uvS(L.i, L.j); if (sx < -80 || sx > VW + 80 || sy < -60 || sy > VH + 100) continue;
@@ -1517,7 +1534,7 @@ function frame(now) {
 }
 function flyTo(h) {
   selected = h; selT = S.T; const [wx, wy] = isoW(h.i, h.j); $('sugg').classList.remove('on');
-  target.z = Math.max(1.1, fitZoom()); target.x = wx; target.y = wy - 40 + (VH * .12) / target.z;
+  target.z = Math.max(1.3, fitZoom()); target.x = wx; target.y = wy - 20 + (FY - VH * .34) / target.z;
   showCard(h);
 }
 function overview() { target.x = PX; target.y = PY + 10; target.z = fitZoom(); }
@@ -1561,6 +1578,7 @@ function showCard(h) {
   const next = UPGRADES.find(u => u[0] > dF), prev = [...UPGRADES].reverse().find(u => u[0] <= dF);
   $('cardUp').innerHTML = (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.round(100 * dF / next[0]) + '%"></i></div>' : 'All upgrades unlocked 🏆');
   $('cardUp').classList.add('on');
+  $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
   $('cardTitle').textContent = '@' + h.name;
   $('cardMeta').textContent = 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '');
@@ -1572,7 +1590,7 @@ function showMiss(name) {
   $('cardTitle').textContent = name ? '@' + name : 'Type your @name';
   $('cardMeta').textContent = name ? 'No house yet 😢' : '';
   $('cardOg').style.display = 'none';
-  $('cardStats').classList.remove('on'); $('cardUp').classList.remove('on');
+  $('cardStats').classList.remove('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
   $('cardMsg').textContent = name ? 'Follow Benny on TikTok and your house gets built in the next update. New houses are added every day.' : '';
   $('card').classList.add('on', 'miss');
 }
@@ -1605,12 +1623,13 @@ function goBenny() {
   $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · sleeps on the street';
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
-  $('cardStats').classList.add('on'); $('cardUp').classList.remove('on');
+  $('cardStats').classList.add('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
   $('cardMsg').textContent = 'Still sleeping on cardboard. Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
 function initUI() {
   $('bennyBtn').addEventListener('click', goBenny);
+  $('v3close').addEventListener('click', close3D);
   $('q').addEventListener('input', suggest);
   $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2);
   $('sTen').textContent = N.toLocaleString('en-US');
@@ -1626,7 +1645,117 @@ function initUI() {
   if (DEMO) $('hint').textContent = 'DEMO DATA · ' + $('hint').textContent;
 }
 window.addEventListener('resize', () => { resize(); if (!selected) overview(); });
-window.SITE = { flyTo, search, HOUSES };
+/* ---- 3D house view ---- */
+let V3 = null;
+function loadThree() { return window.THREE ? Promise.resolve() : new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = 'three.min.js'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); }); }
+function tierOf(h) { const ov = location.hash.match(/tier=(\d)/); if (ov) return +ov[1]; const d = daysFollowing(h); let t = 0; UPGRADES.forEach((u, k) => { if (d >= u[0]) t = k + 1; }); return t; }
+function canvasTex(draw, w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; }
+function buildHouse3D(h, tier) {
+  const T = THREE, g = new T.Group(), pal = PAL[h.v % PAL.length];
+  const M = (c, o) => new T.MeshStandardMaterial(Object.assign({ color: c, roughness: .85 }, o || {}));
+  const box = (w, hh, d, m, x, y, z) => { const b = new T.Mesh(new T.BoxGeometry(w, hh, d), m); b.position.set(x, y, z); b.castShadow = b.receiveShadow = true; g.add(b); return b; };
+  // plot, grass, path, sidewalk
+  box(8, .3, 8, M('#5aa868'), 0, -.15, 0);
+  box(8, .32, 1.2, M('#9a9a9f'), 0, -.14, 4.6);
+  box(8, .2, 2.2, M('#464b63'), 0, -.2, 6.3);
+  for (let x = -3.5; x <= 3.5; x += 1.6) box(.8, .02, .12, M('#ffd25a'), x, -.09, 6.3);
+  box(1, .04, 2.6, M('#c9b48f'), -.6, .02, 2.9);
+  // house body
+  const wh = tier >= 4 ? 4.2 : 2.2, wall = M(pal[0]), wall2 = M(shade(pal[0], .86));
+  box(3.6, wh, 3.2, wall, 0, wh / 2, 0);
+  // gable roof (ridge along x)
+  const rs = new T.Shape(); rs.moveTo(-1.95, 0); rs.lineTo(0, 1.5); rs.lineTo(1.95, 0); rs.lineTo(-1.95, 0);
+  const roof = new T.Mesh(new T.ExtrudeGeometry(rs, { depth: 4.1, bevelEnabled: false }), [M(pal[1]), M(shade(pal[1], .8))]);
+  roof.rotation.y = Math.PI / 2; roof.position.set(-2.05, wh, 0); roof.castShadow = true; g.add(roof);
+  const gab = new T.Shape(); gab.moveTo(-1.6, 0); gab.lineTo(0, 1.2); gab.lineTo(1.6, 0); gab.lineTo(-1.6, 0);
+  for (const sx of [-1.8, 1.8]) { const m = new T.Mesh(new T.ShapeGeometry(gab), wall2); m.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2; m.position.set(sx + (sx > 0 ? .001 : -.001), wh, 0); g.add(m); }
+  box(.35, .9, .35, M('#8a4b2e'), 1, wh + 1.1, -.5); // chimney
+  // door, windows (lit)
+  box(.8, 1.5, .08, M('#6b4a33'), -.6, .75, 1.62); box(.08, .08, .06, M('#e8c25a', { metalness: .6 }), -.35, .8, 1.68);
+  const win = M('#ffd56b', { emissive: '#ffb733', emissiveIntensity: .7 }), frame = M('#f4efe4');
+  const addWin = (x, y, z, ry) => { const w = box(.8, .7, .06, win, x, y, z); w.rotation.y = ry; const f = box(.95, .85, .04, frame, x, y, z - .02 * Math.cos(ry)); f.rotation.y = ry; };
+  addWin(.85, 1.25, 1.62, 0); addWin(1.82, 1.25, 0, Math.PI / 2); addWin(-1.82, 1.25, 0, Math.PI / 2);
+  if (tier >= 4) { addWin(-.6, 3.2, 1.62, 0); addWin(.85, 3.2, 1.62, 0); addWin(1.82, 3.2, 0, Math.PI / 2); }
+  // doorstep + mailbox with name
+  box(1.1, .12, .5, M('#b9b0a0'), -.6, .06, 1.9);
+  box(.12, 1.1, .12, M('#6b4a2e'), 2.4, .55, 3.7);
+  const mb = box(.7, .45, .4, M('#e2483a'), 2.4, 1.3, 3.7);
+  const plate = new T.Mesh(new T.PlaneGeometry(1.6, .4), new T.MeshBasicMaterial({ map: canvasTex((c, w, hh) => { c.fillStyle = '#fbf3df'; c.fillRect(0, 0, w, hh); c.strokeStyle = '#1b1728'; c.lineWidth = 8; c.strokeRect(0, 0, w, hh); c.fillStyle = '#1b1728'; let fs = 64; c.font = '700 ' + fs + 'px Poppins, sans-serif'; while (c.measureText('@' + h.name).width > w - 30 && fs > 20) { fs -= 2; c.font = '700 ' + fs + 'px Poppins, sans-serif'; } c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('@' + h.name, w / 2, hh / 2 + 3); }, 512, 128) }));
+  plate.position.set(2.4, 1.85, 3.92); g.add(plate);
+  // tier 1: flowers
+  if (tier >= 1) { const cols = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff']; for (let k = 0; k < 14; k++) { const x = -1.8 + (k % 7) * .55 + (k > 6 ? .25 : 0), z = 1.95 + (k > 6 ? .35 : 0); if (Math.abs(x + .6) < .6) continue; box(.05, .3, .05, M('#2f7d3a'), x, .15, z); const fl = new T.Mesh(new T.SphereGeometry(.13, 10, 8), M(cols[k % 5])); fl.position.set(x, .35, z); g.add(fl); } }
+  // tier 2: fence + tree
+  if (tier >= 2) {
+    const fm = M('#f4efe4');
+    for (let k = 0; k <= 16; k++) { const t = -3.8 + k * .475; box(.12, .8, .12, fm, t, .4, 3.85); box(.12, .8, .12, fm, -3.85, .4, t); box(.12, .8, .12, fm, 3.85, .4, t); }
+    box(7.7, .1, .06, fm, 0, .6, 3.85); box(.06, .1, 7.7, fm, -3.85, .6, 0); box(.06, .1, 7.7, fm, 3.85, .6, 0);
+    box(.35, 1.6, .35, M('#6b4a2e'), -2.8, .8, -2.6); const crown = new T.Mesh(new T.SphereGeometry(1.1, 14, 10), M('#2f8a45')); crown.position.set(-2.8, 2.3, -2.6); crown.castShadow = true; g.add(crown);
+  }
+  // tier 3: lantern + bench
+  if (tier >= 3) {
+    box(.12, 2.6, .12, M('#3a3f55'), 3.2, 1.3, 2.2); const bulb = new T.Mesh(new T.SphereGeometry(.22, 12, 10), M('#ffe08a', { emissive: '#ffd56b', emissiveIntensity: 1.5 })); bulb.position.set(3.2, 2.7, 2.2); g.add(bulb);
+    const pl = new T.PointLight('#ffcf7a', .6, 6); pl.position.set(3.2, 2.6, 2.2); g.add(pl);
+    box(1.4, .1, .45, M('#a77b4f'), -2.6, .55, 1.6); box(.1, .5, .4, M('#5b4028'), -3.2, .3, 1.6); box(.1, .5, .4, M('#5b4028'), -2, .3, 1.6);
+    box(1.4, .4, .08, M('#a77b4f'), -2.6, .85, 1.4);
+  }
+  // tier 5: pool
+  if (tier >= 5) { box(2.2, .25, 1.6, M('#e8e3d8'), 2.4, .1, -2.6); box(1.9, .05, 1.3, M('#4fb3e8', { roughness: .2, metalness: .1 }), 2.4, .25, -2.6); }
+  // tenant stand
+  if (h.stand) {
+    const st = new T.Group(); st.position.set(-2.7, 0, 3.0); g.add(st);
+    const sb = (w, hh, d, m, x, y, z) => { const b = new T.Mesh(new T.BoxGeometry(w, hh, d), m); b.position.set(x, y, z); b.castShadow = true; st.add(b); };
+    sb(1.4, .7, .6, M('#b07a46'), 0, .5, 0);
+    for (const x of [-.65, .65]) sb(.08, 1.4, .08, M('#6b4a2e'), x, 1.2, -.25);
+    for (let k = 0; k < 4; k++) sb(.36, .08, .9, M(k % 2 ? '#fff4e0' : h.stand[2]), -.54 + k * .36, 1.95, -.05);
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: canvasTex((c, w) => { c.font = '100px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(h.stand[0], w / 2, 64); }, 128, 128) }));
+    sp.scale.set(.6, .6, .6); sp.position.set(0, 1.15, 0); st.add(sp);
+  }
+  // OG crown floating above
+  if (h.og) { const cr = new T.Sprite(new T.SpriteMaterial({ map: canvasTex((c, w) => { c.font = '100px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('👑', w / 2, 64); }, 128, 128) })); cr.scale.set(1.1, 1.1, 1.1); cr.position.set(0, wh + 2.4, 0); cr.userData.bob = true; g.add(cr); }
+  return g;
+}
+function open3D(h) {
+  $('v3d').classList.add('on'); $('v3name').textContent = '@' + h.name; const tier = tierOf(h), next = UPGRADES[tier];
+  $('v3sub').textContent = (h.og ? '👑 OG · ' : '') + 'Tenant #' + (h.idx + 1) + ' · ' + (tier ? UPGRADES[tier - 1][1] + ' unlocked' : 'Starter cottage');
+  $('v3tier').textContent = next ? 'Next: ' + next[1] + ' in ' + (next[0] - daysFollowing(h)) + ' days' : 'All upgrades unlocked 🏆';
+  $('v3load').style.display = 'block';
+  loadThree().then(() => {
+    $('v3load').style.display = 'none';
+    const T = THREE;
+    if (!V3) {
+      const r = new T.WebGLRenderer({ canvas: $('c3d'), antialias: true }); r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+      const sc = new T.Scene(); sc.background = new T.Color('#1b2049'); sc.fog = new T.Fog('#1b2049', 34, 70);
+      const cam3 = new T.PerspectiveCamera(40, 1, .1, 100);
+      sc.add(new T.HemisphereLight('#bcd2ff', '#2b2f45', .75));
+      const sun = new T.DirectionalLight('#fff1d6', .95); sun.position.set(6, 12, 8); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); sc.add(sun);
+      const ground = new T.Mesh(new T.PlaneGeometry(80, 80), new T.MeshStandardMaterial({ color: '#2f6b45', roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.31; ground.receiveShadow = true; sc.add(ground);
+      const stars = new T.Group(); const sg = new T.SphereGeometry(.06, 6, 6), smat = new T.MeshBasicMaterial({ color: '#ffffff' }); const rr = seeded(3); for (let k = 0; k < 160; k++) { const m = new T.Mesh(sg, smat); const a = rr() * Math.PI * 2, e = .25 + rr() * 1.1; m.position.set(Math.cos(a) * 38 * Math.cos(e), 38 * Math.sin(e), Math.sin(a) * 38 * Math.cos(e)); stars.add(m); } sc.add(stars);
+      V3 = { r, sc, cam: cam3, yaw: .7, pitch: .42, dist: 14, auto: true, house: null, t0: performance.now() };
+      const cv3 = $('c3d'), pts = new Map(); let pd = null;
+      cv3.addEventListener('pointerdown', e => { cv3.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); V3.auto = false; if (pts.size === 2) { const [a, b] = [...pts.values()]; pd = [Math.hypot(a[0] - b[0], a[1] - b[1]), V3.dist]; } });
+      cv3.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; const p = pts.get(e.pointerId); const dx = e.clientX - p[0], dy = e.clientY - p[1]; pts.set(e.pointerId, [e.clientX, e.clientY]); if (pts.size === 1) { V3.yaw -= dx * .008; V3.pitch = clamp(V3.pitch + dy * .006, .08, 1.35); } else if (pd) { const [a, b] = [...pts.values()]; V3.dist = clamp(pd[1] * pd[0] / Math.max(10, Math.hypot(a[0] - b[0], a[1] - b[1])), 6, 26); } });
+      const upf = e => { pts.delete(e.pointerId); if (pts.size < 2) pd = null; }; cv3.addEventListener('pointerup', upf); cv3.addEventListener('pointercancel', upf);
+      cv3.addEventListener('wheel', e => { e.preventDefault(); V3.dist = clamp(V3.dist * Math.exp(e.deltaY * .001), 6, 26); }, { passive: false });
+      const loop = () => {
+        if (!$('v3d').classList.contains('on')) { V3.raf = 0; return; }
+        const w = innerWidth, hh = innerHeight; if (r.domElement.width !== Math.round(w * DPR)) { r.setPixelRatio(DPR); r.setSize(w, hh, false); V3.cam.aspect = w / hh; V3.cam.updateProjectionMatrix(); }
+        if (V3.auto) V3.yaw += .004;
+        const t = (performance.now() - V3.t0) / 1000;
+        const D = V3.dist * (V3.cam.aspect < 1 ? Math.pow(V3.cam.aspect, -.75) : 1); V3.cam.position.set(Math.sin(V3.yaw) * Math.cos(V3.pitch) * D, 1.2 + Math.sin(V3.pitch) * D, Math.cos(V3.yaw) * Math.cos(V3.pitch) * D); V3.cam.lookAt(0, 1.6, .8);
+        if (V3.house) V3.house.traverse(o => { if (o.userData.bob) o.position.y = o.userData.y0 + Math.sin(t * 2) * .15; });
+        r.render(sc, V3.cam); V3.raf = requestAnimationFrame(loop);
+      };
+      V3.loop = loop;
+    }
+    if (V3.house) V3.sc.remove(V3.house);
+    V3.house = buildHouse3D(h, tier); V3.house.traverse(o => { if (o.userData.bob) o.userData.y0 = o.position.y; }); V3.sc.add(V3.house);
+    V3.auto = true; V3.yaw = .7; V3.pitch = .42; V3.dist = 14;
+    if (!V3.raf) V3.raf = requestAnimationFrame(V3.loop);
+  }).catch(() => { $('v3load').textContent = 'Could not load the 3D view 😢'; });
+}
+function close3D() { $('v3d').classList.remove('on'); }
+
+window.SITE = { flyTo, search, HOUSES, open3D };
 function start() { resize(); initUI(); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
 
 const go = () => start();
