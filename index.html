@@ -113,7 +113,7 @@ const ctx = cv.getContext('2d');
 const TW = 128, TH = 64;            // iso tile size
 let FX = 560, FY = 1290;          // screen point the camera looks at
 const OUT = '#1b1728';
-const CEN = 1.5;                    // city centre in tile coords
+const CEN = 3;                      // city centre in tile coords (middle of Benny's square)
 const CONF = ['#ff4d6d', '#ffd23f', '#3ddc84', '#4da3ff', '#b07cff', '#ff8a3d'];
 const OPT_COL = ['#ff4d6d', '#3ddc84', '#4da3ff'];
 
@@ -167,9 +167,10 @@ const mod2 = n => ((n % 2) + 2) % 2, mod6 = n => ((n % 6) + 6) % 6;
 // layout: every house stands alone on its own plot. Streets run along i (every 2nd row) and cross streets every 6th row;
 // the rows in between are garden strips, so no house is ever hidden behind its neighbour.
 const isRoad = (i, j) => mod2(i) === 0 || mod2(j) === 0;
-const isPlaza = (i, j) => (i >= -1 && i <= 4 && j >= -1 && j <= 4)   // Benny's square + ring road
-  || (i >= 5 && i <= 7 && j >= -1 && j <= 4)                          // park (500 followers)
-  || (j >= 5 && j <= 7 && i >= -1 && i <= 4);                         // town hall + market (1,000 followers)
+// special blocks (6x6 tiles, always framed by streets): Benny's square in the middle, new places a few streets further out
+const blockOf = n => Math.floor(n / 6);
+const RESERVED = { '0,0': 'square', '2,0': 'park', '0,2': 'hall' };
+const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)];
 const LOTS = [];
 (function () {
   const N = 78;
@@ -394,21 +395,22 @@ function drawCar(car) {
   box(lu, lv, hg, 0, car.col, shade(car.col, .8), shade(car.col, .62));
   box(lu * .55, lv * .8, 5 * z, hg, '#2b3350', '#3b4670', '#232a45');
 }
-const PARK = { u0: 4.62, u1: 7.38, v0: -1.38, v1: 4.38 }, HALL = { u0: -1.38, u1: 4.38, v0: 4.62, v1: 7.38 };
+const blk = (bu, bv) => ({ u0: bu * 6 + .38, u1: bu * 6 + 5.62, v0: bv * 6 + .38, v1: bv * 6 + 5.62 });
+const SQUARE = blk(0, 0), PARK = blk(2, 0), HALL = blk(0, 2);
 function zoneGround(Z, fill, edge) { const z = cam.z; poly(ctx, [uvS(Z.u0, Z.v0), uvS(Z.u1, Z.v0), uvS(Z.u1, Z.v1), uvS(Z.u0, Z.v1)], fill, edge, edge ? 2 * z : 0); }
 function drawParkGround() {
   const z = cam.z; zoneGround(PARK, '#4f985c');
   const path = (a, b, c, d) => poly(ctx, [uvS(a, b), uvS(c, b), uvS(c, d), uvS(a, d)], '#c9b48f');
-  path(PARK.u0, 1.3, PARK.u1, 1.7); path(5.8, PARK.v0, 6.2, PARK.v1);
-  const [px, py] = uvS(6.6, -.2); ellipse(ctx, px, py, 44 * z, 22 * z, '#3e8fc9', '#2b6f9e', 1.5 * z); ellipse(ctx, px - 8 * z, py - 3 * z, 18 * z, 7 * z, 'rgba(255,255,255,.25)');
-  const [sx, sy] = uvS(5.2, 3.4); poly(ctx, [[sx - 26 * z, sy], [sx, sy + 13 * z], [sx + 26 * z, sy], [sx, sy - 13 * z]], '#e8d9a8', '#c9b48f', 1 * z);
+  path(PARK.u0, 2.8, PARK.u1, 3.2); path(14.8, PARK.v0, 15.2, PARK.v1);
+  const [px, py] = uvS(16.4, 1.4); ellipse(ctx, px, py, 44 * z, 22 * z, '#3e8fc9', '#2b6f9e', 1.5 * z); ellipse(ctx, px - 8 * z, py - 3 * z, 18 * z, 7 * z, 'rgba(255,255,255,.25)');
+  const [sx, sy] = uvS(13.4, 4.6); poly(ctx, [[sx - 26 * z, sy], [sx, sy + 13 * z], [sx + 26 * z, sy], [sx, sy - 13 * z]], '#e8d9a8', '#c9b48f', 1 * z);
 }
 function drawPlayground(u, v) { const z = cam.z, [x, y] = uvS(u, v); line(ctx, x - 14 * z, y, x - 14 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x + 14 * z, y, x + 14 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x - 16 * z, y - 30 * z, x + 16 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x - 4 * z, y - 30 * z, x - 4 * z, y - 12 * z, '#555', 1.2 * z); line(ctx, x + 4 * z, y - 30 * z, x + 4 * z, y - 12 * z, '#555', 1.2 * z); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 6 * z, y - 13 * z, 12 * z, 3 * z); }
 function drawHallGround() {
   const z = cam.z;
   if (!TOWN.milestones.townHall) {
-    zoneGround(HALL, '#8a7f6a'); const [cx, cy] = uvS(1.5, 6);
-    for (let k = 0; k < 4; k++) { const [x, y] = uvS(.2 + k * .9, 5.4); ctx.fillStyle = '#c9a46b'; ctx.fillRect(x - 3 * z, y - 10 * z, 6 * z, 10 * z); }
+    zoneGround(HALL, '#8a7f6a');
+    for (let k = 0; k < 4; k++) { const [x, y] = uvS(1.4 + k * 1.1, 14.5); ctx.fillStyle = '#c9a46b'; ctx.fillRect(x - 3 * z, y - 10 * z, 6 * z, 10 * z); }
     return;
   }
   zoneGround(HALL, '#a49d8c', '#7f796b');
@@ -423,14 +425,14 @@ function drawTownHall() {
   const z = cam.z;
   if (!TOWN.milestones.townHall) {
     for (let k = 0; k <= 12; k++) { const t = HALL.u0 + .1 + k * (HALL.u1 - HALL.u0 - .2) / 12, [x, y] = uvS(t, HALL.v0 + .12); ctx.fillStyle = k % 2 ? '#ff8a3d' : '#f4efe4'; ctx.fillRect(x - 2 * z, y - 16 * z, 4 * z, 16 * z); }
-    const [sx, sy] = uvS(1.5, 5.3); line(ctx, sx, sy, sx, sy - 40 * z, '#5b4630', 3 * z);
+    const [sx, sy] = uvS(3, 13.4); line(ctx, sx, sy, sx, sy - 40 * z, '#5b4630', 3 * z);
     panel(sx - 58 * z, sy - 74 * z, 116 * z, 40 * z, 6 * z, '#f4efe4', '#c23a2d', 2 * z);
     if (z > .45) { txt('🔑 1,000', sx, sy - 60 * z, Math.round(13 * z), '#c23a2d', 'center', 'middle'); txt('COMING SOON', sx, sy - 45 * z, Math.round(9 * z), '#5b4630', 'center', 'middle'); }
     return;
   }
-  const b = isoBox(.2, 5.9, 2.8, 7.1, 62, '#e9e2d0', '#d8cfb8', '#c2b89f');
-  const [tx, ty] = uvS(1.5, 6.5); const top = ty - 62 * z;
-  isoBox(1.1, 6.2, 1.9, 6.8, 98, '#e9e2d0', '#d8cfb8', '#c2b89f');
+  const b = isoBox(1.2, 14.6, 4.8, 16.4, 62, '#e9e2d0', '#d8cfb8', '#c2b89f');
+  const [tx, ty] = uvS(3, 15.5); const top = ty - 62 * z;
+  isoBox(2.6, 15.1, 3.4, 15.9, 98, '#e9e2d0', '#d8cfb8', '#c2b89f');
   poly(ctx, [[tx - 24 * z, top - 36 * z], [tx, top - 60 * z], [tx + 24 * z, top - 36 * z]], '#3c5a99', OUT, 1.2 * z);
   circle(ctx, tx - 12 * z, top - 18 * z, 7 * z, '#fbf7ee', OUT, 1 * z); line(ctx, tx - 12 * z, top - 18 * z, tx - 12 * z, top - 23 * z, OUT, 1.2 * z); line(ctx, tx - 12 * z, top - 18 * z, tx - 8 * z, top - 18 * z, OUT, 1.2 * z);
   line(ctx, tx, top - 60 * z, tx, top - 84 * z, '#555', 1.5 * z); poly(ctx, [[tx, top - 84 * z], [tx + 16 * z, top - 79 * z], [tx, top - 74 * z]], '#ff2e63');
@@ -441,18 +443,15 @@ function drawTownHall() {
 }
 function drawMarketStall(u, v, col) { const z = cam.z, [x, y] = uvS(u, v); ctx.fillStyle = '#b07a46'; ctx.fillRect(x - 13 * z, y - 12 * z, 26 * z, 12 * z); line(ctx, x - 12 * z, y - 12 * z, x - 12 * z, y - 30 * z, '#6b4a2e', 2 * z); line(ctx, x + 12 * z, y - 12 * z, x + 12 * z, y - 30 * z, '#6b4a2e', 2 * z); for (let k = 0; k < 4; k++) { ctx.fillStyle = k % 2 ? '#fff4e0' : col; ctx.fillRect(x - 16 * z + k * 8 * z, y - 36 * z, 8 * z, 7 * z); } }
 function drawPlazaGround() {
-  const z = cam.z, a = -1.38, b = 4.38, c = -.5, d = 3.5;
-  poly(ctx, [uvS(a, a), uvS(b, a), uvS(b, b), uvS(a, b)], '#464b63');
-  if (z > .3) { ctx.save(); ctx.setLineDash([12 * z, 12 * z]); ctx.strokeStyle = 'rgba(255,210,90,.6)'; ctx.lineWidth = Math.max(1, 2.4 * z); const m = (a + c) / 2, n = (b + d) / 2; ctx.beginPath(); for (const p of [[m, m], [n, m], [n, n], [m, n], [m, m]]) { const q = uvS(p[0], p[1]); ctx.lineTo(q[0], q[1]); } ctx.stroke(); ctx.restore(); }
-  poly(ctx, [uvS(c - .08, c - .08), uvS(d + .08, c - .08), uvS(d + .08, d + .08), uvS(c - .08, d + .08)], '#7f796b');
+  const z = cam.z, c = SQUARE.u0, d = SQUARE.u1;
   poly(ctx, [uvS(c, c), uvS(d, c), uvS(d, d), uvS(c, d)], '#a49d8c', '#7f796b', 2 * z);
   if (z > .3) {
     ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1.2 * z; ctx.beginPath();
-    for (let k = 1; k < 8; k++) { const t = c + k * .5; let p = uvS(t, c), q = uvS(t, d); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); p = uvS(c, t); q = uvS(d, t); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+    for (let t = 1; t < 5.6; t += .5) { let p = uvS(t, c), q = uvS(t, d); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); p = uvS(c, t); q = uvS(d, t); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
     ctx.stroke();
   }
-  for (const [u, v] of [[-.2, -.2], [3.2, -.2], [-.2, 3.2], [3.2, 3.2]]) { const [x, y] = uvS(u, v); ellipse(ctx, x, y, 22 * z, 11 * z, '#4f985c', '#3c7d49', 1.2 * z); }
-  const [fx, fy] = uvS(1.5, 1.5);
+  for (const [u, v] of [[1, 1], [5, 1], [1, 5], [5, 5]]) { const [x, y] = uvS(u, v); ellipse(ctx, x, y, 30 * z, 15 * z, '#4f985c', '#3c7d49', 1.2 * z); }
+  const [fx, fy] = uvS(3, 3);
   ellipse(ctx, fx, fy, 48 * z, 24 * z, '#7d7769'); ellipse(ctx, fx, fy - 5 * z, 48 * z, 24 * z, '#9a9383'); ellipse(ctx, fx, fy - 5 * z, 39 * z, 19.5 * z, '#4fa3d9');
   ellipse(ctx, fx, fy - 5 * z, 26 * z + Math.sin(S.T * 3) * 4 * z, 13 * z + Math.sin(S.T * 3) * 2 * z, null, 'rgba(255,255,255,.35)', 1.5 * z);
   ctx.fillStyle = '#8c8577'; ctx.fillRect(fx - 4 * z, fy - 26 * z, 8 * z, 21 * z);
@@ -1507,7 +1506,7 @@ function resize() {
 }
 function fitZoom() { const R = Math.max(3.2, R_CITY + 1.2); return clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .08, 1.6); }
 
-const [PX, PY] = isoW(1.5, 1.5);
+const [PX, PY] = isoW(3, 3);
 const target = { x: PX, y: PY, z: 1 };
 let selected = null, selT = 0;
 const STARS = []; { const r = seeded(77); for (let k = 0; k < 140; k++) STARS.push([r(), r() * .6, .6 + r() * 1.6]); }
@@ -1555,22 +1554,22 @@ function draw() {
     if (idx < N + 40) objs.push({ d: L.i + L.j, f: () => drawSignPost(sx, sy, z) });
     if (L.h % 4 === 0) { const [tx, ty] = uvS(L.i + .36, L.j - .36); objs.push({ d: L.i + L.j - .1, f: () => drawTree(ctx, tx, ty, z * .85, (L.h >> 5) & 1) }); }
   }
-  for (const [u, v] of [[3.3, .2], [.2, 3.3], [-.3, -.3]]) objs.push({ d: u + v, f: () => drawLamp(u, v) });
-  for (const [u, v] of [[5.0, -1.0], [7.0, -.9], [5.1, .5], [7.1, 2.4], [5.0, 2.3], [6.9, 3.9], [5.3, 4.1], [7.1, .8]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, (Math.round(u * 7 + v * 3)) & 1) }); }
-  objs.push({ d: 8.6, f: () => drawPlayground(5.2, 3.4) }); objs.push({ d: 7.5, f: () => drawBench(6.5, 1.0) });
-  objs.push({ d: 10.5, f: drawTownHall });
-  if (TOWN.milestones.townHall) [[0, 5.2, '#e2483a'], [1.5, 5.15, '#3ddc84'], [3.0, 5.2, '#4da3ff']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
-  objs.push({ d: 3.0, f: () => drawBench(.6, 2.6) }); objs.push({ d: 3.0, f: () => drawBench(2.6, .6) });
-  for (const [u, v] of [[-.2, 3.2], [3.2, -.2]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
-  objs.push({ d: 4.15, f: () => {
-    const [x, y] = uvS(2.0, 2.15);
+  for (const [u, v] of [[3, .9], [.9, 3], [1.6, 1.6], [4.6, 1.6], [1.6, 4.6]]) objs.push({ d: u + v, f: () => drawLamp(u, v) });
+  for (const [u, v] of [[13, 1], [17, 1.2], [13.2, 2.2], [17.1, 4.2], [16.3, 5.1], [13.4, 5.2], [16.9, 2.4], [14.1, .9]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, (Math.round(u * 7 + v * 3)) & 1) }); }
+  objs.push({ d: 18, f: () => drawPlayground(13.4, 4.6) }); objs.push({ d: 17.5, f: () => drawBench(15.9, 1.9) });
+  objs.push({ d: 18.5, f: drawTownHall });
+  if (TOWN.milestones.townHall) [[1.5, 13.3, '#e2483a'], [3, 13.2, '#3ddc84'], [4.5, 13.3, '#4da3ff']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
+  objs.push({ d: 6, f: () => drawBench(1.9, 4.2) }); objs.push({ d: 6, f: () => drawBench(4.2, 1.9) });
+  for (const [u, v] of [[1, 5], [5, 1], [1, 1]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
+  objs.push({ d: 7.15, f: () => {
+    const [x, y] = uvS(3.5, 3.65);
     poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z);
     drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'sit', mood: TOWN.bankCents > 0 ? 'hope' : 'sad', look: [0, .6], blink: (S.T % 3.7) < .12 });
   } });
   objs.sort((a, b) => a.d - b.d); for (const o of objs) o.f();
   ctx.fillStyle = 'rgba(8,10,34,.18)'; ctx.fillRect(0, 0, VW, VH);
   // labels
-  const [bx, by] = uvS(2.0, 2.15);
+  const [bx, by] = uvS(3.5, 3.65);
   if (z > .45) tag(bx, by - 104 * z - 6, 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1);
   if (z > 1.0 && !selected) { let shown = 0; for (const h of HOUSES) { if (h === selected) continue; const [sx, sy] = uvS(h.i, h.j); if (sx < 0 || sx > VW || sy < 60 || sy > VH) continue; if (++shown > 25) break; const st = STY[styleOf(h.v)]; tag(sx, sy - (st.wall + st.roofH + st.f * 32 + 12) * z, '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); } }
   if (selected) {
@@ -1678,7 +1677,7 @@ function suggest() {
   box.classList.add('on');
 }
 function goBenny() {
-  selected = null; const [wx, wy] = isoW(2.0, 2.15); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
+  selected = null; const [wx, wy] = isoW(3.5, 3.65); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
   $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · sleeps on the street';
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
