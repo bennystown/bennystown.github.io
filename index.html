@@ -56,7 +56,26 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-ac
 #cardStats div{background:rgba(255,255,255,.06);border-radius:10px;padding:5px 3px;text-align:center}
 #cardStats b{display:block;font-size:15px;line-height:1.1}
 #cardStats span{font-size:10px;color:#9aa3c7;letter-spacing:.3px}
-#cardUp{display:none;margin-top:10px;font-size:12px;color:#c3c9e4}
+#cardUp{display:none;margin-top:10px;font-size:12px;color:#c3c9e4;cursor:pointer;border-radius:10px;padding:4px;margin-left:-4px;margin-right:-4px}
+#cardUp:active{background:rgba(255,255,255,.06)}
+#cardUp .more{float:right;color:#ffd23f;font-weight:700}
+#rw{position:fixed;inset:0;z-index:6;display:none;align-items:flex-end;justify-content:center;background:rgba(4,6,18,.55)}
+#rw.on{display:flex}
+#rwBox{width:min(96vw,440px);max-height:82vh;overflow:auto;background:rgba(12,14,30,.98);border:2px solid #46e08a;border-radius:22px 22px 0 0;padding:16px 16px 22px;margin-bottom:0}
+#rwBox h3{margin:0 0 2px;font-size:20px}
+#rwSub{font-size:13px;color:#9aa3c7;margin-bottom:12px}
+.rwI{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid rgba(255,255,255,.07)}
+.rwI .ic{font-size:26px;width:36px;text-align:center}
+.rwI .tx{flex:1;min-width:0}
+.rwI b{font-size:14px;display:block}
+.rwI small{font-size:11.5px;color:#9aa3c7;display:block;line-height:1.3}
+.rwI .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
+.rwI .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#46e08a,#ffd23f)}
+.rwI .pc{font-size:12px;font-weight:800;width:46px;text-align:right;color:#c3c9e4}
+.rwI.done .pc{color:#46e08a}
+.rwI.lock{opacity:.75}
+#rwNote{font-size:11.5px;color:#9aa3c7;margin-top:10px;line-height:1.35}
+#rwClose{position:absolute;right:18px;margin-top:-6px;font-size:22px;color:#9aa3c7;background:none;border:0;cursor:pointer}
 #cardUp.on{display:block}
 #cardUp .bar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
 #cardUp .bar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#ffd23f);border-radius:5px}
@@ -96,6 +115,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-ac
   <div class="hint" id="hint">Drag to look around · pinch or scroll to zoom · tap a house</div>
 </div>
 <div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardStats"></div><div id="cardUp"></div><button id="view3d">🔍 View house in 3D</button><div id="cardMsg"></div></div>
+<div id="rw"><div id="rwBox"><button id="rwClose" aria-label="Close">×</button><h3>🏆 Loyalty rewards</h3><div id="rwSub"></div><div id="rwList"></div><div id="rwNote">Rewards come only from staying a follower — they can't be bought. If you unfollow, your house goes back to FOR RENT.</div></div></div>
 <button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>
 <div id="v3d"><canvas id="c3d"></canvas><div class="v3top"><span id="v3name"></span><span id="v3sub"></span></div><button id="v3close" aria-label="Close 3D view">×</button><div id="v3load">Building your house…</div><div class="v3bot"><div id="v3tier"></div><div class="v3hint">Drag to turn · pinch or scroll to zoom</div></div></div>
 <div class="bottom">
@@ -2871,11 +2891,22 @@ function tapAt(x, y) {
 /* ---- UI ---- */
 const $ = id => document.getElementById(id);
 const DAYMS = 864e5;
-const UPGRADES = [[3, '🌷 Flowers'], [7, '🏡 Fence + garden'], [14, '💡 Lantern + balcony'], [30, '⭐ Second floor'], [90, '🏊 Pool']];
+const UPGRADES = [[3, '🌷 Flowers'], [7, '🏡 Fence + garden'], [14, '💡 Lantern + bench'], [30, '⭐ Second floor'], [90, '🏊 Pool'], [180, '✨ Golden roof trim'], [365, '🗿 Original Neighbor statue']];
+const UPDESC = ['Colourful flowers in front of your house', 'White fence and a tree in your garden', 'A glowing lantern and your own bench', 'Your house grows a whole second floor', 'Your own pool in the garden', 'A shiny golden edge on your roof', 'A statue with your name for a year of loyalty'];
+const fmtDays = d => d >= 365 ? '1 year' : d >= 30 ? Math.round(d / 30) + (d >= 60 ? ' months' : ' month') : d >= 7 ? Math.round(d / 7) + (d >= 14 ? ' weeks' : ' week') : d + ' days';
 function moveDate(day) { return new Date(new Date(TOWN.startDate + 'T00:00:00').getTime() + (day - 1) * DAYMS); }
 function daysFollowing(h) { return Math.max(0, Math.floor((Date.now() - moveDate(h.day).getTime()) / DAYMS)); }
 function sundaysSince(d) { let n = 0; for (let t = new Date(d); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function openRewards(h) {
+  const dF = daysFollowing(h);
+  $('rwSub').textContent = '@' + h.name + ' · following for ' + (dF === 0 ? 'less than a day' : dF + (dF === 1 ? ' day' : ' days'));
+  $('rwList').innerHTML = UPGRADES.map(([d, label], k) => {
+    const pc = Math.min(100, Math.floor(100 * dF / d)), done = dF >= d, [ic, ...rest] = label.split(' ');
+    return '<div class="rwI ' + (done ? 'done' : 'lock') + '"><div class="ic">' + ic + '</div><div class="tx"><b>' + rest.join(' ') + ' · ' + fmtDays(d) + '</b><small>' + UPDESC[k] + '</small><div class="bar"><i style="width:' + Math.max(2, pc) + '%"></i></div></div><div class="pc">' + (done ? '✓' : pc + '%') + '</div></div>';
+  }).join('');
+  $('rw').classList.add('on');
+}
 function showCard(h) {
   const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, gifts = TOWN.tenants[h.idx].gifts || 0;
   const tiles = [['#' + (h.idx + 1), 'TENANT'], [dF === 0 ? 'today' : dF + (dF === 1 ? ' day' : ' days'), 'FOLLOWING'], ['Day ' + h.day, 'MOVED IN'],
@@ -2883,7 +2914,8 @@ function showCard(h) {
   $('cardStats').innerHTML = tiles.map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on');
   const next = UPGRADES.find(u => u[0] > dF), prev = [...UPGRADES].reverse().find(u => u[0] <= dF);
-  $('cardUp').innerHTML = (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.round(100 * dF / next[0]) + '%"></i></div>' : 'All upgrades unlocked 🏆');
+  $('cardUp').innerHTML = '<span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆');
+  $('cardUp').onclick = () => openRewards(h);
   $('cardUp').classList.add('on');
   $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
@@ -2940,6 +2972,8 @@ function flashHint() { $('hint').classList.remove('off'); clearTimeout(hintT); h
 function placeBenny() { const b = document.querySelector('.bottom'); if (b) $('bennyBtn').style.bottom = (b.offsetHeight + 10) + 'px'; }
 function initUI() {
   $('bennyBtn').addEventListener('click', goBenny);
+  $('rwClose').addEventListener('click', () => $('rw').classList.remove('on'));
+  $('rw').addEventListener('click', e => { if (e.target.id === 'rw') $('rw').classList.remove('on'); });
   $('v3close').addEventListener('click', close3D);
   $('q').addEventListener('input', suggest);
   $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2);
