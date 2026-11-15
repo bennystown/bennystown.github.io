@@ -51,8 +51,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #cardMsg{font-size:14px;margin-top:8px;line-height:1.35}
 #cardStats{display:none;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
 #cardStats.on{display:grid}
-#cardStats div{background:rgba(255,255,255,.06);border-radius:12px;padding:7px 4px;text-align:center}
-#cardStats b{display:block;font-size:16px;line-height:1.15}
+#cardStats div{background:rgba(255,255,255,.06);border-radius:10px;padding:5px 3px;text-align:center}
+#cardStats b{display:block;font-size:15px;line-height:1.1}
 #cardStats span{font-size:10px;color:#9aa3c7;letter-spacing:.3px}
 #cardUp{display:none;margin-top:10px;font-size:12px;color:#c3c9e4}
 #cardUp.on{display:block}
@@ -69,7 +69,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #v3tier{font-size:13px;font-weight:700;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:7px 12px}
 .v3hint{font-size:11px;color:#c3c9e4}
 #v3load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;color:#c3c9e4}
-#view3d{display:none;margin-top:10px;width:100%;font:800 14px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:12px;padding:10px;cursor:pointer}
+#view3d{display:none;margin-top:8px;width:100%;font:800 14px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:12px;padding:10px;cursor:pointer}
 #view3d.on{display:block}
 #bennyBtn{position:fixed;right:12px;top:150px;z-index:3;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:6px 11px 6px 8px;cursor:pointer;display:flex;align-items:center;gap:5px}
 #bennyBtn i{font-style:normal;font-size:16px}
@@ -1641,7 +1641,7 @@ function initUI() {
   $('sDay').textContent = TOWN.day;
   $('find').addEventListener('click', search);
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
-  $('close').addEventListener('click', () => { hideCard(); selected = null; overview(); });
+  $('close').addEventListener('click', () => { hideCard(); selected = null; });
   $('all').addEventListener('click', () => { hideCard(); selected = null; overview(); });
   const rec = $('recent');
   if (!N) { rec.innerHTML = '<span class="empty">No tenants yet. Be the first to move in 🏠</span>'; }
