@@ -1441,7 +1441,8 @@ if (DEMO) {
   TOWN.day = 2; TOWN.bankCents = DEMO_N * 10 + 240;
 }
 const STANDS = [['🍞', 'bread stand', '#e2483a'], ['🍋', 'lemonade stand', '#f2c230'], ['🍎', 'fruit stand', '#3ddc84'], ['🍪', 'cookie stand', '#8a4b2e'], ['🌭', 'hot dog stand', '#ff8a3d'], ['🧃', 'juice stand', '#4da3ff']];
-const standFor = (name, k) => { if (k < 3) return null; const h = hashStr('stand:' + norm(name)); return h % 9 === 0 ? STANDS[(h >> 4) % STANDS.length] : null; };
+const standFor = (name, k) => { return null; // stands removed for now
+  if (k < 3) return null; const h = hashStr('stand:' + norm(name)); return h % 9 === 0 ? STANDS[(h >> 4) % STANDS.length] : null; };
 const HOUSES = TOWN.tenants.map((t, k) => { const L = LOTS[k]; return { name: t.name, day: t.day || 1, idx: k, lot: k, i: L.i, j: L.j, v: t.color != null && COLOR_NAMES[t.color] != null ? COLOR_NAMES[t.color] : variantForLot(t.name, k), og: k < TOWN.ogLimit, stand: standFor(t.name, k) }; });
 const BY_LOT = new Map(HOUSES.map(h => [h.i + ':' + h.j, h]));
 const BY_NAME = new Map(HOUSES.map(h => [norm(h.name), h]));
