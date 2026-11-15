@@ -28,7 +28,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 .sugg button:last-child{border-bottom:0}
 .sugg button span{color:#9aa3c7;font-size:12px;white-space:nowrap}
 .sugg button b{color:#ffd23f;font-weight:700}
-.hint{font-size:12px;color:#c3c9e4;text-align:center;text-shadow:0 1px 4px #000}
+.hint{font-size:12px;color:#c3c9e4;text-align:center;text-shadow:0 1px 4px #000;transition:opacity .5s;pointer-events:none}
+.hint.off{opacity:0}
 .bottom{position:fixed;left:0;right:0;bottom:0;padding:0 12px 14px;display:flex;flex-direction:column;gap:10px;z-index:3;pointer-events:none}
 #recent{display:flex;gap:6px;overflow-x:auto;pointer-events:auto;scrollbar-width:none;padding-bottom:2px}
 #recent::-webkit-scrollbar{display:none}
@@ -43,6 +44,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #follow{display:none;align-items:center;color:#fff;background:#ff2e63}
 #all{color:#fff;background:#262b4a}
 #card{position:fixed;left:50%;bottom:150px;transform:translate(-50%,30px);opacity:0;pointer-events:none;width:min(92vw,420px);background:rgba(12,14,30,.96);border:2px solid #ffd23f;border-radius:20px;padding:14px 16px;z-index:4;transition:.25s}
+#card.on~#bennyBtn{display:none}
 #card.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 #card.miss{border-color:#ff6b8b}
 #cardTitle{font-size:22px;font-weight:800;word-break:break-all;padding-right:30px}
@@ -71,8 +73,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#060919;font-family:Po
 #v3load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;color:#c3c9e4}
 #view3d{display:none;margin-top:8px;width:100%;font:800 14px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:12px;padding:10px;cursor:pointer}
 #view3d.on{display:block}
-#bennyBtn{position:fixed;right:12px;top:150px;z-index:3;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.88);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:6px 11px 6px 8px;cursor:pointer;display:flex;align-items:center;gap:5px}
-#bennyBtn i{font-style:normal;font-size:16px}
+#bennyBtn{position:fixed;right:12px;bottom:150px;z-index:3;width:58px;height:58px;border-radius:29px;font:700 10px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.9);border:2px solid #ff6b8b;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#bennyBtn i{font-style:normal;font-size:22px;line-height:1}
 #close{position:absolute;right:10px;top:8px;font-size:22px;color:#9aa3c7;background:none;border:0;cursor:pointer}
 #demo{display:none;position:fixed;right:10px;top:132px;z-index:3;font-size:11px;font-weight:700;color:#1b1728;background:#ffd23f;border-radius:8px;padding:3px 8px}
 @media (max-width:380px){.logo{font-size:16px;padding:6px 10px}.chip{min-width:50px;padding:4px 6px}.chip b{font-size:13px}}
@@ -2832,7 +2834,7 @@ function overview() { target.x = PX; target.y = PY + 10; target.z = fitZoom(); }
 
 /* ---- input: drag, pinch, wheel, tap ---- */
 const ptrs = new Map(); let dragging = false, moved = 0, pinch0 = null;
-cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); dragging = true; moved = 0; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: cam.z }; } });
+cv.addEventListener('pointerdown', e => { touched = true; hideHint(); cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); dragging = true; moved = 0; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: cam.z }; } });
 cv.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId), dx = e.clientX - p[0], dy = e.clientY - p[1]; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
   if (ptrs.size === 1) { cam.x -= dx / cam.z; cam.y -= dy / cam.z; moved += Math.abs(dx) + Math.abs(dy); }
@@ -2918,6 +2920,10 @@ function goBenny() {
   $('cardMsg').textContent = 'Still sleeping on cardboard. Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
+let hintT = 0;
+function hideHint() { $('hint').classList.add('off'); }
+function flashHint() { $('hint').classList.remove('off'); clearTimeout(hintT); hintT = setTimeout(hideHint, 3500); }
+function placeBenny() { const b = document.querySelector('.bottom'); if (b) $('bennyBtn').style.bottom = (b.offsetHeight + 10) + 'px'; }
 function initUI() {
   $('bennyBtn').addEventListener('click', goBenny);
   $('v3close').addEventListener('click', close3D);
@@ -2928,14 +2934,15 @@ function initUI() {
   $('find').addEventListener('click', search);
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
   $('close').addEventListener('click', () => { hideCard(); selected = null; });
-  $('all').addEventListener('click', () => { hideCard(); selected = null; overview(); });
+  $('all').addEventListener('click', () => { hideCard(); selected = null; overview(); flashHint(); });
   const rec = $('recent');
   if (!N) { rec.innerHTML = '<span class="empty">No tenants yet. Be the first to move in 🏠</span>'; }
   else { rec.innerHTML = '<span class="lbl">🆕 Newest</span>'; HOUSES.slice(-8).reverse().forEach(h => { const b = document.createElement('button'); b.textContent = (h.og ? '👑 ' : '') + '@' + h.name; b.addEventListener('click', () => flyTo(h)); rec.appendChild(b); }); }
   if (TOWN.tiktokUrl) { const a = $('follow'); a.href = TOWN.tiktokUrl; a.style.display = 'inline-flex'; }
   if (DEMO) $('hint').textContent = 'DEMO DATA · ' + $('hint').textContent;
 }
-window.addEventListener('resize', () => { resize(); if (!selected) overview(); });
+let lastW = innerWidth, touched = false;
+window.addEventListener('resize', () => { resize(); if (Math.abs(innerWidth - lastW) > 40 && !touched && !selected) overview(); lastW = innerWidth; });
 /* ---- 3D house view ---- */
 let V3 = null;
 function loadThree() { return window.THREE ? Promise.resolve() : new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = 'three.min.js'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); }); }
@@ -3047,7 +3054,7 @@ function open3D(h) {
 function close3D() { $('v3d').classList.remove('on'); }
 
 window.SITE = { flyTo, search, HOUSES, open3D };
-function start() { resize(); initUI(); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
+function start() { resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
 
 const go = () => start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
