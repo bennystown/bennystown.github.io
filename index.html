@@ -169,8 +169,17 @@ const mod2 = n => ((n % 2) + 2) % 2, mod6 = n => ((n % 6) + 6) % 6;
 const isRoad = (i, j) => mod2(i) === 0 || mod2(j) === 0;
 // special blocks (6x6 tiles, always framed by streets): Benny's square in the middle, new places a few streets further out
 const blockOf = n => Math.floor(n / 6);
-const RESERVED = { '0,0': 'square', '2,0': 'park', '0,2': 'hall' };
-const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)];
+const RESERVED = { '0,0': 'square', '0,2': 'hall' };
+// organic park (500 followers): a soft blob that runs across a few streets; houses keep a margin around it
+const PARK_C = [15.5, 6.2], PARK_R = 4.7;
+const parkRad = a => PARK_R * (1 + .13 * Math.sin(3 * a + 1.1) + .07 * Math.sin(5 * a + 2.3) + .04 * Math.sin(2 * a + .4));
+const parkDist = (u, v) => { const du = u - PARK_C[0], dv = v - PARK_C[1]; return Math.hypot(du, dv) - parkRad(Math.atan2(dv, du)); };
+// reserved for future milestones (kept free now so houses never have to move later)
+const MEADOWS = [{ c: [-8.5, 3.5], R: 4.2, ph: 2.1 }, { c: [4, -8.5], R: 4.0, ph: 4.4 }];
+const meadowRad = (m, a) => m.R * (1 + .12 * Math.sin(3 * a + m.ph) + .07 * Math.sin(5 * a + m.ph * 2));
+const meadowDist = (m, u, v) => { const du = u - m.c[0], dv = v - m.c[1]; return Math.hypot(du, dv) - meadowRad(m, Math.atan2(dv, du)); };
+const inPark = (i, j) => parkDist(i, j) < 1.15 || MEADOWS.some(m => meadowDist(m, i, j) < 1.15);
+const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)] || inPark(i, j);
 const LOTS = [];
 (function () {
   const N = 78;
@@ -396,24 +405,49 @@ function drawCar(car) {
   box(lu * .55, lv * .8, 5 * z, hg, '#2b3350', '#3b4670', '#232a45');
 }
 const blk = (bu, bv) => ({ u0: bu * 6 + .38, u1: bu * 6 + 5.62, v0: bv * 6 + .38, v1: bv * 6 + 5.62 });
-const SQUARE = blk(0, 0), PARK = blk(2, 0), HALL = blk(0, 2);
+const SQUARE = blk(0, 0), HALL = blk(0, 2);
 function zoneGround(Z, fill, edge) { const z = cam.z; poly(ctx, [uvS(Z.u0, Z.v0), uvS(Z.u1, Z.v0), uvS(Z.u1, Z.v1), uvS(Z.u0, Z.v1)], fill, edge, edge ? 2 * z : 0); }
+function blobPath(off, fn) { ctx.beginPath(); for (let k = 0; k <= 120; k++) { const a = k / 120 * Math.PI * 2, r = (fn || parkRad)(a) + off, [x, y] = uvS(PARK_C[0] + Math.cos(a) * r, PARK_C[1] + Math.sin(a) * r); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); }
+function roundRectUV(Z, rr, fill, stroke, lw) {
+  ctx.beginPath(); const c = [[Z.u1 - rr, Z.v0 + rr, -Math.PI / 2], [Z.u1 - rr, Z.v1 - rr, 0], [Z.u0 + rr, Z.v1 - rr, Math.PI / 2], [Z.u0 + rr, Z.v0 + rr, Math.PI]];
+  let first = true; for (const [cu, cv, a0] of c) for (let k = 0; k <= 8; k++) { const a = a0 + k / 8 * Math.PI / 2, [x, y] = uvS(cu + Math.cos(a) * rr, cv + Math.sin(a) * rr); first ? ctx.moveTo(x, y) : ctx.lineTo(x, y); first = false; }
+  ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+const PARK_TREES = []; { const r = seeded(44); let n = 0; while (PARK_TREES.length < 34 && n++ < 4000) { const u = PARK_C[0] + (r() - .5) * 11, v = PARK_C[1] + (r() - .5) * 11; const d = parkDist(u, v); if (d > -.5) continue; const pond = Math.hypot(u - 16.6, v - 4.6) < 1.7, path = Math.abs((v - PARK_C[1]) - .55 * Math.sin((u - PARK_C[0]) * .7)) < .5; if (pond || path) continue; if (PARK_TREES.some(t => Math.hypot(t[0] - u, t[1] - v) < .75)) continue; PARK_TREES.push([u, v, r() < .35 ? 1 : 0]); } }
+const MEADOW_TREES = []; MEADOWS.forEach((m, mi) => { const r = seeded(70 + mi); let n = 0, got = 0; while (got < 14 && n++ < 3000) { const u = m.c[0] + (r() - .5) * 10, v = m.c[1] + (r() - .5) * 10; if (meadowDist(m, u, v) > -.6) continue; if (MEADOW_TREES.some(t => Math.hypot(t[0] - u, t[1] - v) < 1.1)) continue; MEADOW_TREES.push([u, v, r() < .5 ? 1 : 0]); got++; } });
+function drawMeadows() {
+  for (const m of MEADOWS) {
+    const path = off => { ctx.beginPath(); for (let k = 0; k <= 100; k++) { const a = k / 100 * Math.PI * 2, r = meadowRad(m, a) + off, [x, y] = uvS(m.c[0] + Math.cos(a) * r, m.c[1] + Math.sin(a) * r); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); };
+    path(.45); ctx.fillStyle = '#4f985c'; ctx.fill(); path(.1); ctx.fillStyle = '#3f8a4e'; ctx.fill(); path(0); ctx.fillStyle = '#5aa868'; ctx.fill();
+  }
+}
 function drawParkGround() {
-  const z = cam.z; zoneGround(PARK, '#4f985c');
-  const path = (a, b, c, d) => poly(ctx, [uvS(a, b), uvS(c, b), uvS(c, d), uvS(a, d)], '#c9b48f');
-  path(PARK.u0, 2.8, PARK.u1, 3.2); path(14.8, PARK.v0, 15.2, PARK.v1);
-  const [px, py] = uvS(16.4, 1.4); ellipse(ctx, px, py, 44 * z, 22 * z, '#3e8fc9', '#2b6f9e', 1.5 * z); ellipse(ctx, px - 8 * z, py - 3 * z, 18 * z, 7 * z, 'rgba(255,255,255,.25)');
-  const [sx, sy] = uvS(13.4, 4.6); poly(ctx, [[sx - 26 * z, sy], [sx, sy + 13 * z], [sx + 26 * z, sy], [sx, sy - 13 * z]], '#e8d9a8', '#c9b48f', 1 * z);
+  drawMeadows();
+  const z = cam.z;
+  blobPath(.45); ctx.fillStyle = '#d9c9a0'; ctx.fill();                       // walkway around the park
+  blobPath(.12); ctx.fillStyle = '#3f8a4e'; ctx.fill();                       // hedge edge
+  blobPath(0); ctx.fillStyle = '#5aa868'; ctx.fill();
+  // winding path through the park
+  ctx.save(); blobPath(.2); ctx.clip();
+  ctx.beginPath(); for (let k = 0; k <= 60; k++) { const u = PARK_C[0] - 6 + k * .2, v = PARK_C[1] + .55 * Math.sin((u - PARK_C[0]) * .7), [x, y] = uvS(u, v); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.strokeStyle = '#d9c9a0'; ctx.lineWidth = 30 * z; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore();
+  // pond
+  ctx.beginPath(); for (let k = 0; k <= 60; k++) { const a = k / 60 * Math.PI * 2, r = 1.15 * (1 + .15 * Math.sin(3 * a)), [x, y] = uvS(16.6 + Math.cos(a) * r * 1.2, 4.6 + Math.sin(a) * r * .8); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath();
+  ctx.fillStyle = '#3e8fc9'; ctx.fill(); ctx.strokeStyle = '#2b6f9e'; ctx.lineWidth = 2 * z; ctx.stroke();
+  const [px, py] = uvS(16.3, 4.4); ellipse(ctx, px, py, 22 * z, 6 * z, 'rgba(255,255,255,.25)');
+  // flower beds
+  const cols = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff']; const r = seeded(5);
+  for (let k = 0; k < 9; k++) { const u = 12.5 + r() * 7, v = 2.5 + r() * 7; if (parkDist(u, v) > -.8 || Math.hypot(u - 16.6, v - 4.6) < 1.7 || Math.abs((v - PARK_C[1]) - .55 * Math.sin((u - PARK_C[0]) * .7)) < .6) continue; const [x, y] = uvS(u, v); ellipse(ctx, x, y, 20 * z, 10 * z, '#4b9a5a'); for (let j = 0; j < 7; j++) circle(ctx, x + Math.cos(j * 2.4) * 12 * z, y + Math.sin(j * 2.4) * 5 * z, 3 * z, cols[(k + j) % 4]); }
 }
 function drawPlayground(u, v) { const z = cam.z, [x, y] = uvS(u, v); line(ctx, x - 14 * z, y, x - 14 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x + 14 * z, y, x + 14 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x - 16 * z, y - 30 * z, x + 16 * z, y - 30 * z, '#e2483a', 3 * z); line(ctx, x - 4 * z, y - 30 * z, x - 4 * z, y - 12 * z, '#555', 1.2 * z); line(ctx, x + 4 * z, y - 30 * z, x + 4 * z, y - 12 * z, '#555', 1.2 * z); ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 6 * z, y - 13 * z, 12 * z, 3 * z); }
 function drawHallGround() {
   const z = cam.z;
   if (!TOWN.milestones.townHall) {
-    zoneGround(HALL, '#8a7f6a');
+    roundRectUV(HALL, 1.3, '#8a7f6a');
     for (let k = 0; k < 4; k++) { const [x, y] = uvS(1.4 + k * 1.1, 14.5); ctx.fillStyle = '#c9a46b'; ctx.fillRect(x - 3 * z, y - 10 * z, 6 * z, 10 * z); }
     return;
   }
-  zoneGround(HALL, '#a49d8c', '#7f796b');
+  roundRectUV(HALL, 1.3, '#a49d8c', '#7f796b', 2 * cam.z);
   if (z > .3) { ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.2 * z; ctx.beginPath(); for (let t = HALL.u0 + .5; t < HALL.u1; t += .5) { const p = uvS(t, HALL.v0), q = uvS(t, HALL.v1); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } for (let t = HALL.v0 + .5; t < HALL.v1; t += .5) { const p = uvS(HALL.u0, t), q = uvS(HALL.u1, t); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } ctx.stroke(); }
 }
 function isoBox(u0, v0, u1, v1, hgt, top, left, right) {
@@ -444,13 +478,15 @@ function drawTownHall() {
 function drawMarketStall(u, v, col) { const z = cam.z, [x, y] = uvS(u, v); ctx.fillStyle = '#b07a46'; ctx.fillRect(x - 13 * z, y - 12 * z, 26 * z, 12 * z); line(ctx, x - 12 * z, y - 12 * z, x - 12 * z, y - 30 * z, '#6b4a2e', 2 * z); line(ctx, x + 12 * z, y - 12 * z, x + 12 * z, y - 30 * z, '#6b4a2e', 2 * z); for (let k = 0; k < 4; k++) { ctx.fillStyle = k % 2 ? '#fff4e0' : col; ctx.fillRect(x - 16 * z + k * 8 * z, y - 36 * z, 8 * z, 7 * z); } }
 function drawPlazaGround() {
   const z = cam.z, c = SQUARE.u0, d = SQUARE.u1;
-  poly(ctx, [uvS(c, c), uvS(d, c), uvS(d, d), uvS(c, d)], '#a49d8c', '#7f796b', 2 * z);
+  roundRectUV(SQUARE, 1.3, '#7f796b'); roundRectUV({ u0: c + .1, u1: d - .1, v0: c + .1, v1: d - .1 }, 1.2, '#a49d8c');
+  { const [x, y] = uvS(3, 3); ellipse(ctx, x, y, 150 * z, 75 * z, null, 'rgba(255,255,255,.18)', 3 * z); ellipse(ctx, x, y, 105 * z, 52 * z, null, 'rgba(255,255,255,.12)', 2 * z); }
   if (z > .3) {
     ctx.strokeStyle = 'rgba(255,255,255,.13)'; ctx.lineWidth = 1.2 * z; ctx.beginPath();
+    ctx.save(); roundRectUV({ u0: c + .1, u1: d - .1, v0: c + .1, v1: d - .1 }, 1.2); ctx.clip(); ctx.beginPath();
     for (let t = 1; t < 5.6; t += .5) { let p = uvS(t, c), q = uvS(t, d); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); p = uvS(c, t); q = uvS(d, t); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
-    ctx.stroke();
+    ctx.stroke(); ctx.restore();
   }
-  for (const [u, v] of [[1, 1], [5, 1], [1, 5], [5, 5]]) { const [x, y] = uvS(u, v); ellipse(ctx, x, y, 30 * z, 15 * z, '#4f985c', '#3c7d49', 1.2 * z); }
+  for (const [u, v] of [[1.4, 1.4], [4.6, 1.4], [1.4, 4.6], [4.6, 4.6]]) { const [x, y] = uvS(u, v); ellipse(ctx, x, y, 34 * z, 17 * z, '#5aa868', '#3f8a4e', 1.5 * z); }
   const [fx, fy] = uvS(3, 3);
   ellipse(ctx, fx, fy, 48 * z, 24 * z, '#7d7769'); ellipse(ctx, fx, fy - 5 * z, 48 * z, 24 * z, '#9a9383'); ellipse(ctx, fx, fy - 5 * z, 39 * z, 19.5 * z, '#4fa3d9');
   ellipse(ctx, fx, fy - 5 * z, 26 * z + Math.sin(S.T * 3) * 4 * z, 13 * z + Math.sin(S.T * 3) * 2 * z, null, 'rgba(255,255,255,.35)', 1.5 * z);
@@ -2750,12 +2786,13 @@ function draw() {
     if (L.h % 4 === 0) { const [tx, ty] = uvS(L.i + .36, L.j - .36); objs.push({ d: L.i + L.j - .1, f: () => drawTree(ctx, tx, ty, z * .85, (L.h >> 5) & 1) }); }
   }
   for (const [u, v] of [[3, .9], [.9, 3], [1.6, 1.6], [4.6, 1.6], [1.6, 4.6]]) objs.push({ d: u + v, f: () => drawLamp(u, v) });
-  for (const [u, v] of [[13, 1], [17, 1.2], [13.2, 2.2], [17.1, 4.2], [16.3, 5.1], [13.4, 5.2], [16.9, 2.4], [14.1, .9]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, (Math.round(u * 7 + v * 3)) & 1) }); }
-  objs.push({ d: 18, f: () => drawPlayground(13.4, 4.6) }); objs.push({ d: 17.5, f: () => drawBench(15.9, 1.9) });
+  for (const [u, v, kind] of MEADOW_TREES) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, kind) }); }
+  for (const [u, v, kind] of PARK_TREES) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, cam.z * .9, kind) }); }
+  objs.push({ d: 21, f: () => drawPlayground(14.0, 7.2) }); objs.push({ d: 21.6, f: () => drawBench(15.4, 6.6) }); objs.push({ d: 20.2, f: () => drawBench(17.3, 3.0) });
   objs.push({ d: 18.5, f: drawTownHall });
   if (TOWN.milestones.townHall) [[1.5, 13.3, '#e2483a'], [3, 13.2, '#3ddc84'], [4.5, 13.3, '#4da3ff']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
   objs.push({ d: 6, f: () => drawBench(1.9, 4.2) }); objs.push({ d: 6, f: () => drawBench(4.2, 1.9) });
-  for (const [u, v] of [[1, 5], [5, 1], [1, 1]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
+  for (const [u, v] of [[1.4, 4.6], [4.6, 1.4], [1.4, 1.4]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
   objs.push({ d: 7.15, f: () => {
     const [x, y] = uvS(3.5, 3.65);
     poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z);
@@ -3015,5 +3052,6 @@ const go = () => start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
 })();
 </script>
+<script data-goatcounter="https://bennystown.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
