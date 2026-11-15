@@ -175,10 +175,10 @@ const PARK_C = [15.5, 6.2], PARK_R = 4.7;
 const parkRad = a => PARK_R * (1 + .13 * Math.sin(3 * a + 1.1) + .07 * Math.sin(5 * a + 2.3) + .04 * Math.sin(2 * a + .4));
 const parkDist = (u, v) => { const du = u - PARK_C[0], dv = v - PARK_C[1]; return Math.hypot(du, dv) - parkRad(Math.atan2(dv, du)); };
 // reserved for future milestones (kept free now so houses never have to move later)
-const MEADOWS = [{ c: [-8.5, 3.5], R: 4.2, ph: 2.1 }, { c: [4, -8.5], R: 4.0, ph: 4.4 }];
+const MEADOWS = [];
 const meadowRad = (m, a) => m.R * (1 + .12 * Math.sin(3 * a + m.ph) + .07 * Math.sin(5 * a + m.ph * 2));
 const meadowDist = (m, u, v) => { const du = u - m.c[0], dv = v - m.c[1]; return Math.hypot(du, dv) - meadowRad(m, Math.atan2(dv, du)); };
-const inPark = (i, j) => parkDist(i, j) < 1.15 || MEADOWS.some(m => meadowDist(m, i, j) < 1.15);
+const inPark = (i, j) => parkDist(i, j) < 1.75 || MEADOWS.some(m => meadowDist(m, i, j) < 1.15);
 const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)] || inPark(i, j);
 const LOTS = [];
 (function () {
