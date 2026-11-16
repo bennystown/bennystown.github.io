@@ -233,6 +233,9 @@ Pro Video ein Ordner, z. B. `/tmp/ep7`. Vorlagen liegen in `docs-team/video/`.
      - Dann `python3 ocr.py f1 0 1` (tesseract; Zeilen werden über die roten „Auch folgen“-Buttons gefunden).
      - Dann `python3 merge.py` (Frames zu einer Liste zusammenfügen) → `merged.json`.
    - **Die Überschneidung mit der alten Liste finden.** Der neue Teil ist alles vor dem ersten Block bekannter Namen.
+   - **OCR-Namen am Bild prüfen.** Tesseract macht auch *gleichbleibende* Fehler, die alle Frames teilen (z. B. `5`→`s`, `0`→`o`, `_` fehlt, `j`→`i`). Deshalb Kontaktbögen der Zeilen bauen und jede Zeile ansehen (am 16.11. waren ~15 von 168 falsch).
+   - **Abgleich mit dem Chrome-Poller (seit 16.11., Instanz B):** Auf Kierans MacBook läuft in Chrome (Claude-Tabgruppe, Tab „Bennys Town“) ein Skript, das jede Minute die TikTok-Benachrichtigungen → „Follower*innen“ liest und neue @Namen **exakt** in `localStorage['bt_new_followers_v1']` speichert (`order`, `info{nick,label,firstSeen}`, `log`). Damit OCR-Namen korrigieren. Achtung: Die Benachrichtigungen lassen vereinzelt jemanden aus (16.11.: 1 von 42), die Aufnahme bleibt deshalb die Hauptquelle. Tab nicht schließen/neu laden, MacBook wach lassen.
+   - Vorbereitete Liste für das nächste Update: `docs-team/data/pending_day4.json` (älteste zuerst, schon geprüft).
    - **Die OCR macht Fehler** (0/o, 1/l, 5/s). Die Website-Suche fängt das mit `conf()`/`ed1()` ab.
    - Liste umdrehen (älteste zuerst). Anzeigenamen als `a:` übernehmen.
    - **Achtung:** Falls ein LIVE lief, **zuerst die Namen aus `live.json`** (in Live-Reihenfolge) anhängen, **dann** die übrigen neuen Follower.
@@ -327,3 +330,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 
 ## Änderungslog
 - **16.11.2026 22:50** – Doku angelegt (Instanz A, Hauptchat). Stand nach Folge 7, Bank €75,70, 4.661 Bewohner, Tag 3.
+- **16.11.2026 23:20** – Instanz B (zweiter Chat):
+  - Follower seit dem letzten Update ausgewertet (Aufnahme 22:50 + exakte Web-Namen): **168 neue** → `data/pending_day4.json`. Noch **nicht** in `index.html` eingetragen (kommt morgens mit Tag 4). Darunter **@haste50fps** → Palette `bluepurple` jetzt nötig.
+  - Chrome-Poller für neue Follower gestartet (Abschnitt 6).
+  - **Folge 7 (Campervan):** Instanz B hat im fertigen Video nur den Van durch ein Alkoven-Wohnmobil ersetzt (Datei `Benny_Folge6_Campervan_neu.mp4` an Kieran geschickt). `drawVan` im Code ist noch alt; neu zeichnen bleibt Aufgabe von Instanz A für Website und künftige Videos.
