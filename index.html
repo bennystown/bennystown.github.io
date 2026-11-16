@@ -6116,8 +6116,9 @@ async function livePush() {
 function liveConnect() {
   const P = new URLSearchParams(location.search); LV.key = P.get('key'); LV.gh = P.get('gh');
   if (LV.gh && !LV.ghTimer) LV.ghTimer = setInterval(livePush, 45000); LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
+  LV.wsUrl = P.get('ws'); if (LV.wsUrl && !LV.key) LV.key = 'local';
   if (!LV.key) return;
-  let ws; try { ws = new WebSocket('wss://api.tik.tools?uniqueId=' + encodeURIComponent(LV.user) + '&apiKey=' + encodeURIComponent(LV.key)); } catch (e) { return setTimeout(liveConnect, 10000); }
+  let ws; try { ws = new WebSocket(LV.wsUrl || ('wss://api.tik.tools?uniqueId=' + encodeURIComponent(LV.user) + '&apiKey=' + encodeURIComponent(LV.key))); } catch (e) { return setTimeout(liveConnect, 10000); }
   LV.ws = ws;
   ws.onopen = () => { LV.wsOk = true; LV.wsTry = 0; };
   ws.onclose = () => { LV.wsOk = false; LV.wsTry++; setTimeout(liveConnect, Math.min(30000, 3000 * LV.wsTry)); };
