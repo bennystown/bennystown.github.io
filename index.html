@@ -5802,29 +5802,13 @@ function startControl() {
   const btn = (r, label, fn, cls) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; r.appendChild(b); return b; };
   const log = document.createElement('div'); log.className = 'log';
   const note = s => { log.textContent = new Date().toLocaleTimeString() + '  ' + s + '\n' + log.textContent.slice(0, 600); };
-  h('🏠 New follower moves in');
-  let r = row(); const inp = document.createElement('input'); inp.placeholder = '@name'; r.appendChild(inp);
-  const welcome = () => { const n = inp.value.trim().replace(/^@+/, ''); if (!n) return; liveSend({ type: 'welcome', name: n }); note('welcome @' + n); inp.value = ''; inp.focus(); };
-  btn(r, 'Move in', welcome, 'big');
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') welcome(); });
-  r = row(); btn(r, '🧪 Test: 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); });
-  h('📍 Find a house (viewer asks “where is mine?”)');
-  r = row(); const inp2 = document.createElement('input'); inp2.placeholder = '@name or display name'; r.appendChild(inp2);
-  const find = () => { const n = inp2.value.trim(); if (!n) return; liveSend({ type: 'find', name: n }); note('find ' + n); inp2.value = ''; };
-  btn(r, 'Show', find, 'big'); inp2.addEventListener('keydown', e => { if (e.key === 'Enter') find(); });
-  h('🎁 Gift thank-you (shows name + effect)');
-  r = row(); const inp3 = document.createElement('input'); inp3.placeholder = '@name who sent the gift'; r.appendChild(inp3);
-  [['🌹 small', 'confetti'], ['💖 medium', 'hearts'], ['🎆 big', 'fireworks']].forEach(([l, fx]) => btn(r, l, () => { liveSend({ type: 'gift', name: inp3.value.trim().replace(/^@+/, ''), fx }); note('gift ' + fx + ' ' + inp3.value); inp3.value = ''; }));
+  h('🧪 Test');
+  let r = row(); btn(r, '🧪 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); }, 'big');
+  btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
   h('🗣️ Benny says');
   r = row(); LIVE_CLIPS.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }));
-  h('💬 Big text on screen');
-  r = row(); const inp4 = document.createElement('input'); inp4.placeholder = 'e.g. 1,000 likes = fireworks 🎆'; r.appendChild(inp4);
-  btn(r, 'Show', () => { liveSend({ type: 'banner', text: inp4.value.trim() }); note('banner'); inp4.value = ''; });
-  btn(r, 'Hide', () => liveSend({ type: 'banner', text: '' }));
-  h('📋 Live move-ins');
-  r = row(); btn(r, 'Copy list', () => { let a = []; try { a = JSON.parse(localStorage.getItem('benny-live-joins') || '[]'); } catch (e) {} const s = a.join('\n'); navigator.clipboard && navigator.clipboard.writeText(s); note(a.length + ' names copied'); });
   cp.appendChild(log); note('Control panel ready. Scene must be open (…?live).');
 }
 
@@ -5994,16 +5978,66 @@ function liveEnqueue(name, kind) {
   if (kind === 'build' && BY_NAME.get(norm(name)) && !LV.q.length && !LV.job) kind = 'find';
   LV.q.push({ name, kind });
 }
+
+/* ---- street-level 3D build scene for each new neighbour ---- */
+const ST = { ready: false, loading: false };
+function streetInit() {
+  if (ST.ready || ST.loading) return; ST.loading = true;
+  loadThree().then(() => {
+    const T = THREE, c = document.createElement('canvas');
+    const r = new T.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true }); r.setPixelRatio(1); r.setSize(1080, 1920, false); r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+    const sc = new T.Scene(); sc.background = new T.Color('#141a3f'); sc.fog = new T.Fog('#141a3f', 26, 60);
+    const cam3 = new T.PerspectiveCamera(46, 1080 / 1920, .1, 120);
+    sc.add(new T.HemisphereLight('#c6d6ff', '#2b2f45', .85));
+    const sun = new T.DirectionalLight('#fff1d6', 1.0); sun.position.set(7, 13, 10); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14 }); sc.add(sun);
+    const ground = new T.Mesh(new T.PlaneGeometry(160, 160), new T.MeshStandardMaterial({ color: '#4f985c', roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.32; ground.receiveShadow = true; sc.add(ground);
+    const road = new T.Mesh(new T.PlaneGeometry(160, 2.2), new T.MeshStandardMaterial({ color: '#464b63', roughness: 1 })); road.rotation.x = -Math.PI / 2; road.position.set(0, -.29, 6.3); sc.add(road);
+    const stars = new T.Group(), sg = new T.SphereGeometry(.08, 6, 6), sm = new T.MeshBasicMaterial({ color: '#ffffff' }), rr = seeded(5); for (let k = 0; k < 220; k++) { const m = new T.Mesh(sg, sm), a = rr() * Math.PI, e = .15 + rr() * 1.1; m.position.set(Math.cos(a) * 55 * Math.cos(e) * 1.6, 55 * Math.sin(e), -Math.sin(a) * 55 * Math.cos(e)); stars.add(m); } sc.add(stars);
+    Object.assign(ST, { T, c, r, sc, cam: cam3, ready: true, loading: false, neigh: [] });
+  }).catch(() => { ST.loading = false; });
+}
+function streetStart(h, dur) {
+  if (!ST.ready) return false;
+  const T = ST.T;
+  const kill = g => { if (!g) return; ST.sc.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); };
+  kill(ST.house); for (const g of ST.neigh) kill(g); ST.neigh = [];
+  const g = buildHouse3D(h, 0); ST.sc.add(g); ST.house = g;
+  const parts = []; g.traverse(o => { if (o.isMesh && o !== g) { const y = o.position.y; if (y > 0 || o.geometry.type !== 'BoxGeometry' || o.position.z < 3.2 && y > -.1) parts.push(o); } });
+  parts.sort((a, b) => (a.position.y - b.position.y) || (a.position.z - b.position.z));
+  parts.forEach((o, k) => { o.userData.k = k / Math.max(1, parts.length - 1); o.userData.y0 = o.position.y; o.userData.s0 = o.scale.clone(); o.scale.set(.001, .001, .001); });
+  // neighbours left and right (finished houses of other tenants)
+  for (const [dx, idx] of [[-9, Math.max(0, h.idx - 1)], [9, Math.max(0, h.idx - 2)]]) { const hn = HOUSES[idx] || HOUSES[0]; const n = buildHouse3D(hn, 0); n.position.x = dx; ST.sc.add(n); ST.neigh.push(n); }
+  ST.parts = parts; ST.h = h; ST.t0 = S.T; ST.dur = dur; ST.active = true;
+  return true;
+}
+function streetRender() {
+  if (!ST.active) return;
+  const p = S.T - ST.t0, D = ST.dur; if (p > D) { ST.active = false; return; }
+  const build = Math.min(3.0, D * .55);
+  for (const o of ST.parts) { const t0 = .35 + o.userData.k * build, q = clamp((p - t0) / .35, 0, 1), e = q <= 0 ? .001 : eBack(q); o.scale.set(o.userData.s0.x * e, o.userData.s0.y * e, o.userData.s0.z * e); o.position.y = o.userData.y0 + (1 - eOut(q)) * 2.2; }
+  const sw = Math.sin(p * .35) * .9;
+  ST.cam.position.set(3.6 + sw, 2.1, 16.5 - p * .35); ST.cam.lookAt(.9, 2.3, 1.2);
+  ST.r.render(ST.sc, ST.cam);
+  const a = clamp(Math.min(p / .3, (D - p) / .35), 0, 1);
+  ctx.globalAlpha = a; ctx.drawImage(ST.c, 0, 0, 1080, 1920); ctx.globalAlpha = 1;
+  // dust when the walls land, hammer while building
+  const done = .35 + build + .35;
+  if (p < done) { const hb = Math.abs(Math.sin(p * 13)); ctx.save(); ctx.translate(760, 1180 - hb * 40); ctx.rotate(-.7 + hb); emoji(ctx, '🔨', 0, 0, 120); ctx.restore(); }
+  if (p > done && p < done + 1.2) { const q = (p - done) / 1.2; ctx.globalAlpha = 1 - q; for (let k = 0; k < 14; k++) { const ang = k / 14 * Math.PI * 2; ellipse(ctx, 540 + Math.cos(ang) * (220 + q * 260), 1420 + Math.sin(ang) * (40 + q * 60), 70 + q * 40, 30 + q * 20, '#d9c9a0'); } ctx.globalAlpha = 1; }
+  if (p > done) { const k = eBack(clamp((p - done) / .4, 0, 1)); ctx.save(); ctx.translate(540, 1700); ctx.scale(k, k); const s = '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', '#46e08a', 5); otxt(s, 0, 2, fs, '#46e08a', 8); ctx.restore(); txt('House #' + (ST.h.idx + 1).toLocaleString('en-US') + ' · just moved in', 540, 1790, 34, '#ffffff', 'center', 'middle'); }
+}
 function liveJobs() {
   liveRunSched();
   if (LV.ms && S.T < LV.ms.until) return;
-  const busy = LV.job && S.T - LV.job.t < (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2);
+  const busy = LV.job && S.T - LV.job.t < (LV.job.dur || (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2)) + .15;
   if (busy || !LV.q.length) { if (LV.job && !busy) LV.job = null; return; }
   const j = LV.q.shift(); j.t = S.T; LV.job = j;
   if (j.kind === 'build') {
     const { h, isNew } = liveAddHouse(j.name);
     liveFocus(h, 6); j.h = h;
-    if (isNew) { liveAt(1.1, () => liveBeep('pop')); liveAlert('🏠 @' + h.name + ' moved in!', 'House #' + (h.idx + 1).toLocaleString('en-US') + ' · +10¢ for Benny 💰', '#46e08a', 1.2); liveAt(1.3, () => liveFx('confetti', .5)); }
+    const dur = LV.q.length > 8 ? 3.4 : LV.q.length > 3 ? 4.6 : 6.2; j.dur = dur;
+    if (isNew && streetStart(h, dur)) { h.bt = 0; const land = .35 + Math.min(3.0, dur * .55) + .35; for (let k = 0; k < 6; k++) liveAt(.5 + k * land / 6, () => liveBeep('pop')); liveAt(land, () => { liveBeep('chime'); liveFx('confetti', .6); }); }
+    else if (isNew) { liveAt(1.1, () => liveBeep('pop')); liveAlert('🏠 @' + h.name + ' moved in!', 'House #' + (h.idx + 1).toLocaleString('en-US') + ' · +10¢ for Benny 💰', '#46e08a', 1.2); liveAt(1.3, () => liveFx('confetti', .5)); }
     else liveAlert('🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US'), '#46e08a');
     liveCheckMilestone();
   } else {
@@ -6098,7 +6132,7 @@ function startLive() {
   const st = document.createElement('style'); st.textContent = '#c{width:auto!important;height:100vh!important;aspect-ratio:9/16;left:50%!important;transform:translateX(-50%);inset:auto}html,body{background:#000}'; document.head.appendChild(st);
   DPR = 1; VW = 1080; VH = 1920; cv.width = 1080; cv.height = 1920; FX = 540; FY = 1150;
   [BX_L, BY_L] = isoW(3.5, 3.65);
-  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true); LV.__t0 = 0;
+  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true); streetInit(); LV.__t0 = 0;
   addEventListener('keydown', e => { const m = { '1': 'confetti', '2': 'hearts', '3': 'fireworks', '4': 'coins', '5': 'dance', '6': 'snow', '7': 'rain', '8': 'night', '9': 'tour' }[e.key]; if (m) liveFx(m); });
   addEventListener('pointerdown', () => liveAudioCtx());
   target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; cam.x = target.x; cam.y = target.y; cam.z = .5; LV.holdUntil = 6;
@@ -6108,7 +6142,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); liveWeather(dt); liveParts(dt); liveHUD(); liveGoal(); liveQueueUI(); liveBanner(); liveAlerts(); liveBennyCam(); liveStatus();
+    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveHUD(); liveGoal(); liveQueueUI(); liveBanner(); liveAlerts(); liveBennyCam(); liveStatus();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
