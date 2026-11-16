@@ -5935,7 +5935,7 @@ function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
   if (a.t === null) { if (S.T < a.after) return; a.t = S.T; } const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
-  ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 900); ctx.scale(k, k);
+  ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
   otxt(a.title, 0, -28, fitSize(a.title, 64, 880), a.col, 9);
   txt(a.sub, 0, 48, fitSize(a.sub, 36, 880), '#ffffff', 'center', 'middle');
@@ -5950,7 +5950,7 @@ function liveBennyCam() {
   const talking = LV.talkA && S.T < LV.talkUntil, dancing = S.T - LV.dance < 6;
   if (!talking && !dancing) return;
   const lvl = liveLevel(); LV.level += (lvl - LV.level) * .5;
-  const x = 880, y = 1010, bob = dancing ? Math.sin((S.T - LV.dance) * 10) * 18 : 0;
+  const x = 880, y = 1260, bob = dancing ? Math.sin((S.T - LV.dance) * 10) * 18 : 0;
   circle(ctx, x, y, 150, 'rgba(10,12,26,.92)', '#ff6b8b', 6);
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, 144, 0, Math.PI * 2); ctx.clip();
   drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
@@ -5959,9 +5959,9 @@ function liveBennyCam() {
     const s = LV.talk, fs = 38; ctx.font = F(fs);
     const words = s.split(' '), lines = []; let cur = '';
     for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 640 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
-    const h = lines.length * fs * 1.25 + 34, y0 = 1180;
+    const h = lines.length * fs * 1.25 + 34, y0 = 1430;
     panel(270, y0, 720, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
-    poly(ctx, [[830, y0], [870, y0], [880, 1150]], 'rgba(255,255,255,.96)');
+    poly(ctx, [[830, y0], [870, y0], [880, 1400]], 'rgba(255,255,255,.96)');
     lines.forEach((l, i) => txt(l, 630, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
   }
 }
@@ -6024,16 +6024,15 @@ function streetRender() {
   const done = .35 + build + .35;
   if (p < done) { const hb = Math.abs(Math.sin(p * 13)); ctx.save(); ctx.translate(760, 1180 - hb * 40); ctx.rotate(-.7 + hb); emoji(ctx, '🔨', 0, 0, 120); ctx.restore(); }
   if (p > done && p < done + 1.2) { const q = (p - done) / 1.2; ctx.globalAlpha = 1 - q; for (let k = 0; k < 14; k++) { const ang = k / 14 * Math.PI * 2; ellipse(ctx, 540 + Math.cos(ang) * (220 + q * 260), 1420 + Math.sin(ang) * (40 + q * 60), 70 + q * 40, 30 + q * 20, '#d9c9a0'); } ctx.globalAlpha = 1; }
-  if (p > done) { const k = eBack(clamp((p - done) / .4, 0, 1)); ctx.save(); ctx.translate(540, 830); ctx.scale(k, k); const s = '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', '#46e08a', 5); otxt(s, 0, 2, fs, '#46e08a', 8); ctx.restore(); txt('House #' + (ST.h.idx + 1).toLocaleString('en-US') + ' · just moved in · +10¢ for Benny 💰', 540, 918, 32, '#ffffff', 'center', 'middle');
-    if (p > done + .5) { const k2 = eBack(clamp((p - done - .5) / .4, 0, 1)); ctx.save(); ctx.translate(540, 990); ctx.scale(k2, k2); const s2 = 'Stay longer = better house: 3 days 🌷  ·  1 week 🏡  ·  1 month ⭐'; panel(-470, -30, 940, 60, 30, 'rgba(255,93,143,.92)'); txt(s2, 0, 2, fitSize(s2, 28, 900), '#fff', 'center', 'middle'); ctx.restore(); } }
+  if (p > done) { const k = eBack(clamp((p - done) / .4, 0, 1)); ctx.save(); ctx.translate(540, 925); ctx.scale(k, k); const s = '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', '#46e08a', 5); otxt(s, 0, 2, fs, '#46e08a', 8); ctx.restore(); txt('House #' + (ST.h.idx + 1).toLocaleString('en-US') + ' · just moved in · +10¢ for Benny 💰', 540, 1012, 32, '#ffffff', 'center', 'middle');
+  }
 }
 
 const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🎁 Gifts = fireworks for the whole town', '🗳️ You vote what Benny buys next'];
 function liveTips() {
-  if (ST.active || LV.alerts.length || (LV.ms && S.T < LV.ms.until)) return;
   const k = Math.floor(S.T / 7) % LIVE_TIPS.length, ph = S.T % 7, a = clamp(Math.min(ph / .4, (7 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
-  ctx.save(); ctx.globalAlpha = a; const fs = fitSize(s, 30, 900); ctx.font = F(fs); const w = Math.min(1000, ctx.measureText(s).width + 56);
-  panel(540 - w / 2, 772, w, 60, 30, 'rgba(10,12,26,.85)', 'rgba(255,255,255,.25)', 2); txt(s, 540, 803, fs, '#ffffff', 'center', 'middle'); ctx.restore();
+  panel(40, 772, 1000, 60, 30, 'rgba(10,12,26,.88)', 'rgba(255,255,255,.25)', 2);
+  ctx.save(); ctx.globalAlpha = a; txt(s, 540, 803, fitSize(s, 30, 940), '#ffffff', 'center', 'middle'); ctx.restore();
 }
 function liveJobs() {
   liveRunSched();
