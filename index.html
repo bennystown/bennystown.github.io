@@ -496,7 +496,7 @@ const FEATURES = { '-4,-4': { n: 5000, kind: 'market', name: '🛍️ Marketplac
 const FEAT_ANIM = {};   // key -> start time of the live build animation
 function featP(key) {
   const f = FEATURES[key]; if (!f) return 0;
-  if (FEAT_ANIM[key] != null) return clamp((S.T - FEAT_ANIM[key]) / 7, 0, 1);
+  if (FEAT_ANIM[key] != null) return clamp((S.T - FEAT_ANIM[key]) / 16, 0, 1);
   return (typeof HOUSES !== 'undefined' && HOUSES.length >= f.n) || (location.hash.indexOf('feat') >= 0) ? 1 : 0;
 }
 const SHOPS = [['🥐', 'BAKERY', '#f2d6a2', '#c75f1d'], ['☕', 'CAFÉ', '#d7efd2', '#2f7d6b'], ['🍦', 'ICE CREAM', '#f6c9cf', '#d6457a'], ['📰', 'KIOSK', '#cfe3f2', '#3c5a99'], ['🍕', 'PIZZA', '#f7e27a', '#e2483a'], ['💐', 'FLOWERS', '#e9d8f2', '#7b4b94']];
@@ -6015,11 +6015,11 @@ function liveJobs() {
 function liveCheckMilestone() {
   const n = HOUSES.length, m = MILESTONES.find(x => x[0] === n); if (!m || LV.msShown[m[0]]) return; LV.msShown[m[0]] = 1;
   const key = Object.keys(FEATURES).find(k => FEATURES[k].n === m[0]);
-  if (key) FEAT_ANIM[key] = S.T + 9;           // stays a construction site until the camera is there
-  LV.ms = { n: m[0], name: m[1], key, t0: S.T, until: S.T + (key ? 22 : 8) };
+  if (key) FEAT_ANIM[key] = S.T + 10;           // stays a construction site until the camera is there
+  LV.ms = { n: m[0], name: m[1], key, t0: S.T, until: S.T + (key ? 34 : 8) };
   liveAt(2, () => { liveFx('fireworks', 2); liveAlert('🎉 ' + m[0].toLocaleString('en-US') + ' NEIGHBORS!', m[1] + ' gets built! 🔨', '#ffd23f'); livePlay('ms' + (m[0] / 1000)); });
-  if (key) liveAt(5.5, () => { const [bu, bv] = key.split(',').map(Number), [wx, wy] = isoW(bu * 6 + 3, bv * 6 + 3); selected = null; LV.cur = null; target.x = wx; target.y = wy - 60; target.z = 1.3; LV.holdUntil = S.T + 16; });
-  if (key) liveAt(16.5, () => { liveFx('fireworks', 2); liveFx('confetti'); liveAlert('✨ ' + m[1] + ' is open!', 'Thank you, ' + m[0].toLocaleString('en-US') + ' neighbors 🫶', '#ffd23f'); });
+  if (key) liveAt(5.5, () => { const [bu, bv] = key.split(',').map(Number), [wx, wy] = isoW(bu * 6 + 3, bv * 6 + 3); selected = null; LV.cur = null; target.x = wx; target.y = wy - 60; target.z = .8; LV.holdUntil = S.T + 28; liveAt(4, () => { target.z = 1.35; }); liveAt(12, () => { target.z = 1.1; }); liveAt(18, () => { target.z = 1.5; }); });
+  if (key) liveAt(26.5, () => { liveFx('fireworks', 2); liveFx('confetti'); liveAlert('✨ ' + m[1] + ' is open!', 'Thank you, ' + m[0].toLocaleString('en-US') + ' neighbors 🫶', '#ffd23f'); });
 }
 function liveBuildFx() {
   const h = LV.job && LV.job.kind === 'build' && LV.job.h; if (!h || !h.bt) return;
