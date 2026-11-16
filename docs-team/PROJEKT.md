@@ -1,0 +1,329 @@
+# Benny's Town – Projekt-Dokumentation (Team-Stand)
+
+> **Für beide Claude-Instanzen.** Diese Datei ist die gemeinsame Wahrheit. Wer etwas ändert (Regeln, Bank, Story, Code), trägt es hier ein, im **Änderungslog** ganz unten.
+> Stand: **16.11.2026, 22:50** (nach Folge 7 / Abendvideo Tag 3).
+> Der Kunde ist **Kieran** (schreibt meist Deutsch, Inhalte sind auf Englisch). TikTok-Account: **@bennys.town**.
+
+---
+
+## 1. Konzept in 5 Sätzen
+
+1. **Benny** ist obdachlos. Sein Opa hat ihm eine **leere Stadt** und einen **mysteriösen Schlüssel** vererbt.
+2. **Jeder Follower zieht ein** und bekommt ein eigenes Haus mit seinem @Namen am Briefkasten.
+3. **Jeder Follow = 10 Cent** für Benny. **Jeden Sonntag ist Rent Day:** Jeder Bewohner zahlt nochmal 10 Cent.
+4. Die Zuschauer **stimmen per TikTok-Umfrage ab**, was Benny kauft (immer mit Preis). Gekauft werden die **Top 2**, wenn das Geld reicht.
+5. Die Website **https://bennystown.github.io** zeigt die ganze Stadt. Jeder kann dort sein Haus suchen („Find your house, link in bio“).
+
+**Tagesrhythmus:**
+- **Morgens Bauvideo:** neue Follower ziehen ein, das Geld kommt rein, neue Umfrage.
+- **Abends Story-Video:** Benny kauft, was gewonnen hat, und erlebt etwas.
+
+---
+
+## 2. Story bisher (alle Folgen)
+
+| # | Datei/Ordner (Mac: `Movies/Benny/Folge N`) | Inhalt |
+|---|---|---|
+| 1 | ep1 – „I own a whole town“ | Intro im Regen: Benny besitzt eine Stadt, schläft aber auf der Straße. Opa hat ihm Stadt und Schlüssel hinterlassen. Eine **Taube klaut sein Abendessen**. Er erklärt die Regeln (10¢ pro Follow, Rent Day sonntags). Umfrage: Was kauft Benny? (Brot / Lotto / …) „Will I eat today? That's up to you.“ |
+| 2 | ep2 – Brot | **Brot gewinnt (64 %)**, Lotto 34 %. Benny kauft Brot, „best bread in the history of bread“. Die **Taube kommt wieder**, und Benny teilt mit ihr („we're neighbors now“). Mehr Follower kommen dazu. |
+| 3 | build2 – Bauvideo Tag 1 | **34 Bewohner** ziehen ein (= die ersten 34, Tag 1 = 14.11.). Bank €3,40. Running Gags: „Dom, my builder“ (@footballdom9), „Bodyguard“ (@bootydestroyer61). „I'm not crying, it's the rain.“ |
+| 4 | build3 – Bauvideo Tag 2 | 2.000 Benachrichtigungen. **2.156 Bewohner**. #100 = letzter OG 👑 (@amiramaya02), #1.000 = @henry_xyt. **Erster Rent Day (Sonntag)**: Bank €214,60 → €430,20. **500 → Park freigeschaltet**. Der Schlüssel passt bei 1.000 → „Tonight“. Umfrage: Zelt €80 / Winterkleidung €50 / 20 Lottoscheine €40. Ergebnis: Zelt 47 %, Lotto 37 %, Kleidung 16 %. |
+| 5 | ep5 – Rathaus | Der Schlüssel öffnet das **Rathaus**. Darin liegt **Opas Brief**: „Benny. If you're reading this… the town isn't empty anymore. Build it together. – Grandpa“. Der Markt mit Ständen öffnet. Benny kauft das **Zelt (−€80)** und **20 Lottoscheine (−€40)**, gewinnt €65 („Lotto team was right“). Kleidung: „maybe next time“. Erste Nacht im Zelt („First night not on cardboard“). Bank **€375,20**. |
+| 6 | build4 – Bauvideo Tag 3 | „+2,505 in one night“ → **4.661 Bewohner**. Danke für die vielen lieben Nachrichten. **Haus des Tages**: @yolaylist (Anzeigename 60V_R1der, #3748). Bank +€250,50 → **€625,70**. Ausblick: „Tomorrow my first neighbors get flowers“ plus Treue-Stufen. Umfrage: Campervan €350 / Motorrad €400 / Straßenlaternen €200. Ergebnis: **Campervan 72 %, Laternen 24 %, Motorrad 4 %**. |
+| 7 | ep6 – Campervan | Benny kauft **beides**. Der rostige Campervan (−€350) springt nicht an („doesn't drive, but it has a BED“). Straßenlaternen (−€200). Nachts schiebt er den Van nach Hause, die Laternen gehen Straße für Straße an, die ganze Stadt leuchtet. „A real bed… and a door I can lock.“ Bank **€75,70**. |
+
+### Running Gags & Figuren
+- **Die Taube** 🐦 klaut Benny Essen. Feste Nebenfigur, aber **nur manchmal**, nicht in jedem Video.
+- **Opa** (nur über Briefe/Gegenstände): Schlüssel, Brief. **Offener Handlungsstrang:** Opas Geheimnis (weitere Briefe, Karte, Fotos).
+- **Lotto-Team vs. Kleider-Team:** Kleidung hat zweimal verloren („maybe next time“).
+- „Dom, my builder“ und „Bodyguard“ aus Folge 3.
+- Benny wird emotional („I'm not crying, it's the rain“).
+
+### Offene Handlungsstränge / Ideen (Kieran hat zugestimmt, noch nicht umgesetzt)
+- **Campervan fährt nicht** → Reparatur kann ein späteres Sparziel werden.
+- **Motorrad** (4 %) wurde nicht gekauft → später Sparziel oder neue Umfrage.
+- **Haus des Tages** (zufällig, keine Bevorzugung) in Bauvideos.
+- **Joshua (Joshua Blewett)** will „best friend“ sein und neben Benny wohnen. **Nein zu Sonderplätzen.** Idee: Benny parkt den Van irgendwann vor seinem Haus bzw. besucht ihn (nur wenn Kieran zustimmt, dafür @Handle nötig).
+- **Katzen/Haustiere**: viele Wünsche (@autumm096, @comment_1297 „Meila“, @sacreddfawn, RM02 …). Mögliches Upgrade oder Kaufoption.
+- **Hauswunsch-Verlosung am Rent Day** (Kierans Idee, angenommen): Jeden Sonntag wird ein zufälliger Kommentar mit Hauswunsch gezogen und das Haus genau so gebaut, mit Glücksrad im Video.
+- **Bezirke bei sehr vielen Bewohnern** (z. B. ab 25.000 pro Viertel): Strand-, Schnee-, Neonviertel, später mit Bus/Zug. Noch nicht festgelegt.
+- **Erstes LIVE**: voraussichtlich **Fr 20.11.** (TikTok schaltet LIVE erst 7 Tage nach Kontoerstellung frei). In Videos vorher ankündigen.
+
+---
+
+## 3. Regeln (verbindlich)
+
+### Geld / Bank (`TOWN.bankCents` in index.html)
+- **+10¢ pro neuem Follower.** Das Geld kommt erst **im Bauvideo am nächsten Morgen** dazu, wenn die Leute einziehen, nie schon im Abendvideo.
+- **Rent Day = Sonntag:** +10¢ × alle Bewohner (im Sonntags-Bauvideo, Bank zählt sichtbar hoch).
+- **Käufe** (Abendvideo) werden abgezogen.
+- **Keine Geldspenden von Fans annehmen.** Alles ist gratis.
+- **Aktuelle Rechnung:** Tag 2 €430,20 → −80 −40 +65 = €375,20 → +2.505 × 0,10 = €625,70 → −350 −200 = **€75,70**.
+
+### Umfragen
+- **Immer mit Preis**, Text max. **25 Zeichen** pro Option (TikTok-Limit), z. B. „🚐 Campervan €350“.
+- **Top 2 werden gekauft**, wenn genug Geld da ist. Sonst kauft Benny Platz 1, und Platz 2 wird Sparziel.
+- Optionen sollen **Benny im Leben weiterhelfen**, teuer/krass genug sein und die Story weitertreiben.
+
+### Häuser
+- **Jedes Haus:** gleiches einstöckiges Cottage mit Spitzdach, eigenes Grundstück. Nur die **Farbe** unterscheidet sich (12 Paletten, zufällig aus dem Namen).
+- **Hauswünsche (Farben)** werden umgesetzt, wenn der @Handle bekannt ist: `color:` im Tenant-Eintrag. Mögliche Werte: `cream, lightblue, pink, mint, sand, grey, yellowpurple, blue, red, lavender, peach, white`.
+  - **Offen:** @haste50fps will blau + lila → neue Palette `bluepurple` ['#7fb2ec','#7b4b94'] anlegen, sobald er in der Liste ist.
+  - Liste aller Wünsche: `docs-team/data/wishes.md` + `wishes_mapped.md`.
+- **Unfollow** → Haus wird wieder „FOR RENT“. **Umbenennung** → Haus bleibt.
+- **Häuser bewegen sich nie** (Grundstücks-Zuteilung siehe Abschnitt 6).
+
+### OG-Krone 👑
+- Die **ersten 100 Follower** (`ogLimit: 100`) sind OGs und bekommen eine Krone und den Platz rund um Bennys Platz.
+
+### Treue-Belohnungen (nur durch Folgedauer, **nie** durch Geschenke oder Geld)
+| Folgedauer | Upgrade |
+|---|---|
+| 3 Tage | 🌷 Blumen |
+| 1 Woche | 🏡 Zaun + Garten/Baum |
+| 2 Wochen | 💡 Laterne + Bank |
+| 1 Monat | ⭐ zweiter Stock |
+| 3 Monate | 🏊 Pool |
+| 6 Monate | ✨ goldener Dachrand |
+| 1 Jahr | 🗿 Statue / Original-Neighbor-Schild |
+
+- In der **3D-Ansicht** auf der Website sind die Stufen schon gebaut (`buildHouse3D`, `tierOf`).
+- **TODO:** In der 2D-Karte fehlen die Blumen noch. Die ersten 34 Tag-1-Bewohner erreichen 3 Tage am **17.11.** → im Bauvideo am 17.11. zeigen und erklären, und in 2D einbauen.
+
+### Meilensteine (nach Bewohnerzahl, kostet kein Geld)
+| Bewohner | Was | Ort (Block) |
+|---|---|---|
+| 500 | Park (neben Bennys Platz) | Blob bei (15.5, 6.2) – ✅ |
+| 1.000 | Schlüssel öffnet Rathaus + Markt | Block (0,2) – ✅ |
+| 2.500 | Baustellen erscheinen | – ✅ |
+| **5.000** | 🛍️ **Marktplatz mit 6 Läden + Autos fahren durch die Stadt** | Block (-4,-4), oben |
+| **10.000** | 🎢 **Achterbahn „Benny Coaster“** | Block (-5,0), oben links |
+| **15.000** | ⛲ **Brunnen + Benny-Statue („Benny Square“)** | Block (0,-5), oben rechts |
+| 20.000 | ❓ Surprise (Idee: Stadion, Jacob wünscht es sich) | noch offen |
+
+- Die Gebäude erscheinen automatisch auf Website und LIVE, sobald die Zahl erreicht ist (`FEATURES`, `featP()` in index.html).
+- Vorschau aller Gebäude: `index.html#feat`.
+
+### Gekaufte Dinge in der Stadt (`TOWN.milestones`)
+- `park, townHall, tent, van, lights` sind aktuell alle `true`.
+- Zelt und Campervan stehen auf Bennys Platz. Straßenlaternen stehen an allen Kreuzungen.
+
+### Community-Regeln (Kieran)
+- **Keine Sonderrollen:** kein Bürgermeister, kein Vize, kein Platz neben Benny.
+- **DMs werden nicht angenommen/beantwortet.** Nur im Video allgemein danken.
+- **Kein KI-Label** (Kierans Entscheidung).
+- **Kommentare im Video** nur in jedem 4.–5. Video zeigen.
+
+### LIVE & Geschenke
+- **Geschenke lösen nur Effekte aus:**
+  - unter 10 Diamanten → Konfetti
+  - 10–99 Diamanten → Herzen
+  - ab 100 Diamanten → Feuerwerk
+- **Geschenk-Haus-Upgrades** (z. B. „Galaxy = Schloss auf 4 Grundstücken“, Villa) bespricht Kieran **erst nach dem ersten LIVE**.
+- Großbauten aus Geschenken kommen in ein eigenes Viertel, niemand wird verdrängt.
+- Details zur Technik: Abschnitt 7.
+
+---
+
+## 4. Wie ein Video entsteht
+
+### Werkzeuge
+- **Rendering:** Die Website-Engine selbst (`index.html`, HTML-Canvas, isometrische Stadt) läuft in einem **Video-Modus**.
+  - Ein Patch-Skript (`mk_*.py`) baut daraus eine `epN.html`.
+  - **Playwright + Chrome** (`/usr/bin/google-chrome`) ruft pro Frame `EP.jpeg(t)` auf.
+  - ffmpeg encodiert mit H.264.
+- **Format:** **1080×1920, 30 fps**, H.264 (`-preset veryfast -crf 18 -pix_fmt yuv420p`), AAC 192k.
+- **Länge:** Bauvideos ~45–52 s, Abendvideos ~40–50 s. Kieran mag es **nicht gequetscht**, 50 s sind ok.
+- **Stimme: ElevenLabs**
+  - **Voice-ID `OwEAPhTFInN6VSRT9QXm`** („Jordan – Warm & Gritty“)
+  - Modell **`eleven_v4`**, `generations_count: 1`
+  - Flow-ID in Kierans Workspace: `PZLBOxlx8nuP2KjLdQzj`
+  - Audio-Tags im Text wie `[excited]`, `[sleepy]`, `[softly]`, `[straining]`, `[gasps]`
+  - Der API-Key gehört in den ElevenLabs-Connector bzw. in Kierans Konto, **nie ins Repo**.
+- **Wort-Timings:** ElevenLabs Speech-to-Text (`eleven_scribe_v1`) auf das TTS-Ergebnis anwenden. Die Wörter mit Start/Ende kommen in `words_raw.py`.
+- **Sounds/Musik:** komplett **mit numpy synthetisiert** (`sfx*.py`): Pads, Plucks, Pops, Münzen, Whoosh, Hammer, Grillen. Es gibt keine Musik-Lizenzen und keine externen Assets.
+- **Mix:** Voice + SFX mit Sidechain (SFX duckt unter der Stimme), `loudnorm I=-14 TP=-1.5`.
+
+### Reihenfolge (Befehle)
+Pro Video ein Ordner, z. B. `/tmp/ep7`. Vorlagen liegen in `docs-team/video/`.
+
+1. **Skript schreiben** (Englisch, Benny spricht direkt zum Zuschauer, durchgehend, schnell, catchy).
+2. **TTS erzeugen** (ElevenLabs, siehe oben) → MP3 herunterladen → `raw.mp3`.
+3. **Transkribieren** → Wortliste in `words_raw.py` eintragen → `python3 words_raw.py` → `words_raw.json`.
+4. **Stimme schneiden/timen:** eine der beiden Varianten.
+   - **Bauvideo:** `python3 cut.py` (Pausen kürzen, KEEP-Liste für dramatische Pausen) → `python3 build_voice.py` (TEMPO 1.04–1.13, LEAD 0.3 s) → `voice.wav` + `words.json`.
+   - **Abendvideo mit Szenen:** `python3 voice.py`. Jeder Satz wird auf eine Ziel-Zeit gelegt (Liste `SEG = (raw_start, raw_end, target_start)`), damit Laufwege und Animationen Platz haben.
+5. **Untertitel + Mundbewegung:** `python3 prep.py` → `caps.json` (Gruppen von max. 4 Wörtern, Bruch bei Satzende/Pausen) + `mouth.json` (Lautstärke pro Frame, 30 fps). Die Dauer `n=int(DUR*30)` anpassen.
+6. **Szene programmieren:** `vidN.js`. Darin stehen
+   - die Zeitachse `T`,
+   - Kamera-Keyframes (`KEYS`/`camAt`),
+   - Bennys Zustand (`BENNY_O`, `BPOS`),
+   - Overlays (`vstamp`, `vcard`),
+   - HUD (`vHUD`) und Untertitel (`vCaption`).
+7. **HTML bauen:** `python3 mk6.py` (patcht die aktuelle `index.html` und fügt `vidN.js`, Font, caps, mouth ein) → `epN.html`. Dabei immer die **aktuelle** `index.html` nehmen.
+8. **Standbilder prüfen:** `python3 stills.py 2.5 6 10 …` → `st_*.jpg`. Zu Sheets zusammenkleben und **ansehen**. Fehler beheben, bevor gerendert wird (Regel: erst testen, dann hochladen).
+9. **SFX:** `python3 sfx6.py` → `sfx.wav`.
+10. **Rendern:** `python3 render.py video_tmp.mp4 x 0 DAUER` (~2 min).
+11. **Mix + Mux:**
+    ```
+    ffmpeg -i voice.wav -i sfx.wav -filter_complex "[0:a]aformat=sample_rates=44100:channel_layouts=stereo,apad=whole_dur=DUR,asplit=2[v1][v2];[1:a]volume=0.6[s];[s][v1]sidechaincompress=threshold=0.04:ratio=5:attack=20:release=350[d];[d][v2]amix=inputs=2:normalize=0:duration=longest,atrim=0:DUR,loudnorm=I=-14:TP=-1.5:LRA=11" -ar 44100 mix.wav
+    ffmpeg -i video_tmp.mp4 -i mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest OUT.mp4
+    ```
+12. **Kontrolle:** 8 Frames extrahieren und ansehen. Dann an Kieran schicken und auf seinen Mac legen: `Movies/Benny/Folge N/`.
+
+### Bild-/Timing-Regeln (von Kieran)
+- **Bank-Panel** groß und mittig unter der TikTok-Suchleiste: Panel bei y≈262–468, Zahl bei y=376. Darunter klein die pinke Pille „Follow = you move in 🏠“ (y≈486–532).
+- **Untertitel:** Poppins 700, 66 px, weiß mit dunkler Kontur. Das gerade gesprochene Wort wird **gelb** (#ffd23f) hervorgehoben. Position y=1500 (bei Umfrage/Karten höher, ~1330). **Keine Untertitel über Namenslisten.**
+- **Stempel/Pop-ups** (`vstamp`) bei y≈640, mindestens **1,5–2 s** sichtbar lassen.
+- **Endkarte** („FOLLOW = +10¢ / and move into Benny's town 🏠 / Find your house: link in bio 🔗“) mindestens **2 s vor Videoende** einblenden.
+- **Umfrage-Karten** zeigen immer den Preis.
+- **Abendvideo: kein Teaser am Ende.** Neues Follower-Geld gibt es nur morgens.
+- **Benny läuft selbst** zu Ständen/Markt, um zu kaufen. Produkte fliegen nicht zu ihm.
+- **Abwechslung:** Benny soll Dinge **tun** (Abenteuer, Pannen, Emotionen), nicht nur „Häuser ploppen, Bank zählt“.
+- **Hook** in den ersten 2–4 s (Benachrichtigungsflut, Frage, Überraschung).
+
+### Wo Benny & die Stadt im Code stehen
+- `index.html`:
+  - `drawBenny(c, x, y, s, o)`: Figur. Optionen `pose:'sit'|'stand'`, `mood:'sad'|'hope'|'happy'|'surprised'`, `armsUp`, `walk`, `look:[x,y]`, `blink`, `talk` (0..1 Mundöffnung).
+  - `drawHouse`/`sprite`: Häuser.
+  - `drawVan`, `drawStreetLamp`, `lampGlow`: Van und Laternen.
+  - `drawShop`, `drawCoaster`, `drawFountain`: Meilenstein-Gebäude.
+  - `buildHouse3D`: 3D-Haus.
+- Die Video-Patches (`mk6.py`) fügen hinzu: `VIDEO`-Flag, `BPOS` (Bennys Position), `BENNY_O` (Optionen), `BENNY_CARD` (Pappe sichtbar), `EXTRA_OBJS` (eigene Objekte in die Tiefensortierung). Im Video-Modus sind Labels und Marktstände ausgeblendet.
+- Hilfen: `uvS(u,v)` → Bildschirmkoordinaten, `isoW(u,v)` → Weltkoordinaten, `cam {x,y,z}`, `S.T` = Zeit.
+
+---
+
+## 5. Captions, Hashtags, Kommentare, Posting
+
+- **Caption-Stil:** kurz, aus Bennys Sicht, ein Hook + Emoji, oft mit Verweis auf Umfrage oder Link. Beispiele:
+  - „Went to sleep with 2,156 neighbors. Woke up with 4,661. 🥹 Now you decide what I buy 👇“
+  - „You voted. I bought BOTH 🚐💡 now I just have to push it home… 😮‍💨“
+- **Hashtags:** `#bennystown #dayN #fyp`, sparsam.
+- **Umfrage-Frage:** „What should Benny buy? 🛒“. Optionen ≤ 25 Zeichen mit Preis.
+- **Posting-Zeiten** (bisher, Wien): **Bauvideo morgens (~9–11 Uhr)**, **Abendvideo ~20–22 Uhr**. Kieran postet selbst.
+- **Kommentar-Antworten:** Englisch, als Benny, kurz, warm, witzig, 1–2 Emojis.
+  - Dabei nie etwas versprechen, das gegen die Regeln ist: keine Sonderplätze, keine Rollen. Auch kein „deal“ auf Wünsche nach Sonderbehandlung!
+  - Wer sein Haus nicht findet: „search your @name on the website (link in bio)“. Die Suche ist fehlertolerant.
+  - Shoutout-Wünsche: „House of the day is picked randomly 🎲“.
+  - Hauswünsche: „noted, stay tuned“ bzw. bei Farben „your house gets built that way in the next move-in“.
+  - Bei Nervern (z. B. Jacob/„vice mayor“): einmal freundlich nein, danach nicht mehr antworten, höchstens liken.
+
+---
+
+## 6. Website – täglicher Ablauf
+
+**Repo:** `bennystown/bennystown.github.io`, Branch `main`. GitHub Pages, eine Datei **`index.html`** (+ `three.min.js`, `live/*.mp3`, `live.json`). Statistik: GoatCounter (`bennystown.goatcounter.com`).
+
+### Tenant-Format (in `TOWN.tenants`, Reihenfolge = Einzugsreihenfolge = Hausnummer)
+```js
+{ name: "username", day: 3 },                               // Minimum
+{ name: "username", day: 3, a: "Anzeigename aus OCR" },     // a = Alias, nur für die Suche
+{ name: "username", day: 1, nick: "Anzeigename" },          // nick wird auf der Karte angezeigt (nur bei sicheren Namen)
+{ name: "username", day: 1, color: 'red' },                 // Hauswunsch-Farbe
+```
+- `day` = Tag des Einzugs (Tag 1 = `startDate` 14.11.2026). Daraus berechnen sich Treue-Stufen und „Moved in“.
+- Die Reihenfolge **nie ändern**, sonst wandern Häuser.
+
+### Morgens (vor dem Bauvideo)
+1. **Neue Follower holen.** Die TikTok-Website zeigt nur noch die neuesten ~30.
+   - Kieran macht auf dem **iPhone eine Bildschirmaufnahme**: Profil → Follower-Liste langsam runterscrollen bis über die Leute vom Vortag hinaus. Er schickt das .MOV.
+   - Auswerten mit `docs-team/video/follower-ocr/`:
+     - Frames extrahieren: `ffmpeg -i X.MOV -vf "fps=3,crop=840:2140:230:440" -q:v 3 f1/%05d.jpg` (Crop für iPhone 1206×2622, ggf. anpassen).
+     - Dann `python3 ocr.py f1 0 1` (tesseract; Zeilen werden über die roten „Auch folgen“-Buttons gefunden).
+     - Dann `python3 merge.py` (Frames zu einer Liste zusammenfügen) → `merged.json`.
+   - **Die Überschneidung mit der alten Liste finden.** Der neue Teil ist alles vor dem ersten Block bekannter Namen.
+   - **Die OCR macht Fehler** (0/o, 1/l, 5/s). Die Website-Suche fängt das mit `conf()`/`ed1()` ab.
+   - Liste umdrehen (älteste zuerst). Anzeigenamen als `a:` übernehmen.
+   - **Achtung:** Falls ein LIVE lief, **zuerst die Namen aus `live.json`** (in Live-Reihenfolge) anhängen, **dann** die übrigen neuen Follower.
+2. **In `index.html` eintragen:** neue Tenants ans Ende von `TOWN.tenants`.
+   - Dazu `TOWN.day += 1`.
+   - `TOWN.bankCents += neue × 10`, sonntags zusätzlich `+ alle × 10`.
+3. **`live.json` zurücksetzen:** `{"base": <neue Tenant-Zahl>, "names": []}`.
+4. **Lokal testen:** Playwright-Screenshot (Mobil 390×844), Suche nach 2–3 neuen Namen, keine JS-Fehler. Dann committen und pushen (Co-Author-Zeilen siehe unten).
+5. Gesichertes JSON: `docs-team/data/tenants_YYYY-MM-DD.json` (aktueller Stand 16.11.: 4.661).
+
+### Abends (nach dem Kaufvideo)
+- `TOWN.bankCents` minus Käufe, neue Gegenstände als `TOWN.milestones.xyz = true` plus Zeichnung im Code.
+
+### Grundstücke (wichtig, damit Häuser nie wandern)
+- `LOTS` = alle Grundstücke, sortiert nach Abstand zur Mitte. Sie werden mit `OLD_RESERVED` berechnet (Stand vor dem Umbau).
+- `LOTA` = endgültige Zuteilung:
+  - Häuser `< LOT_FREEZE (4661)` behalten ihren alten Platz.
+  - Die **27 Häuser**, die auf den neuen Baustellen standen, sind an den Rand gezogen.
+  - Neue Bewohner bekommen die nächsten freien Grundstücke.
+- **Neue Sonderflächen** immer als ganzer 6×6-Block, ein paar Straßen außerhalb der Mitte, ohne Überschneidung. Vorher prüfen, wie viele Häuser umziehen müssten.
+- Layout: Straßen jede 2. Reihe, Querstraßen jede 6. Jedes Haus steht auf einem eigenen Grundstück.
+- Reservierte Blöcke: Bennys Platz (0,0), Rathaus (0,2), Parks (8,5), (5,8), (10,10), Baustellen (-4,-4), (-5,0), (0,-5). Dazu kommt der große Park (Blob).
+
+### Suche
+- Gesucht wird nach @Name, Anzeigename (`nick`) und OCR-Alias (`a`). Dazu kommen
+  - Verwechslungs-Faltung (0/o, 1/l/i, 5/s, Punkte/Unterstriche),
+  - Akzente (`Dávid`),
+  - ein falscher oder fehlender Buchstabe.
+
+---
+
+## 7. LIVE (vorbereitet, erstes LIVE geplant ~20.11.)
+
+- **OBS** auf Kierans Mac (macOS hat kein TikTok LIVE Studio):
+  - Leinwand 1080×1920, 30 fps, Apple VT H264, 5000 kbps
+  - Szene „Benny Live“, Browser-Quelle „Stadt“ (1080×1920, Audio über OBS) und Mikrofon
+- **URL der Quelle (nur in OBS, nie posten):**
+  `https://bennystown.github.io/?live&gh=<GITHUB_TOKEN>&key=<TIKTOOLS_KEY>`
+  oder mit eigenem Listener: `&ws=ws://localhost:21213` statt `&key=`.
+  - `gh` = Fine-grained GitHub-Token (nur Repo bennystown.github.io, Contents: Read and write). Er schreibt alle 45 s `live.json`.
+  - `key` = Tik.Tools-API-Key (wss://api.tik.tools). Das Gratis-Limit ist fraglich, deshalb baut Kieran mit einer anderen Claude-Instanz einen **eigenen lokalen Listener**. Übergabe: `Uebergabe_Live_Listener.md`. Event-Format: `{event:'follow'|'gift'|'chat', data:{user:{uniqueId,nickname}, giftName, diamondCount, repeatCount, repeatEnd, giftType, comment}}`.
+- **Steuerpult:** `https://bennystown.github.io/?control&v=N` als OBS-Custom-Dock. Es hat nur Test-Follows, Effekte (Konfetti, Herzen, Feuerwerk, Münzregen, Benny tanzt, Schnee, Regen, Nacht, Tour) und 18 Benny-Sprüche (`live/*.mp3`, darunter `ms5/ms10/ms15`). Kommunikation über BroadcastChannel + localStorage. Bei Cache-Problemen `&v=` hochzählen.
+- **Was die Live-Szene macht:**
+  - **Follow** → Warteschlange („🔨 Next: …“). Pro Follower kommt eine **3D-Bauszene aus Straßensicht** (three.js, `streetStart`): Haus baut sich auf, @Name am Briefkasten, +10¢.
+  - **Chat „house“** → Kamera fliegt zum Haus.
+  - **Geschenke** → Effekte.
+  - Immer sichtbar: Fortschrittsbalken „4.661 / 5.000 → 🛍️ Marketplace + cars“, Laufband „NEW“ und eine wechselnde Info-Leiste.
+  - **Meilenstein-Sequenz** (~35 s): goldener Balken, Feuerwerk, Benny-Clip, Kamera zur Baustelle, 16 s Bauphase, „is open!“, Balken springt aufs nächste Ziel.
+- Die Live-Häuser landen über `live.json` **sofort auch auf der Website** (base muss gleich der Tenant-Zahl sein).
+
+---
+
+## 8. Bekannte Probleme & Lösungen
+
+| Problem | Lösung |
+|---|---|
+| TikTok-Website lädt die Follower-Liste nicht nach (nur ~30) | Bildschirmaufnahme vom iPhone + OCR (Abschnitt 6) |
+| OCR-Lesefehler in Namen | Fehlertolerante Suche; Anzeigename als `a:` speichern |
+| tik.tools blockt den Browser in der Claude-App (403) | Kieran meldet sich selbst in Safari/Chrome an |
+| ElevenLabs-Download speichert beim ersten Klick nicht | Download zweimal mit Pause auslösen; Datei landet in `~/Downloads` (manchmal als `.Q6L2SF6YDW…`-Temp), dann nach `Movies/Benny/Folge N` kopieren |
+| `device_commit_files` mit stagedPath → HTTP 400 | Erst `SendUserFile`, dann mit dessen `fileUuid` committen |
+| OBS-Dock zeigt alte Version | URL mit `&v=N` ändern; Docks-Menü → „Benny“ zum Wiedereinblenden |
+| OBS-Leinwand quer | Einstellungen → Video: Basis + Ausgabe 1080x1920; Quelle → Transformieren → An Bildschirm anpassen |
+| TikTok LIVE-Option fehlt | Konto muss ≥ 7 Tage alt sein (Kieran ~ab 19./20.11.) |
+| Lokaler `python -m http.server` stirbt zwischen Befehlen | Tests per `file://` laden (live.json-Fetch schlägt dann still fehl, ok) |
+| Headless-Chrome rendert die Live-Szene langsam (~1 fps) | Normal; zur Logikprüfung `SITE.__ff(t)` (Fast-Forward-Hook) nutzen |
+| Video-Patch-Strings passen nicht mehr nach index-Änderungen | `mk*.py` meldet per assert, welcher String fehlt → Patch anpassen |
+
+---
+
+## 9. Nächste Videos
+Siehe `NAECHSTE_VIDEOS.md` (4 Skript-Entwürfe).
+
+## 9b. Offene Aufgaben (Stand 16.11. 22:50)
+
+1. **Campervan realistischer zeichnen.** Kieran will ihn wie einen echten Alkoven-Wohnmobil (Fiat-Ducato-Stil): weiß, Fahrerkabine vorne mit Windschutzscheibe, Alkoven über der Kabine, Fenster, grüne/blaue Swoosh-Streifen, Räder. Gilt für `drawVan` (Website + Videos). Danach ggf. das Abendvideo Folge 7 neu rendern (Kieran: „everything is perfect except the campervan“).
+2. **Bauvideo Di 17.11.**: neue Follower, **erste Treue-Blumen** (34 Tag-1-Bewohner), Blumen auch in 2D einbauen.
+3. Palette `bluepurple` für @haste50fps.
+4. LIVE-Start vorbereiten (Stream-Key, sobald freigeschaltet), eigener Listener (andere Instanz).
+5. Hauswunsch-Verlosung am Rent Day (So 22.11.) vorbereiten (Glücksrad-Animation).
+
+---
+
+## 10. Git-Konventionen
+Commits enden mit:
+```
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+(+ Session-Link der jeweiligen Instanz). Vor dem Push immer `git pull`, denn **zwei Instanzen** arbeiten am selben Repo. Kleine, klar benannte Commits.
+
+---
+
+## Änderungslog
+- **16.11.2026 22:50** – Doku angelegt (Instanz A, Hauptchat). Stand nach Folge 7, Bank €75,70, 4.661 Bewohner, Tag 3.
