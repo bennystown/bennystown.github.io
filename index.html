@@ -595,6 +595,51 @@ function drawBlockParks() {
     for (let k = 0; k < 5; k++) { const u = p.c[0] - 1.6 + r() * 2.4, v = p.c[1] + .2 + r() * 1.4; if (bparkDist(p, u, v) > -.5) continue; const [x, y] = uvS(u, v); ellipse(ctx, x, y, 14 * z, 7 * z, '#4b9a5a'); for (let j = 0; j < 6; j++) circle(ctx, x + Math.cos(j * 2.4) * 8 * z, y + Math.sin(j * 2.4) * 3.5 * z, 2.4 * z, cols[(k + j) % 4]); }
   }
 }
+
+/* ---- campervan (day 3 purchase) + street lights for the whole town ---- */
+let LAMP_ON = null;   // video hook: (u, v) => 0..1
+const STREET_LAMPS = []; for (let a = -14; a <= 15; a++) for (let b = -14; b <= 15; b++) { const u = a * 6 + .55, v = b * 6 + .55; if (Math.hypot(u - CEN, v - CEN) > 92) continue; STREET_LAMPS.push([u, v]); }
+function drawStreetLamp(u, v, on) {
+  const z = cam.z, [x, y] = uvS(u, v);
+  line(ctx, x, y, x, y - 58 * z, '#2a2e45', Math.max(1, 3.4 * z)); line(ctx, x, y - 58 * z, x + 10 * z, y - 62 * z, '#2a2e45', Math.max(1, 3 * z));
+  circle(ctx, x + 11 * z, y - 61 * z, 5.5 * z, on > .5 ? '#fff2c4' : '#6b6f86');
+}
+function lampObjs(objs) {
+  const z = cam.z; if (z < .12) return;
+  for (const [u, v] of STREET_LAMPS) {
+    if (isPlaza(Math.floor(u), Math.floor(v))) continue;
+    const [x, y] = uvS(u, v); if (x < -30 || x > VW + 30 || y < -20 || y > VH + 80) continue;
+    const on = LAMP_ON ? LAMP_ON(u, v) : 1; objs.push({ d: u + v + .02, f: () => drawStreetLamp(u, v, on) });
+  }
+}
+function lampGlow(alpha) {   // warm light pools, drawn on top of the night overlay
+  const z = cam.z; ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const [u, v] of STREET_LAMPS) {
+    if (isPlaza(Math.floor(u), Math.floor(v))) continue;
+    const on = LAMP_ON ? LAMP_ON(u, v) : 1; if (on <= 0) continue;
+    const [x, y] = uvS(u, v); if (x < -150 || x > VW + 150 || y < -150 || y > VH + 150) continue;
+    const gx = x + 11 * z, gy = y - 61 * z, R = clamp(110 * z, 22, 170);
+    let g = ctx.createRadialGradient(gx, gy, 1, gx, gy, R * .45); g.addColorStop(0, `rgba(255,230,160,${.9 * on * alpha})`); g.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = g; ctx.fillRect(gx - R, gy - R, 2 * R, 2 * R);
+    g = ctx.createRadialGradient(x, y, 1, x, y, R); g.addColorStop(0, `rgba(255,205,120,${.45 * on * alpha})`); g.addColorStop(1, 'rgba(255,190,110,0)'); ctx.save(); ctx.translate(x, y); ctx.scale(1, .5); ctx.fillStyle = g; ctx.fillRect(-R, -R, 2 * R, 2 * R); ctx.restore();
+  }
+  ctx.restore();
+}
+function drawVan(u, v, o) {
+  o = o || {}; const z = cam.z, k = o.k == null ? 1 : o.k; if (k <= .01) return;
+  const L = .56, Wd = .27, h = 24 * k, base = '#e8dcc0', rust = '#a0522d';
+  // wheels
+  for (const [du, dv] of [[-L * .6, Wd], [L * .6, Wd], [L * .6, -Wd]]) { const [wx, wy] = uvS(u + du, v + dv); ellipse(ctx, wx, wy - 3 * z, 7 * z, 6 * z, '#1f2233', OUT, 1 * z); circle(ctx, wx, wy - 3 * z, 2.6 * z, o.flat ? '#555' : '#9aa0b5'); }
+  const b = isoBox(u - L, v - Wd, u + L, v + Wd, h, '#f4ead2', base, shade(base, .82));
+  // stripe + rust + windows on the long side (facing the viewer)
+  const A = b.A, B = b.B, P = f => [lerp(A[0], B[0], f), lerp(A[1], B[1], f)];
+  ctx.save(); ctx.globalAlpha = .9; const s0 = P(0), s1 = P(1); poly(ctx, [[s0[0], s0[1] - 11 * z * k], [s1[0], s1[1] - 11 * z * k], [s1[0], s1[1] - 16 * z * k], [s0[0], s0[1] - 16 * z * k]], '#2f8a8a'); ctx.restore();
+  for (const f of [.18, .42]) { const p = P(f); ctx.fillStyle = '#3b4670'; ctx.fillRect(p[0] - 1, p[1] - 27 * z * k, 18 * z, 9 * z * k); }
+  const d = P(.7); ctx.fillStyle = shade(base, .7); ctx.fillRect(d[0] - 2, d[1] - 24 * z * k, 12 * z, 22 * z * k);
+  if (o.rusty !== false) for (const [f, hh, r] of [[.08, 6, 4], [.55, 4, 5], [.88, 9, 3.5], [.33, 3, 3]]) { const p = P(f); ellipse(ctx, p[0] + 4 * z, p[1] - hh * z, r * z, r * .6 * z, rust); }
+  // pop-top roof
+  const [rx, ry] = uvS(u - .1, v); poly(ctx, [[rx - 26 * z, ry - h * z - 4 * z], [rx + 18 * z, ry - h * z - 14 * z], [rx + 26 * z, ry - h * z - 10 * z], [rx - 18 * z, ry - h * z]], '#d9534f', OUT, 1 * z);
+  if (o.smoke > 0) { const [ex, ey] = uvS(u - L - .05, v + .1); for (let k2 = 0; k2 < 6; k2++) { const q = (o.smoke + k2 * .17) % 1; ctx.globalAlpha = (1 - q) * .8; circle(ctx, ex - q * 40 * z, ey - 6 * z - q * 50 * z, (6 + q * 16) * z, '#7c7f8f'); } ctx.globalAlpha = 1; }
+}
 function drawHallGround() {
   const z = cam.z;
   if (!TOWN.milestones.townHall) {
@@ -697,9 +742,9 @@ function tag(x, y, label, col, alpha, prog) {
 /* ---- DATA: update this block every day (move-in order = tenant number) ---- */
 const TOWN = {
   day: 3,
-  milestones: { park: true, townHall: true, tent: true },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
+  milestones: { park: true, townHall: true, tent: true, van: true, lights: true },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
   startDate: '2026-11-14',   // date of Day 1 (move-in dates are counted from here)
-  bankCents: 62570,         // Benny's bank in cents (e.g. 210 = €2.10)
+  bankCents: 7570,         // Benny's bank in cents (e.g. 210 = €2.10)
   ogLimit: 100,           // first X tenants get the OG crown
   tiktokUrl: 'https://www.tiktok.com/@bennys.town',
   // optional per tenant: color: cream | lightblue | pink | mint | sand | grey | yellowpurple | blue | red | lavender | peach | white
@@ -5467,6 +5512,8 @@ function draw() {
     drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'sit', mood: TOWN.bankCents > 0 ? 'hope' : 'sad', look: [0, .6], blink: (S.T % 3.7) < .12 });
   } });
   featureObjs(objs);
+  if (TOWN.milestones.lights) lampObjs(objs);
+  if (TOWN.milestones.van) objs.push({ d: 9.45, f: () => drawVan(4.55, 4.85, { k: 1 }) });
   objs.sort((a, b) => a.d - b.d); for (const o of objs) o.f();
   ctx.fillStyle = 'rgba(8,10,34,.18)'; ctx.fillRect(0, 0, VW, VH);
   // labels
