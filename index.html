@@ -5253,7 +5253,9 @@ const TOWN = {
 const norm = s => String(s || '').trim().replace(/^@+/, '').toLowerCase();
 const fold = s => String(s || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N} ._-]/gu, '').trim();
 // look-alike characters (0/o, 1/l/i, 5/s, dots/underscores) so a tiny typo in a name still finds the house
-const conf = s => norm(s).replace(/0/g, 'o').replace(/[1i|]/g, 'l').replace(/5/g, 's').replace(/[._\s]/g, '');
+// true if a and b differ by at most one inserted/deleted/changed character (catches small reading errors in names)
+const ed1 = (a, b) => { if (a === b) return true; if (Math.abs(a.length - b.length) > 1) return false; let i = 0, j = 0, d = 0; while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++d > 1) return false; if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } } return d + (a.length - i) + (b.length - j) <= 1; };
+const conf = s => norm(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/0/g, 'o').replace(/[1i|]/g, 'l').replace(/5/g, 's').replace(/[._\s]/g, '');
 const DEMO = /demo/i.test(location.hash);
 const DEMO_N = +((location.hash.match(/demo=(\d+)/) || [0, 64])[1]);
 if (DEMO) {
@@ -5463,6 +5465,7 @@ function search() {
   let h = BY_NAME.get(q);
   if (!h) { const qf = fold(q); const c = HOUSES.filter(x => norm(x.name).includes(q) || (qf && (fold(x.nick) === qf || fold(x.al) === qf))); if (c.length >= 1) h = c[0]; }
   if (!h) { const qc = conf(q); if (qc.length >= 3) h = HOUSES.find(x => conf(x.name) === qc) || HOUSES.find(x => conf(x.name).startsWith(qc)); }
+  if (!h) { const qc = conf(q); if (qc.length >= 5) h = HOUSES.find(x => ed1(conf(x.name), qc)) || HOUSES.find(x => x.al && ed1(conf(x.al), qc)); }
   if (h) { flyTo(h); $('q').blur(); } else { selected = null; overview(); showMiss(q); }
 }
 function suggest() {
