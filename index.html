@@ -5326,7 +5326,7 @@ function draw() {
   }
   drawPlazaGround(); drawParkGround(); drawHallGround(); drawSiteGround();
   const objs = [], lo = z < .6, maxD = (A1 - CEN) * 1.45;
-  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), k = z / sp_.sc; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * k, sy - sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.globalAlpha = 1; } }); }
+  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc, kx = k * (h.bt ? clamp(bk, 0, 1.2) : 1), ky = k * bk; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * kx, sy - sp_.ay * ky, sp_.c.width * kx, sp_.c.height * ky); ctx.globalAlpha = 1; } }); }
   for (let idx = HOUSES.length; idx < LOTS.length && LOTS[idx].d <= maxD; idx++) {
     const L = LOTS[idx]; if (L.i < A0 + .5 || L.i > A1 - .5 || L.j < A0 + .5 || L.j > A1 - .5) continue;
     const [sx, sy] = uvS(L.i, L.j); if (sx < -80 || sx > VW + 80 || sy < -60 || sy > VH + 100) continue;
@@ -5684,6 +5684,7 @@ function startControl() {
   const welcome = () => { const n = inp.value.trim().replace(/^@+/, ''); if (!n) return; liveSend({ type: 'welcome', name: n }); note('welcome @' + n); inp.value = ''; inp.focus(); };
   btn(r, 'Move in', welcome, 'big');
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') welcome(); });
+  r = row(); btn(r, '🧪 Test: 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); });
   h('📍 Find a house (viewer asks “where is mine?”)');
   r = row(); const inp2 = document.createElement('input'); inp2.placeholder = '@name or display name'; r.appendChild(inp2);
   const find = () => { const n = inp2.value.trim(); if (!n) return; liveSend({ type: 'find', name: n }); note('find ' + n); inp2.value = ''; };
@@ -5705,7 +5706,7 @@ function startControl() {
 }
 
 /* ---------- the LIVE scene ---------- */
-const LV = { tour: true, snow: false, rain: false, night: 0, nightT: 0, stopT: 0, holdUntil: 0, cur: null, banner: '', bannerT: 0, alerts: [], parts: [], dance: -9, talk: null, talkT: 0, audio: {}, analyser: null, level: 0, joins: [], tick: 0 };
+const LV = { q: [], job: null, ws: null, wsOk: false, wsTry: 0, msShown: {}, tour: true, snow: false, rain: false, night: 0, nightT: 0, stopT: 0, holdUntil: 0, cur: null, banner: '', bannerT: 0, alerts: [], parts: [], dance: -9, talk: null, talkT: 0, audio: {}, analyser: null, level: 0, joins: [], tick: 0 };
 function liveAudioCtx() { if (!LV.ac) { try { LV.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (LV.ac && LV.ac.state === 'suspended') LV.ac.resume(); return LV.ac; }
 function liveBeep(kind) {
   const ac = liveAudioCtx(); if (!ac) return; const t0 = ac.currentTime;
@@ -5743,12 +5744,14 @@ function liveFocus(h, hold) {
 function liveAddHouse(name) {
   let h = liveFindHouse(name); if (h && norm(h.name) === norm(name)) return { h, isNew: false };
   const k = HOUSES.length, L = LOTS[k];
-  h = { nick: '', al: '', name, day: TOWN.day, idx: k, lot: k, i: L.i, j: L.j, v: variantForLot(name, k), og: false, stand: null, live: S.T };
+  h = { nick: '', al: '', name, day: TOWN.day, idx: k, lot: k, i: L.i, j: L.j, v: variantForLot(name, k), og: false, stand: null, live: S.T, bt: S.T + 1.2 };
+  TOWN.bankCents += 10;
   HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);
+  if (/^test_neighbor_/.test(name)) return { h, isNew: true };
   LV.joins.push(name); try { const a = JSON.parse(localStorage.getItem('benny-live-joins') || '[]'); a.push(name); localStorage.setItem('benny-live-joins', JSON.stringify(a)); } catch (e) {}
   return { h, isNew: true };
 }
-function liveAlert(title, sub, col) { LV.alerts.push({ title, sub, col: col || '#46e08a', t: null }); }
+function liveAlert(title, sub, col, delay) { LV.alerts.push({ title, sub, col: col || '#46e08a', t: null, after: S.T + (delay || 0) }); }
 function liveFx(kind, n) {
   const W_ = 1080, cnt = n || 1;
   if (kind === 'confetti') for (let k = 0; k < 160 * cnt; k++) LV.parts.push({ k: 'c', x: Math.random() * W_, y: -40 - Math.random() * 600, vx: (Math.random() - .5) * 120, vy: 300 + Math.random() * 300, r: Math.random() * 6, col: CONF[k % CONF.length], life: 6 });
@@ -5764,13 +5767,9 @@ function liveFx(kind, n) {
 }
 function liveOnMsg(m) {
   liveAudioCtx();
-  if (m.type === 'welcome' && m.name) {
-    const { h, isNew } = liveAddHouse(m.name.replace(/^@+/, '').trim());
-    liveFocus(h, 10); liveBeep('pop');
-    liveAlert(isNew ? '🏠 @' + h.name + ' moved in!' : '🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US') + (isNew ? ' · built just now 🔨' : ''), '#46e08a');
-    if (isNew) liveFx('confetti');
-  }
-  if (m.type === 'find' && m.name) {
+  if (m.type === 'welcome' && m.name) liveEnqueue(m.name, 'build');
+  if (m.type === 'find' && m.name) liveEnqueue(m.name, 'find');
+  if (m.type === 'findnow' && m.name) {
     const h = liveFindHouse(m.name);
     if (h) { liveFocus(h, 10); liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
     else liveAlert('🔍 Not found yet', '“' + m.name + '” · follow = your house gets built 🏠', '#ff6b8b');
@@ -5799,10 +5798,10 @@ function liveHUD() {
   const a = .6 + .4 * Math.sin(S.T * 4); panel(222, 282, 92, 34, 17, '#ff2e63'); ctx.globalAlpha = a; circle(ctx, 240, 299, 6, '#fff'); ctx.globalAlpha = 1; txt('LIVE', 280, 300, 20, '#fff', 'center', 'middle');
   // ticker of newest neighbours
   const names = HOUSES.slice(-30).reverse().map(h => '@' + h.name).join('   ·   ');
-  panel(60, 552, 960, 52, 26, 'rgba(10,12,26,.75)'); ctx.save(); rrect(ctx, 60, 552, 960, 52, 26); ctx.clip();
-  txt('🆕', 92, 580, 26, '#fff', 'center', 'middle');
+  panel(60, 640, 960, 52, 26, 'rgba(10,12,26,.75)'); ctx.save(); rrect(ctx, 60, 640, 960, 52, 26); ctx.clip();
+  txt('🆕', 92, 668, 26, '#fff', 'center', 'middle');
   ctx.font = F(24); const tw = ctx.measureText(names + '   ·   ').width, off = (S.T * 70) % tw;
-  for (let x = 120 - off; x < 1020; x += tw) txt(names + '   ·   ', x, 580, 24, '#c3c9e4', 'left', 'middle');
+  for (let x = 120 - off; x < 1020; x += tw) txt(names + '   ·   ', x, 668, 24, '#c3c9e4', 'left', 'middle');
   ctx.restore();
 }
 function liveWeather(dt) {
@@ -5825,9 +5824,9 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) a.t = S.T; const p = S.T - a.t; if (p > 5) { LV.alerts.shift(); return; }
-  const k = eBack(clamp(p / .35, 0, 1)), al = clamp((5 - p) / .3, 0, 1);
-  ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 800); ctx.scale(k, k);
+  if (a.t === null) { if (S.T < a.after) return; a.t = S.T; } const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
+  ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 860); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
   otxt(a.title, 0, -28, fitSize(a.title, 64, 880), a.col, 9);
   txt(a.sub, 0, 48, fitSize(a.sub, 36, 880), '#ffffff', 'center', 'middle');
@@ -5857,23 +5856,100 @@ function liveBennyCam() {
     lines.forEach((l, i) => txt(l, 630, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
   }
 }
-window.__dbg = () => ({ talk: LV.talk, tu: LV.talkUntil, T: S.T, cam: { ...cam }, sel: selected && selected.name, cur: LV.cur && LV.cur.name, scr: selected && uvS(selected.i, selected.j), VW, VH, FX, FY });
+window.__dbg = () => ({ al: LV.alerts.map(a => [a.title, a.t, a.after]), job: LV.job && LV.job.name, q: LV.q.length, talk: LV.talk, tu: LV.talkUntil, T: S.T, cam: { ...cam }, sel: selected && selected.name, cur: LV.cur && LV.cur.name, scr: selected && uvS(selected.i, selected.j), VW, VH, FX, FY });
+
+/* ---- automatic: queue, build animation, goal bar, TikTok LIVE events ---- */
+const MILESTONES = [[500, '🌳 Park'], [1000, '🏛️ Town hall'], [2500, '🛍️ First shops'], [5000, '🚗 Marketplace + cars'], [10000, '🎢 Theme park land'], [25000, '🏟️ Stadium'], [50000, '🏙️ Downtown']];
+function liveEnqueue(name, kind) {
+  name = String(name || '').replace(/^@+/, '').trim(); if (!name) return;
+  if (LV.q.some(j => norm(j.name) === norm(name) && j.kind === kind) || (LV.job && norm(LV.job.name) === norm(name) && LV.job.kind === kind)) return;
+  if (kind === 'build' && BY_NAME.get(norm(name)) && !LV.q.length && !LV.job) kind = 'find';
+  LV.q.push({ name, kind });
+}
+function liveJobs() {
+  const busy = LV.job && S.T - LV.job.t < (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2);
+  if (busy || !LV.q.length) { if (LV.job && !busy) LV.job = null; return; }
+  const j = LV.q.shift(); j.t = S.T; LV.job = j;
+  if (j.kind === 'build') {
+    const { h, isNew } = liveAddHouse(j.name);
+    liveFocus(h, 6); j.h = h;
+    if (isNew) { setTimeout(() => liveBeep('pop'), 1100); liveAlert('🏠 @' + h.name + ' moved in!', 'House #' + (h.idx + 1).toLocaleString('en-US') + ' · +10¢ for Benny 💰', '#46e08a', 1.2); setTimeout(() => liveFx('confetti', .5), 1300); }
+    else liveAlert('🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US'), '#46e08a');
+    liveCheckMilestone();
+  } else {
+    const h = liveFindHouse(j.name);
+    if (h) { liveFocus(h, 6); j.h = h; liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
+    else { LV.job = null; liveAlert('🔍 @' + j.name + ' not found yet', 'Follow = your house gets built 🏠', '#ff6b8b'); }
+  }
+}
+function liveCheckMilestone() {
+  const n = HOUSES.length, m = MILESTONES.find(x => x[0] === n);
+  if (m && !LV.msShown[m[0]]) { LV.msShown[m[0]] = 1; setTimeout(() => { liveFx('fireworks', 2); liveAlert('🎉 ' + m[0].toLocaleString('en-US') + ' NEIGHBORS!', m[1] + ' gets built! 🔨', '#ffd23f'); }, 2500); }
+}
+function liveBuildFx() {
+  const h = LV.job && LV.job.kind === 'build' && LV.job.h; if (!h || !h.bt) return;
+  const p = S.T - h.bt + 1.2; if (p < 0 || p > 3) return;
+  const [sx, sy] = uvS(h.i, h.j), z = cam.z;
+  if (p < 1.3) { const hb = Math.abs(Math.sin(p * 14)); ctx.save(); ctx.translate(sx + 60 * z, sy - 90 * z - hb * 30 * z); ctx.rotate(-.6 + hb * .9); emoji(ctx, '🔨', 0, 0, 70 * z); ctx.restore(); }
+  if (p > 1.0 && p < 2.4) { const q = (p - 1) / 1.4; ctx.globalAlpha = 1 - q; for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; ellipse(ctx, sx + Math.cos(a) * (40 + q * 90) * z, sy + Math.sin(a) * (16 + q * 30) * z, (18 + q * 20) * z, (10 + q * 10) * z, '#d9c9a0'); } ctx.globalAlpha = 1; }
+}
+function liveGoal() {
+  const n = HOUSES.length, m = MILESTONES.find(x => x[0] > n) || [Math.ceil((n + 1) / 10000) * 10000, '🏙️ Something big'];
+  const prev = [...MILESTONES].reverse().find(x => x[0] <= n), p0 = prev ? prev[0] : 0, f = clamp((n - p0) / (m[0] - p0), 0, 1);
+  panel(60, 552, 960, 74, 37, 'rgba(10,12,26,.88)', 'rgba(255,210,63,.55)', 3);
+  panel(74, 566, 932, 46, 23, 'rgba(255,255,255,.08)');
+  ctx.save(); rrect(ctx, 74, 566, 932, 46, 23); ctx.clip(); const g = ctx.createLinearGradient(74, 0, 1006, 0); g.addColorStop(0, '#ff8a3d'); g.addColorStop(1, '#ffd23f'); ctx.fillStyle = g; ctx.fillRect(74, 566, 932 * f, 46);
+  ctx.globalAlpha = .25; for (let x = 74 - 46 + (S.T * 40) % 46; x < 74 + 932 * f; x += 46) poly(ctx, [[x, 612], [x + 23, 566], [x + 46, 566], [x + 23, 612]], '#fff'); ctx.restore();
+  const s = n.toLocaleString('en-US') + ' / ' + m[0].toLocaleString('en-US') + ' → ' + m[1];
+  otxt(s, 540, 590, fitSize(s, 30, 900), '#ffffff', 6, '#1b1728');
+}
+function liveQueueUI() {
+  const list = LV.q.filter(j => j.kind === 'build'); if (!list.length) return;
+  const shown = list.slice(0, 4).map(j => '@' + trunc(j.name, 14)).join('  ·  ') + (list.length > 4 ? '  +' + (list.length - 4) : '');
+  const s = '🔨 Next: ' + shown, fs = fitSize(s, 28, 900); ctx.font = F(fs); const w = Math.min(980, ctx.measureText(s).width + 48);
+  panel(540 - w / 2, 708, w, 50, 25, 'rgba(70,224,138,.92)'); txt(s, 540, 734, fs, '#0b2a18', 'center', 'middle');
+}
+function liveStatus() {
+  if (!LV.key) return;
+  if (!LV.wsOk) { panel(760, 282, 104, 30, 15, 'rgba(255,90,90,.9)'); txt('offline', 812, 298, 18, '#fff', 'center', 'middle'); }
+}
+function liveConnect() {
+  const P = new URLSearchParams(location.search); LV.key = P.get('key'); LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
+  if (!LV.key) return;
+  let ws; try { ws = new WebSocket('wss://api.tik.tools?uniqueId=' + encodeURIComponent(LV.user) + '&apiKey=' + encodeURIComponent(LV.key)); } catch (e) { return setTimeout(liveConnect, 10000); }
+  LV.ws = ws;
+  ws.onopen = () => { LV.wsOk = true; LV.wsTry = 0; };
+  ws.onclose = () => { LV.wsOk = false; LV.wsTry++; setTimeout(liveConnect, Math.min(30000, 3000 * LV.wsTry)); };
+  ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  ws.onmessage = ev => { let e; try { e = JSON.parse(ev.data); } catch (er) { return; } liveTikTok(e.event || e.type, e.data || e); };
+}
+function liveTikTok(type, d) {
+  const u = d && d.user ? (d.user.uniqueId || d.user.unique_id) : (d && (d.uniqueId || d.user_unique_id));
+  if (type === 'roomInfo' || type === 'connected') LV.wsOk = true;
+  if ((type === 'follow' || (type === 'social' && /follow/i.test(d.displayType || d.label || ''))) && u) liveEnqueue(u, 'build');
+  if (type === 'gift' && u) {
+    if (d.giftType === 1 && !d.repeatEnd) return;
+    const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
+    liveOnMsg({ type: 'gift', name: u, fx });
+  }
+  if (type === 'chat' && u && /^\s*!?(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
+}
 function startLive() {
   document.querySelectorAll('body > *').forEach(e => { if (e.id !== 'c' && e.tagName !== 'SCRIPT') e.style.display = 'none'; });
   const st = document.createElement('style'); st.textContent = '#c{width:auto!important;height:100vh!important;aspect-ratio:9/16;left:50%!important;transform:translateX(-50%);inset:auto}html,body{background:#000}'; document.head.appendChild(st);
   DPR = 1; VW = 1080; VH = 1920; cv.width = 1080; cv.height = 1920; FX = 540; FY = 1150;
   [BX_L, BY_L] = isoW(3.5, 3.65);
-  liveListen(liveOnMsg);
+  liveListen(liveOnMsg); liveConnect();
   addEventListener('keydown', e => { const m = { '1': 'confetti', '2': 'hearts', '3': 'fireworks', '4': 'coins', '5': 'dance', '6': 'snow', '7': 'rain', '8': 'night', '9': 'tour' }[e.key]; if (m) liveFx(m); });
   addEventListener('pointerdown', () => liveAudioCtx());
   target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; cam.x = target.x; cam.y = target.y; cam.z = .5; LV.holdUntil = 6;
   let lastT = 0;
   const loop = now => {
-    const dt = lastT ? Math.min(.1, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;
+    const dt = lastT ? Math.min(.25, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveWeather(dt); liveParts(dt); liveHUD(); liveBanner(); liveAlerts(); liveBennyCam();
+    liveJobs(); liveBuildFx(); liveWeather(dt); liveParts(dt); liveHUD(); liveGoal(); liveQueueUI(); liveBanner(); liveAlerts(); liveBennyCam(); liveStatus();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
