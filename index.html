@@ -384,7 +384,8 @@ function drawBenny(c, x, y, s, o) {
   if (mood === 'sad') { line(c, -40, hy + 10, -13, hy + 1, '#5a3a2c', 6); line(c, 13, hy + 1, 40, hy + 10, '#5a3a2c', 6); }
   else { line(c, -40, hy + 3, -13, hy - 1, '#5a3a2c', 6); line(c, 13, hy - 1, 40, hy + 3, '#5a3a2c', 6); }
   c.beginPath(); c.arc(0, hy + 34, 7, 0, Math.PI); c.strokeStyle = '#c98d6b'; c.lineWidth = 3.5; c.stroke();
-  if (mood === 'happy') {
+  if (o.talk > .08) { ellipse(c, 0, hy + 52, 14, 4 + 15 * Math.min(1, o.talk), '#7a2b2b', OUT, 3.5); ellipse(c, 0, hy + 56 + 8 * Math.min(1, o.talk), 7, 3, '#e46b6b'); }
+  else if (mood === 'happy') {
     c.beginPath(); c.moveTo(-20, hy + 46); c.quadraticCurveTo(0, hy + 78, 20, hy + 46); c.closePath(); c.fillStyle = '#7a2b2b'; c.fill(); c.strokeStyle = OUT; c.lineWidth = 3.5; c.stroke();
     ellipse(c, 0, hy + 56, 8, 4, '#e46b6b');
   } else if (mood === 'hope') { c.beginPath(); c.arc(0, hy + 42, 12, .15 * Math.PI, .85 * Math.PI); c.strokeStyle = '#7a3b35'; c.lineWidth = 4.5; c.stroke(); }
@@ -5326,10 +5327,10 @@ function draw() {
   drawPlazaGround(); drawParkGround(); drawHallGround(); drawSiteGround();
   const objs = [], lo = z < .6, maxD = (A1 - CEN) * 1.45;
   for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), k = z / sp_.sc; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * k, sy - sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.globalAlpha = 1; } }); }
-  for (let idx = N; idx < LOTS.length && LOTS[idx].d <= maxD; idx++) {
+  for (let idx = HOUSES.length; idx < LOTS.length && LOTS[idx].d <= maxD; idx++) {
     const L = LOTS[idx]; if (L.i < A0 + .5 || L.i > A1 - .5 || L.j < A0 + .5 || L.j > A1 - .5) continue;
     const [sx, sy] = uvS(L.i, L.j); if (sx < -80 || sx > VW + 80 || sy < -60 || sy > VH + 100) continue;
-    if (idx < N + 40) objs.push({ d: L.i + L.j, f: () => drawSignPost(sx, sy, z) });
+    if (idx < HOUSES.length + 40) objs.push({ d: L.i + L.j, f: () => drawSignPost(sx, sy, z) });
     if (L.h % 4 === 0) { const [tx, ty] = uvS(L.i + .36, L.j - .36); objs.push({ d: L.i + L.j - .1, f: () => drawTree(ctx, tx, ty, z * .85, (L.h >> 5) & 1) }); }
   }
   for (const [u, v] of [[3, .9], [.9, 3], [1.6, 1.6], [4.6, 1.6], [1.6, 4.6]]) objs.push({ d: u + v, f: () => drawLamp(u, v) });
@@ -5628,10 +5629,260 @@ function open3D(h) {
 }
 function close3D() { $('v3d').classList.remove('on'); }
 
+/* ================= LIVE MODE (index.html?live = scene for OBS, index.html?control = control panel) ================= */
+const LIVE_CLIPS = [
+  ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!"],
+  ['gift', '🎁 Thanks gift', "Thank you so much for the gift!"],
+  ['fire', '🎆 Fireworks', "WOW! Fireworks for everyone!"],
+  ['name', '🔍 Type your name', "Who's new here? Type your name, and I'll find your house!"],
+  ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
+  ['there', '📍 There it is', "Your house is right... there! Nice one, neighbor!"],
+  ['buy', '🛒 What to buy', "Okay chat... what should I buy next?"],
+  ['cold', '🥶 Cold', "Brrr... it's getting cold out here."],
+  ['nervous', '😅 Nervous', "Hehe... I'm a little nervous. First time live!"],
+  ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
+  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!"],
+  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
+  ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
+  ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
+  ['laugh', '😂 Laugh', "Hahaha!"],
+];
+const LIVE_FX = [['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
+const CH_NAME = 'benny-live';
+function liveSend(msg) {
+  msg.mid = Date.now() + Math.random();
+  try { new BroadcastChannel(CH_NAME).postMessage(msg); } catch (e) {}
+  try { localStorage.setItem(CH_NAME, JSON.stringify(msg)); } catch (e) {}
+}
+function liveListen(fn) {
+  const seen = new Set(); const once = m => { if (!m || seen.has(m.mid)) return; seen.add(m.mid); fn(m); };
+  try { new BroadcastChannel(CH_NAME).onmessage = e => once(e.data); } catch (e) {}
+  addEventListener('storage', e => { if (e.key === CH_NAME && e.newValue) try { once(JSON.parse(e.newValue)); } catch (er) {} });
+}
+const CONTROL = /control/i.test(location.search + location.hash);
+
+/* ---------- control panel (OBS custom dock or a second browser tab) ---------- */
+function startControl() {
+  document.body.innerHTML = '';
+  const st = document.createElement('style');
+  st.textContent = `html,body{position:static;overflow:auto;touch-action:auto;height:auto;background:#0e1022}
+  .cp{padding:12px;font:600 14px Poppins,system-ui,sans-serif;color:#fff;max-width:520px}
+  .cp h2{font-size:15px;margin:14px 0 6px;color:#ffd23f}.cp .row{display:flex;gap:6px;flex-wrap:wrap}
+  .cp button{font:600 13px Poppins,system-ui,sans-serif;background:#23284a;color:#fff;border:1px solid #3a4170;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .cp button:hover{background:#2f3666}.cp button.big{background:#ff2e63;border-color:#ff2e63}
+  .cp input{flex:1;min-width:160px;font:600 15px Poppins,system-ui,sans-serif;padding:9px 10px;border-radius:10px;border:1px solid #3a4170;background:#15182f;color:#fff}
+  .cp .log{font-size:12px;color:#9aa3c7;margin-top:10px;white-space:pre-wrap}`;
+  document.head.appendChild(st);
+  const cp = document.createElement('div'); cp.className = 'cp'; document.body.appendChild(cp);
+  const h = (t) => { const e = document.createElement('h2'); e.textContent = t; cp.appendChild(e); };
+  const row = () => { const r = document.createElement('div'); r.className = 'row'; cp.appendChild(r); return r; };
+  const btn = (r, label, fn, cls) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; r.appendChild(b); return b; };
+  const log = document.createElement('div'); log.className = 'log';
+  const note = s => { log.textContent = new Date().toLocaleTimeString() + '  ' + s + '\n' + log.textContent.slice(0, 600); };
+  h('🏠 New follower moves in');
+  let r = row(); const inp = document.createElement('input'); inp.placeholder = '@name'; r.appendChild(inp);
+  const welcome = () => { const n = inp.value.trim().replace(/^@+/, ''); if (!n) return; liveSend({ type: 'welcome', name: n }); note('welcome @' + n); inp.value = ''; inp.focus(); };
+  btn(r, 'Move in', welcome, 'big');
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') welcome(); });
+  h('📍 Find a house (viewer asks “where is mine?”)');
+  r = row(); const inp2 = document.createElement('input'); inp2.placeholder = '@name or display name'; r.appendChild(inp2);
+  const find = () => { const n = inp2.value.trim(); if (!n) return; liveSend({ type: 'find', name: n }); note('find ' + n); inp2.value = ''; };
+  btn(r, 'Show', find, 'big'); inp2.addEventListener('keydown', e => { if (e.key === 'Enter') find(); });
+  h('🎁 Gift thank-you (shows name + effect)');
+  r = row(); const inp3 = document.createElement('input'); inp3.placeholder = '@name who sent the gift'; r.appendChild(inp3);
+  [['🌹 small', 'confetti'], ['💖 medium', 'hearts'], ['🎆 big', 'fireworks']].forEach(([l, fx]) => btn(r, l, () => { liveSend({ type: 'gift', name: inp3.value.trim().replace(/^@+/, ''), fx }); note('gift ' + fx + ' ' + inp3.value); inp3.value = ''; }));
+  h('✨ Effects');
+  r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
+  h('🗣️ Benny says');
+  r = row(); LIVE_CLIPS.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }));
+  h('💬 Big text on screen');
+  r = row(); const inp4 = document.createElement('input'); inp4.placeholder = 'e.g. 1,000 likes = fireworks 🎆'; r.appendChild(inp4);
+  btn(r, 'Show', () => { liveSend({ type: 'banner', text: inp4.value.trim() }); note('banner'); inp4.value = ''; });
+  btn(r, 'Hide', () => liveSend({ type: 'banner', text: '' }));
+  h('📋 Live move-ins');
+  r = row(); btn(r, 'Copy list', () => { let a = []; try { a = JSON.parse(localStorage.getItem('benny-live-joins') || '[]'); } catch (e) {} const s = a.join('\n'); navigator.clipboard && navigator.clipboard.writeText(s); note(a.length + ' names copied'); });
+  cp.appendChild(log); note('Control panel ready. Scene must be open (…?live).');
+}
+
+/* ---------- the LIVE scene ---------- */
+const LV = { tour: true, snow: false, rain: false, night: 0, nightT: 0, stopT: 0, holdUntil: 0, cur: null, banner: '', bannerT: 0, alerts: [], parts: [], dance: -9, talk: null, talkT: 0, audio: {}, analyser: null, level: 0, joins: [], tick: 0 };
+function liveAudioCtx() { if (!LV.ac) { try { LV.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (LV.ac && LV.ac.state === 'suspended') LV.ac.resume(); return LV.ac; }
+function liveBeep(kind) {
+  const ac = liveAudioCtx(); if (!ac) return; const t0 = ac.currentTime;
+  const notes = kind === 'pop' ? [[520, 0, .12]] : kind === 'coin' ? [[1319, 0, .07], [1976, .07, .2]] : [[784, 0, .15], [988, .1, .15], [1319, .2, .35]];
+  for (const [f, d, len] of notes) { const o = ac.createOscillator(), g = ac.createGain(); o.type = kind === 'coin' ? 'square' : 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.18, t0 + d + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len); o.connect(g).connect(ac.destination); o.start(t0 + d); o.stop(t0 + d + len + .05); }
+}
+function livePlay(id) {
+  const c = LIVE_CLIPS.find(x => x[0] === id); if (!c) return;
+  let a = LV.audio[id]; if (!a) { a = LV.audio[id] = new Audio('live/' + id + '.mp3'); a.crossOrigin = 'anonymous'; }
+  for (const k in LV.audio) if (k !== id) { LV.audio[k].pause(); }
+  const ac = liveAudioCtx();
+  if (ac && !a._src) { try { a._src = ac.createMediaElementSource(a); const an = ac.createAnalyser(); an.fftSize = 512; a._src.connect(an); an.connect(ac.destination); a._an = an; } catch (e) {} }
+  LV.analyser = a._an || null; a.currentTime = 0; a.play().catch(() => {});
+  LV.talk = c[2]; LV.talkT = S.T; LV.talkA = a; LV.talkUntil = S.T + .6 + c[2].split(' ').length * .32;
+  a.onloadedmetadata = () => { if (isFinite(a.duration)) LV.talkUntil = LV.talkT + a.duration + .3; }; if (isFinite(a.duration) && a.duration) LV.talkUntil = S.T + a.duration + .3;
+}
+function liveLevel() {
+  if (!LV.talkA || S.T > LV.talkUntil) return 0;
+  if (!LV.analyser || LV.talkA.paused) return .5 + .5 * Math.sin(S.T * 22);
+  const d = new Uint8Array(LV.analyser.fftSize); LV.analyser.getByteTimeDomainData(d); let s = 0; for (const v of d) s += (v - 128) * (v - 128);
+  return clamp(Math.sqrt(s / d.length) / 28, 0, 1);
+}
+function liveFindHouse(q) {
+  q = norm(q); if (!q) return null; let h = BY_NAME.get(q); if (h) return h;
+  const qf = fold(q), qc = conf(q);
+  h = HOUSES.find(x => (qf && (fold(x.nick) === qf || fold(x.al) === qf))) || HOUSES.find(x => conf(x.name) === qc);
+  if (!h && qc.length >= 5) h = HOUSES.find(x => ed1(conf(x.name), qc));
+  if (!h && qc.length >= 3) h = HOUSES.find(x => conf(x.name).startsWith(qc));
+  return h || null;
+}
+function liveFocus(h, hold) {
+  LV.cur = h; selected = h; selT = S.T; const [wx, wy] = isoW(h.i, h.j);
+  target.z = 2.1; target.x = wx; target.y = wy - 30; LV.holdUntil = S.T + (hold || 9); LV.stopT = S.T;
+}
+function liveAddHouse(name) {
+  let h = liveFindHouse(name); if (h && norm(h.name) === norm(name)) return { h, isNew: false };
+  const k = HOUSES.length, L = LOTS[k];
+  h = { nick: '', al: '', name, day: TOWN.day, idx: k, lot: k, i: L.i, j: L.j, v: variantForLot(name, k), og: false, stand: null, live: S.T };
+  HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);
+  LV.joins.push(name); try { const a = JSON.parse(localStorage.getItem('benny-live-joins') || '[]'); a.push(name); localStorage.setItem('benny-live-joins', JSON.stringify(a)); } catch (e) {}
+  return { h, isNew: true };
+}
+function liveAlert(title, sub, col) { LV.alerts.push({ title, sub, col: col || '#46e08a', t: null }); }
+function liveFx(kind, n) {
+  const W_ = 1080, cnt = n || 1;
+  if (kind === 'confetti') for (let k = 0; k < 160 * cnt; k++) LV.parts.push({ k: 'c', x: Math.random() * W_, y: -40 - Math.random() * 600, vx: (Math.random() - .5) * 120, vy: 300 + Math.random() * 300, r: Math.random() * 6, col: CONF[k % CONF.length], life: 6 });
+  if (kind === 'hearts') for (let k = 0; k < 60 * cnt; k++) LV.parts.push({ k: 'h', x: 200 + Math.random() * 680, y: 1950 + Math.random() * 400, vx: (Math.random() - .5) * 60, vy: -380 - Math.random() * 300, r: 0, e: ['💖', '❤️', '💕', '🩷'][k % 4], s: 40 + Math.random() * 40, life: 6 });
+  if (kind === 'coins') for (let k = 0; k < 70 * cnt; k++) LV.parts.push({ k: 'o', x: Math.random() * W_, y: -60 - Math.random() * 900, vx: 0, vy: 500 + Math.random() * 300, r: Math.random() * 6, life: 5 });
+  if (kind === 'fireworks') for (let b = 0; b < 7 * cnt; b++) { const x = 150 + Math.random() * 780, y = 600 + Math.random() * 500, col = CONF[b % CONF.length], d = b * .35; for (let k = 0; k < 70; k++) { const a = k / 70 * Math.PI * 2, sp = 250 + Math.random() * 250; LV.parts.push({ k: 'f', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, col, delay: d, life: 1.8 + d }); } }
+  if (kind === 'dance') LV.dance = S.T;
+  if (kind === 'snow') LV.snow = !LV.snow;
+  if (kind === 'rain') LV.rain = !LV.rain;
+  if (kind === 'night') LV.night = LV.night ? 0 : 1;
+  if (kind === 'tour') LV.tour = !LV.tour;
+  if (kind === 'fireworks' || kind === 'confetti' || kind === 'hearts') liveBeep('chime'); if (kind === 'coins') for (let k = 0; k < 6; k++) setTimeout(() => liveBeep('coin'), k * 140);
+}
+function liveOnMsg(m) {
+  liveAudioCtx();
+  if (m.type === 'welcome' && m.name) {
+    const { h, isNew } = liveAddHouse(m.name.replace(/^@+/, '').trim());
+    liveFocus(h, 10); liveBeep('pop');
+    liveAlert(isNew ? '🏠 @' + h.name + ' moved in!' : '🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US') + (isNew ? ' · built just now 🔨' : ''), '#46e08a');
+    if (isNew) liveFx('confetti');
+  }
+  if (m.type === 'find' && m.name) {
+    const h = liveFindHouse(m.name);
+    if (h) { liveFocus(h, 10); liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
+    else liveAlert('🔍 Not found yet', '“' + m.name + '” · follow = your house gets built 🏠', '#ff6b8b');
+  }
+  if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
+  if (m.type === 'fx') liveFx(m.fx);
+  if (m.type === 'clip') livePlay(m.clip);
+  if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
+}
+function liveTourNext() {
+  LV.tick++;
+  if (LV.tick % 6 === 0) { selected = null; LV.cur = null; target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; LV.holdUntil = S.T + 8; return; }
+  if (LV.tick % 9 === 4) { selected = null; LV.cur = null; target.x = 0; target.y = -600; target.z = .16; LV.holdUntil = S.T + 7; return; }
+  const pool = Math.random() < .5 ? HOUSES.slice(-400) : HOUSES;
+  liveFocus(pool[Math.floor(Math.random() * pool.length)], 7.5);
+}
+let BX_L = 0, BY_L = 0;
+function liveHUD() {
+  panel(200, 262, 680, 206, 44, 'rgba(10,12,26,.9)', 'rgba(70,224,138,.7)', 4);
+  txt("BENNY'S BANK", 540, 302, 26, '#9aa3c7', 'center', 'middle');
+  otxt('€' + (TOWN.bankCents / 100).toFixed(2), 540, 376, 124, '#46e08a', 12, '#06070f');
+  txt('DAY ' + TOWN.day + '  ·  ' + HOUSES.length.toLocaleString('en-US') + ' tenants', 540, 440, 26, '#c3c9e4', 'center', 'middle');
+  ctx.font = F(26); const s = 'Follow = you move in 🏠', w = ctx.measureText(s).width + 40;
+  panel(540 - w / 2, 486, w, 46, 23, 'rgba(255,46,99,.92)', 'rgba(255,255,255,.35)', 2); txt(s, 540, 510, 26, '#fff', 'center', 'middle');
+  // live pill
+  const a = .6 + .4 * Math.sin(S.T * 4); panel(222, 282, 92, 34, 17, '#ff2e63'); ctx.globalAlpha = a; circle(ctx, 240, 299, 6, '#fff'); ctx.globalAlpha = 1; txt('LIVE', 280, 300, 20, '#fff', 'center', 'middle');
+  // ticker of newest neighbours
+  const names = HOUSES.slice(-30).reverse().map(h => '@' + h.name).join('   ·   ');
+  panel(60, 552, 960, 52, 26, 'rgba(10,12,26,.75)'); ctx.save(); rrect(ctx, 60, 552, 960, 52, 26); ctx.clip();
+  txt('🆕', 92, 580, 26, '#fff', 'center', 'middle');
+  ctx.font = F(24); const tw = ctx.measureText(names + '   ·   ').width, off = (S.T * 70) % tw;
+  for (let x = 120 - off; x < 1020; x += tw) txt(names + '   ·   ', x, 580, 24, '#c3c9e4', 'left', 'middle');
+  ctx.restore();
+}
+function liveWeather(dt) {
+  if (LV.night !== LV.nightT) LV.nightT += Math.sign(LV.night - LV.nightT) * Math.min(Math.abs(LV.night - LV.nightT), dt * .7);
+  if (LV.nightT > 0) { ctx.fillStyle = `rgba(6,8,30,${.55 * LV.nightT})`; ctx.fillRect(0, 0, 1080, 1920); }
+  if (LV.snow) { ctx.fillStyle = 'rgba(255,255,255,.9)'; for (let k = 0; k < 160; k++) { const x = (k * 97.3 + Math.sin(S.T * .7 + k) * 30) % 1080, y = (k * 211.7 + S.T * (60 + k % 5 * 18)) % 1920; circle(ctx, x, y, 2 + k % 3, '#fff'); } }
+  if (LV.rain) { ctx.strokeStyle = 'rgba(160,190,255,.5)'; ctx.lineWidth = 2; ctx.beginPath(); for (let k = 0; k < 140; k++) { const x = (k * 131.9 + S.T * 120) % 1080, y = (k * 287.3 + S.T * 900) % 1920; ctx.moveTo(x, y); ctx.lineTo(x - 8, y + 30); } ctx.stroke(); }
+}
+function liveParts(dt) {
+  LV.parts = LV.parts.filter(p => (p.life -= dt) > 0);
+  for (const p of LV.parts) {
+    if (p.delay > 0) { p.delay -= dt; continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.k === 'f') { p.vy += 260 * dt; p.vx *= .985; ctx.globalAlpha = clamp(p.life / 1.2, 0, 1); circle(ctx, p.x, p.y, 4, p.col); }
+    else if (p.k === 'c') { p.r += dt * 6; ctx.globalAlpha = clamp(p.life, 0, 1); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-9, -5, 18, 10); ctx.restore(); }
+    else if (p.k === 'h') { ctx.globalAlpha = clamp(p.life, 0, 1); emoji(ctx, p.e, p.x, p.y, p.s); }
+    else if (p.k === 'o') { ctx.globalAlpha = clamp(p.life, 0, 1); circle(ctx, p.x, p.y, 26, '#f5b82e', '#8a5a12', 3); circle(ctx, p.x, p.y, 17, '#ffd96b'); }
+  }
+  ctx.globalAlpha = 1;
+}
+function liveAlerts() {
+  const a = LV.alerts[0]; if (!a) return;
+  if (a.t === null) a.t = S.T; const p = S.T - a.t; if (p > 5) { LV.alerts.shift(); return; }
+  const k = eBack(clamp(p / .35, 0, 1)), al = clamp((5 - p) / .3, 0, 1);
+  ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 800); ctx.scale(k, k);
+  panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
+  otxt(a.title, 0, -28, fitSize(a.title, 64, 880), a.col, 9);
+  txt(a.sub, 0, 48, fitSize(a.sub, 36, 880), '#ffffff', 'center', 'middle');
+  ctx.restore();
+}
+function liveBanner() {
+  if (!LV.banner) return; const k = eBack(clamp((S.T - LV.bannerT) / .35, 0, 1));
+  ctx.save(); ctx.translate(540, 655); ctx.scale(k, k); const fs = fitSize(LV.banner, 48, 900); ctx.font = F(fs); const w = Math.min(980, ctx.measureText(LV.banner).width + 60);
+  panel(-w / 2, -36, w, 72, 36, '#ffd23f'); txt(LV.banner, 0, 2, fs, '#1b1728', 'center', 'middle'); ctx.restore();
+}
+function liveBennyCam() {
+  const talking = LV.talkA && S.T < LV.talkUntil, dancing = S.T - LV.dance < 6;
+  if (!talking && !dancing) return;
+  const lvl = liveLevel(); LV.level += (lvl - LV.level) * .5;
+  const x = 880, y = 1010, bob = dancing ? Math.sin((S.T - LV.dance) * 10) * 18 : 0;
+  circle(ctx, x, y, 150, 'rgba(10,12,26,.92)', '#ff6b8b', 6);
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, 144, 0, Math.PI * 2); ctx.clip();
+  drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
+  ctx.restore();
+  if (talking && LV.talk) {
+    const s = LV.talk, fs = 38; ctx.font = F(fs);
+    const words = s.split(' '), lines = []; let cur = '';
+    for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 640 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
+    const h = lines.length * fs * 1.25 + 34, y0 = 1180;
+    panel(270, y0, 720, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
+    poly(ctx, [[830, y0], [870, y0], [880, 1150]], 'rgba(255,255,255,.96)');
+    lines.forEach((l, i) => txt(l, 630, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
+  }
+}
+window.__dbg = () => ({ talk: LV.talk, tu: LV.talkUntil, T: S.T, cam: { ...cam }, sel: selected && selected.name, cur: LV.cur && LV.cur.name, scr: selected && uvS(selected.i, selected.j), VW, VH, FX, FY });
+function startLive() {
+  document.querySelectorAll('body > *').forEach(e => { if (e.id !== 'c' && e.tagName !== 'SCRIPT') e.style.display = 'none'; });
+  const st = document.createElement('style'); st.textContent = '#c{width:auto!important;height:100vh!important;aspect-ratio:9/16;left:50%!important;transform:translateX(-50%);inset:auto}html,body{background:#000}'; document.head.appendChild(st);
+  DPR = 1; VW = 1080; VH = 1920; cv.width = 1080; cv.height = 1920; FX = 540; FY = 1150;
+  [BX_L, BY_L] = isoW(3.5, 3.65);
+  liveListen(liveOnMsg);
+  addEventListener('keydown', e => { const m = { '1': 'confetti', '2': 'hearts', '3': 'fireworks', '4': 'coins', '5': 'dance', '6': 'snow', '7': 'rain', '8': 'night', '9': 'tour' }[e.key]; if (m) liveFx(m); });
+  addEventListener('pointerdown', () => liveAudioCtx());
+  target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; cam.x = target.x; cam.y = target.y; cam.z = .5; LV.holdUntil = 6;
+  let lastT = 0;
+  const loop = now => {
+    const dt = lastT ? Math.min(.1, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;
+    if (LV.tour && S.T > LV.holdUntil) liveTourNext();
+    const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
+    draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
+    liveWeather(dt); liveParts(dt); liveHUD(); liveBanner(); liveAlerts(); liveBennyCam();
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
 window.SITE = { flyTo, search, HOUSES, open3D, target, isoW };
 function start() { resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
 
-const go = () => start();
+const go = () => CONTROL ? startControl() : LIVE ? startLive() : start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
 })();
 </script>
