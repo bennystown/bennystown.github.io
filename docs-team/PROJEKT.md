@@ -276,7 +276,15 @@ Pro Video ein Ordner, z. B. `/tmp/ep7`. Vorlagen liegen in `docs-team/video/`.
   `https://bennystown.github.io/?live&gh=<GITHUB_TOKEN>&key=<TIKTOOLS_KEY>`
   oder mit eigenem Listener: `&ws=ws://localhost:21213` statt `&key=`.
   - `gh` = Fine-grained GitHub-Token (nur Repo bennystown.github.io, Contents: Read and write). Er schreibt alle 45 s `live.json`.
-  - `key` = Tik.Tools-API-Key (wss://api.tik.tools). Das Gratis-Limit ist fraglich, deshalb baut Kieran mit einer anderen Claude-Instanz einen **eigenen lokalen Listener**. Übergabe: `Uebergabe_Live_Listener.md`. Event-Format: `{event:'follow'|'gift'|'chat', data:{user:{uniqueId,nickname}, giftName, diamondCount, repeatCount, repeatEnd, giftType, comment}}`.
+  - `key` = Tik.Tools-API-Key (wss://api.tik.tools). Nur noch Reserve, Standard ist jetzt der eigene Listener.
+- **Eigener Listener `live-listener/`** (fertig, 16.11.). Doku: `live-listener/README.md`.
+  - Start auf Kierans Mac: `cd live-listener && npm start` (Node ≥ 22.19). Statusseite: http://localhost:21214. WebSocket: `ws://localhost:21213`.
+  - Er liest anonym nur über den Benutzernamen, ohne Login und ohne Cookies, und sendet nie etwas. Solange Kieran nicht live ist, wartet er; bei Abbruch verbindet er neu.
+  - Standard-Bibliothek: `piratetok-live-js`, **ohne fremden Dienst**. Reserve: `tiktok-live-connector` über den Euler-Stream-Signaturdienst (gratis 1.500 Anfragen/Tag). Auf die Reserve wechselt er automatisch nach 3 Fehlern.
+  - Test mit fremdem LIVE: `npm run test-live -- <user>`. Demo ohne TikTok: `npm run mock`. Beim Test die Website **ohne `&gh=`** öffnen.
+  - Logs: `live-listener/logs/<user>/<datum>_<roomId>.jsonl` (nicht im Repo). Follower in Reihenfolge danach mit `npm run follows`.
+  - Event-Format: `{event:'follow'|'gift'|'chat'|'like'|'join'|'viewers'|'share'|'status'|'connected', data:{user:{uniqueId,nickname}, giftName, diamondCount, repeatCount, repeatEnd, giftType, comment, likeCount, totalLikeCount, viewerCount}}`. Doppelte Follows im selben LIVE werden nicht weitergeleitet.
+  - Website: `like` → kleine Herzen unten rechts (`liveFx('likes')`), kein Haus, kein Ton. `join`/`viewers`/`share`/`status` werden ignoriert.
 - **Steuerpult:** `https://bennystown.github.io/?control&v=N` als OBS-Custom-Dock. Es hat nur Test-Follows, Effekte (Konfetti, Herzen, Feuerwerk, Münzregen, Benny tanzt, Schnee, Regen, Nacht, Tour) und 18 Benny-Sprüche (`live/*.mp3`, darunter `ms5/ms10/ms15`). Kommunikation über BroadcastChannel + localStorage. Bei Cache-Problemen `&v=` hochzählen.
 - **Was die Live-Szene macht:**
   - **Follow** → Warteschlange („🔨 Next: …“). Pro Follower kommt eine **3D-Bauszene aus Straßensicht** (three.js, `streetStart`): Haus baut sich auf, @Name am Briefkasten, +10¢.
@@ -314,7 +322,7 @@ Siehe `NAECHSTE_VIDEOS.md` (4 Skript-Entwürfe).
 1. **Campervan realistischer zeichnen.** Kieran will ihn wie einen echten Alkoven-Wohnmobil (Fiat-Ducato-Stil): weiß, Fahrerkabine vorne mit Windschutzscheibe, Alkoven über der Kabine, Fenster, grüne/blaue Swoosh-Streifen, Räder. Gilt für `drawVan` (Website + Videos). Danach ggf. das Abendvideo Folge 7 neu rendern (Kieran: „everything is perfect except the campervan“).
 2. **Bauvideo Di 17.11.**: neue Follower, **erste Treue-Blumen** (34 Tag-1-Bewohner), Blumen auch in 2D einbauen.
 3. Palette `bluepurple` für @haste50fps.
-4. LIVE-Start vorbereiten (Stream-Key, sobald freigeschaltet), eigener Listener (andere Instanz).
+4. LIVE-Start vorbereiten (Stream-Key, sobald freigeschaltet). Eigener Listener ist fertig (`live-listener/`); auf Kierans Mac einmal `npm install` + Probelauf mit fremdem LIVE.
 5. Hauswunsch-Verlosung am Rent Day (So 22.11.) vorbereiten (Glücksrad-Animation).
 
 ---
@@ -334,3 +342,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Follower seit dem letzten Update ausgewertet (Aufnahme 22:50 + exakte Web-Namen): **168 neue** → `data/pending_day4.json`. Noch **nicht** in `index.html` eingetragen (kommt morgens mit Tag 4). Darunter **@haste50fps** → Palette `bluepurple` jetzt nötig.
   - Chrome-Poller für neue Follower gestartet (Abschnitt 6), liest nur die Follower-Liste, nicht die Benachrichtigungen.
   - **Folge 7 (Campervan):** Instanz B hat im fertigen Video nur den Van durch ein Alkoven-Wohnmobil ersetzt (Datei `Benny_Folge6_Campervan_neu.mp4` an Kieran geschickt). `drawVan` im Code ist noch alt; neu zeichnen bleibt Aufgabe von Instanz A für Website und künftige Videos.
+- **16.11.2026 23:15** – Instanz C (Listener-Chat):
+  - Neuer Ordner **`live-listener/`**: lokaler, anonymer TikTok-LIVE-Listener als Ersatz für Tik.Tools (WebSocket :21213, Statusseite :21214, JSONL-Log pro LIVE, Auto-Reconnect, Warten auf LIVE, Test- und Demo-Modus, `npm run follows`). Details in Abschnitt 7 und `live-listener/README.md`.
+  - Getestet mit fremden LIVEs (@lofigirl, @bossmetri, @adryanacotisel): Follows, Likes, Geschenke inkl. Combo-Ende, Chat, Beitritte und Zuschauer kommen an. Mit `index.html?live&ws=…` hat die Website 19 echte Live-Follows als 19 Häuser in richtiger Reihenfolge gebaut.
+  - `index.html`: Event `like` ergänzt (kleiner Herz-Effekt, kein Haus).
+  - Hinweis: Mit `tiktok-live-connector` meldete TikTok aus der Cloud „DEVICE_BLOCKED“ (Rechenzentrums-IP). Auf Kierans Mac nicht geprüft. Der Standard `piratetok` lief in der Cloud ohne Probleme.

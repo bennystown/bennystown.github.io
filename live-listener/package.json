@@ -1,0 +1,23 @@
+{
+  "name": "benny-live-listener",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lokaler, anonymer TikTok-LIVE-Listener für Benny's Town (nur lesen, kein Login).",
+  "type": "module",
+  "main": "listener.js",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "start": "node listener.js",
+    "test-live": "node listener.js --user",
+    "mock": "node listener.js --mock",
+    "follows": "node follows.js"
+  },
+  "dependencies": {
+    "https-proxy-agent": "7.0.6",
+    "piratetok-live-js": "0.3.0",
+    "tiktok-live-connector": "2.5.0",
+    "ws": "8.18.3"
+  }
+}

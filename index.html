@@ -5911,6 +5911,7 @@ function liveFx(kind, n) {
   const W_ = 1080, cnt = n || 1;
   if (kind === 'confetti') for (let k = 0; k < 160 * cnt; k++) LV.parts.push({ k: 'c', x: Math.random() * W_, y: -40 - Math.random() * 600, vx: (Math.random() - .5) * 120, vy: 300 + Math.random() * 300, r: Math.random() * 6, col: CONF[k % CONF.length], life: 6 });
   if (kind === 'hearts') for (let k = 0; k < 60 * cnt; k++) LV.parts.push({ k: 'h', x: 200 + Math.random() * 680, y: 1950 + Math.random() * 400, vx: (Math.random() - .5) * 60, vy: -380 - Math.random() * 300, r: 0, e: ['💖', '❤️', '💕', '🩷'][k % 4], s: 40 + Math.random() * 40, life: 6 });
+  if (kind === 'likes') for (let k = 0; k < Math.min(8, cnt); k++) LV.parts.push({ k: 'h', x: 910 + Math.random() * 130, y: 1760 + Math.random() * 120, vx: (Math.random() - .5) * 40, vy: -230 - Math.random() * 170, r: 0, e: ['❤️', '💖', '🩷'][k % 3], s: 26 + Math.random() * 16, life: 3 });
   if (kind === 'coins') for (let k = 0; k < 70 * cnt; k++) LV.parts.push({ k: 'o', x: Math.random() * W_, y: -60 - Math.random() * 900, vx: 0, vy: 500 + Math.random() * 300, r: Math.random() * 6, life: 5 });
   if (kind === 'fireworks') for (let b = 0; b < 7 * cnt; b++) { const x = 150 + Math.random() * 780, y = 600 + Math.random() * 500, col = CONF[b % CONF.length], d = b * .35; for (let k = 0; k < 70; k++) { const a = k / 70 * Math.PI * 2, sp = 250 + Math.random() * 250; LV.parts.push({ k: 'f', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, col, delay: d, life: 1.8 + d }); } }
   if (kind === 'dance') LV.dance = S.T;
@@ -6182,6 +6183,7 @@ function liveTikTok(type, d) {
     liveOnMsg({ type: 'gift', name: u, fx });
   }
   if (type === 'chat' && u && /^\s*!?(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
+  if (type === 'like') { const n = Math.max(1, Math.round(Math.sqrt(d.likeCount || 1))); if (LV.parts.length < 900) liveFx('likes', n); } // nur kleiner Herz-Effekt unten rechts, kein Haus, kein Ton
 }
 function startLive() {
   document.querySelectorAll('body > *').forEach(e => { if (e.id !== 'c' && e.tagName !== 'SCRIPT') e.style.display = 'none'; });

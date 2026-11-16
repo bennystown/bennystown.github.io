@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benny LIVE-Listener</title>
+<style>
+  :root { --bg:#14161c; --card:#1e2129; --line:#2c303b; --tx:#e8eaf0; --mut:#9097a6; --ok:#46e08a; --warn:#ffd23f; --bad:#ff6b8b; --acc:#7ab8ff; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--tx); font:15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding:16px; }
+  h1 { font-size:20px; margin:0 0 12px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; min-width:120px; }
+  .k { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  .v { font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:99px; font-weight:600; font-size:14px; }
+  .s-connected { background:var(--ok); color:#06210f } .s-offline { background:#3a3f4b } .s-error { background:var(--bad); color:#2a0610 }
+  .s-checking,.s-connecting,.s-reconnecting,.s-starting { background:var(--warn); color:#2a2000 }
+  .meta { color:var(--mut); font-size:13px; word-break:break-all; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border-radius:10px; overflow:hidden; }
+  td { padding:6px 10px; border-top:1px solid var(--line); vertical-align:top; }
+  td.t { color:var(--mut); white-space:nowrap; font-variant-numeric:tabular-nums; width:1%; }
+  td.e { white-space:nowrap; width:1%; font-weight:600; }
+  .e-follow{color:var(--ok)} .e-gift{color:var(--bad)} .e-chat{color:var(--acc)} .e-like{color:#ff9ecf} .e-join,.e-share{color:var(--mut)}
+  .dup { opacity:.5 }
+  .err { color:var(--bad); margin:6px 0 12px; }
+  label { color:var(--mut); font-size:13px; margin-right:12px; }
+</style>
+</head>
+<body>
+<h1>🏠 Benny's Town · LIVE-Listener</h1>
+<div class="row">
+  <div class="card"><div class="k">Status</div><div><span id="state" class="pill">…</span></div><div class="meta" id="since"></div></div>
+  <div class="card"><div class="k">TikTok</div><div class="v" id="user">–</div><div class="meta" id="room"></div></div>
+  <div class="card"><div class="k">Website (OBS)</div><div class="v" id="ws">–</div><div class="meta" id="wsurl"></div></div>
+  <div class="card"><div class="k">Zuschauer</div><div class="v" id="viewers">–</div></div>
+</div>
+<div class="row">
+  <div class="card"><div class="k">Follows</div><div class="v" id="c-follow">0</div></div>
+  <div class="card"><div class="k">Likes (Events)</div><div class="v" id="c-like">0</div><div class="meta" id="tl"></div></div>
+  <div class="card"><div class="k">Geschenke</div><div class="v" id="c-gift">0</div><div class="meta" id="dia"></div></div>
+  <div class="card"><div class="k">Chat</div><div class="v" id="c-chat">0</div></div>
+  <div class="card"><div class="k">Beitritte</div><div class="v" id="c-join">0</div></div>
+</div>
+<div class="err" id="err"></div>
+<div class="meta" id="engine"></div>
+<div class="meta" id="log" style="margin-bottom:10px"></div>
+<div style="margin-bottom:8px">
+  <label><input type="checkbox" id="f-like"> Likes zeigen</label>
+  <label><input type="checkbox" id="f-join"> Beitritte zeigen</label>
+</div>
+<table><tbody id="list"></tbody></table>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const STATE = { connected: 'verbunden', offline: 'nicht live – warte', checking: 'prüfe …', connecting: 'verbinde …', reconnecting: 'verbinde neu …', error: 'Fehler', starting: 'startet …' };
+function describe(e) {
+  const d = e.data || {}, u = d.user ? '<b>@' + esc(d.user.uniqueId) + '</b> ' + (d.user.nickname ? '<span class="meta">' + esc(d.user.nickname) + '</span> ' : '') : '';
+  if (e.event === 'gift') return u + '🎁 ' + esc(d.giftName) + ' ×' + d.repeatCount + ' · ' + d.diamondCount + '💎' + (d.giftType === 1 ? (d.repeatEnd ? ' · <b>Combo-Ende</b>' : ' · Combo läuft') : '');
+  if (e.event === 'chat') return u + '💬 ' + esc(d.comment);
+  if (e.event === 'like') return u + '❤️ +' + d.likeCount;
+  if (e.event === 'follow') return u + '➕ folgt jetzt' + (e.dup ? ' (doppelt – nicht weitergeleitet)' : '');
+  if (e.event === 'join') return u + 'ist beigetreten';
+  if (e.event === 'share') return u + 'hat geteilt';
+  return esc(JSON.stringify(d));
+}
+async function tick() {
+  let s; try { s = await fetch('/status.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { $('state').textContent = 'Listener aus'; $('state').className = 'pill s-error'; return; }
+  $('state').textContent = (s.mode === 'mock' ? 'DEMO · ' : '') + (STATE[s.state] || s.state); $('state').className = 'pill s-' + s.state;
+  $('since').textContent = 'seit ' + new Date(s.since).toLocaleTimeString('de-DE');
+  $('user').textContent = '@' + s.user; $('room').textContent = s.roomId ? 'Room ' + s.roomId + (s.title ? ' · ' + s.title : '') : '';
+  $('engine').textContent = s.engine ? 'Bibliothek: ' + s.engine : '';
+  $('ws').textContent = s.wsClients + ' verbunden'; $('wsurl').textContent = 'ws://localhost:' + s.wsPort;
+  $('viewers').textContent = s.viewers ?? '–';
+  for (const k of ['follow', 'like', 'gift', 'chat', 'join']) $('c-' + k).textContent = s.counts[k].toLocaleString('de-DE');
+  $('tl').textContent = s.totalLikes != null ? 'gesamt ' + s.totalLikes.toLocaleString('de-DE') : '';
+  $('dia').textContent = s.counts.diamonds.toLocaleString('de-DE') + ' 💎';
+  $('err').textContent = s.lastError ? '⚠ ' + s.lastError : '';
+  $('log').textContent = s.logFile ? 'Log: ' + s.logFile : '';
+  const showLike = $('f-like').checked, showJoin = $('f-join').checked;
+  $('list').innerHTML = s.recent.filter(e => (showLike || e.event !== 'like') && (showJoin || e.event !== 'join')).slice(0, 50)
+    .map(e => '<tr class="' + (e.dup ? 'dup' : '') + '"><td class="t">' + new Date(e.t).toLocaleTimeString('de-DE') + '</td><td class="e e-' + e.event + '">' + e.event + '</td><td>' + describe(e) + '</td></tr>').join('');
+}
+tick(); setInterval(tick, 1500);
+</script>
+</body>
+</html>
