@@ -383,11 +383,11 @@ function drawBenny(c, x, y, s, o) {
   const PANTS = '#3e3e52', HOOD = '#4b6fa5', HOOD_D = '#3f5f8f', SKIN = '#e8b896', SHOE = '#24242c', lw = 5;
   c.save(); c.translate(x, y); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round';
   ellipse(c, 0, 2, sit ? 96 : 62, 14, 'rgba(0,0,0,.28)');
-  const drop = sit ? 100 : 0, br = Math.sin(S.T * 2.1) * 2;
+  const LEGC = !sit && o.shortLegs ? 52 : 0, drop = sit ? 100 : LEGC, br = Math.sin(S.T * 2.1) * 2;
   if (!sit) {
     const sw = Math.sin(walk) * 16;
     for (const [dx, lift] of [[-18 + sw, Math.max(0, Math.sin(walk)) * 10], [18 - sw, Math.max(0, -Math.sin(walk)) * 10]]) {
-      rrect(c, dx - 15, -130, 30, 118 - lift, 12); c.fillStyle = PANTS; c.fill(); c.strokeStyle = OUT; c.lineWidth = lw; c.stroke();
+      rrect(c, dx - 15, -130 + LEGC, 30, 118 - LEGC - lift, 12); c.fillStyle = PANTS; c.fill(); c.strokeStyle = OUT; c.lineWidth = lw; c.stroke();
       ellipse(c, dx + 5, -12 - lift, 24, 12, SHOE, OUT, lw);
     }
   } else {
@@ -5995,7 +5995,7 @@ function draw() {
   const BN = bennyNow();
   if (BN && !BN.sit) {
     objs.push({ d: 7.1, f: () => { const [x, y] = uvS(3.5, 3.65); poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z); } });
-    objs.push({ d: BN.pos[0] + BN.pos[1] + .05, f: () => { const [x, y] = uvS(BN.pos[0], BN.pos[1]); ellipse(ctx, x, y + 2 * z, 14 * z, 6 * z, 'rgba(0,0,0,.25)'); drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'stand', mood: 'happy', walk: BN.walk || 0, armsUp: BN.wave && (S.T * 2.5 % 1) < .5, look: BN.look || [0, 0], blink: (S.T % 3.7) < .12 }); } });
+    objs.push({ d: BN.pos[0] + BN.pos[1] + .05, f: () => { const [x, y] = uvS(BN.pos[0], BN.pos[1]); ellipse(ctx, x, y + 2 * z, 14 * z, 6 * z, 'rgba(0,0,0,.25)'); drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'stand', shortLegs: true, mood: 'happy', walk: BN.walk || 0, armsUp: BN.wave && (S.T * 2.5 % 1) < .5, look: BN.look || [0, 0], blink: (S.T % 3.7) < .12 }); } });
   } else
   objs.push({ d: 7.15, f: () => {
     const [x, y] = uvS(3.5, 3.65);
@@ -6009,8 +6009,8 @@ function draw() {
   envOverlay(1 / 60);
   // labels
   const BNl = bennyNow(), [bx, by] = BNl && !BNl.sit ? uvS(BNl.pos[0], BNl.pos[1]) : uvS(3.5, 3.65);
-  if (z > .45) tag(bx, by - 104 * z - 6, BNl && BNl.wave ? '👋 hi @' + trunc(BNl.at.name, 14) + '!' : 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1);
-  if (z > 1.0 && !selected) { let shown = 0; for (const h of HOUSES) { if (h === selected) continue; const [sx, sy] = uvS(h.i, h.j); if (sx < 0 || sx > VW || sy < 60 || sy > VH) continue; if (++shown > 25) break; const st = STY[styleOf(h.v)]; tag(sx, sy - (st.wall + st.roofH + st.f * 32 + 12) * z, '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); } }
+  if (z > .45) tag(bx, by - (BNl && !BNl.sit ? 92 : 104) * z - 6, BNl && BNl.wave ? '👋 hi @' + trunc(BNl.at.name, 14) + '!' : 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1);
+  if (z > 1.0 && !selected) { let shown = 0; for (const h of HOUSES) { if (h === selected || (BNl && BNl.wave && h === BNl.at)) continue; const [sx, sy] = uvS(h.i, h.j); if (sx < 0 || sx > VW || sy < 60 || sy > VH) continue; if (++shown > 25) break; const st = STY[styleOf(h.v)]; tag(sx, sy - (st.wall + st.roofH + st.f * 32 + 12) * z, '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); } }
   if (selected) {
     const h = selected, [sx, sy] = uvS(h.i, h.j), st = STY[styleOf(h.v)], pu = 1 + Math.sin(S.T * 5) * .06;
     ellipse(ctx, sx, sy, 78 * z * pu, 39 * z * pu, null, '#ffd23f', 3);
