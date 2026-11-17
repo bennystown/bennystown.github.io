@@ -58,7 +58,7 @@
 - **Rent Day = Sonntag:** +10¢ × alle Bewohner (im Sonntags-Bauvideo, Bank zählt sichtbar hoch).
 - **Käufe** (Abendvideo) werden abgezogen.
 - **Keine Geldspenden von Fans annehmen.** Alles ist gratis.
-- **Aktuelle Rechnung:** Tag 2 €430,20 → −80 −40 +65 = €375,20 → +2.505 × 0,10 = €625,70 → −350 −200 = **€75,70**.
+- **Aktuelle Rechnung:** Tag 2 €430,20 → −80 −40 +65 = €375,20 → +2.505 × 0,10 = €625,70 → −350 −200 = €75,70 → Tag 4: +323 × 0,10 = **€108,00**.
 
 ### Umfragen
 - **Immer mit Preis**, Text max. **25 Zeichen** pro Option (TikTok-Limit), z. B. „🚐 Campervan €350“.
@@ -68,7 +68,7 @@
 ### Häuser
 - **Jedes Haus:** gleiches einstöckiges Cottage mit Spitzdach, eigenes Grundstück. Nur die **Farbe** unterscheidet sich (12 Paletten, zufällig aus dem Namen).
 - **Hauswünsche (Farben)** werden umgesetzt, wenn der @Handle bekannt ist: `color:` im Tenant-Eintrag. Mögliche Werte: `cream, lightblue, pink, mint, sand, grey, yellowpurple, blue, red, lavender, peach, white`.
-  - **Offen:** @haste50fps will blau + lila → neue Palette `bluepurple` ['#7fb2ec','#7b4b94'] anlegen, sobald er in der Liste ist.
+  - ✅ @haste50fps hat `bluepurple` (Palette 12, nur per Wunsch; `variantFor` rechnet fest mit `% 12`, damit neue Wunsch-Paletten keine Farben verschieben).
   - Liste aller Wünsche: `docs-team/data/wishes.md` + `wishes_mapped.md`.
 - **Unfollow** → Haus wird wieder „FOR RENT“. **Umbenennung** → Haus bleibt.
 - **Häuser bewegen sich nie** (Grundstücks-Zuteilung siehe Abschnitt 6).
@@ -335,3 +335,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Chrome-Poller für neue Follower gestartet (Abschnitt 6), liest nur die Follower-Liste, nicht die Benachrichtigungen.
   - **Folge 7 (Campervan):** Instanz B hat im fertigen Video nur den Van durch ein Alkoven-Wohnmobil ersetzt (Datei `Benny_Folge6_Campervan_neu.mp4` an Kieran geschickt). `drawVan` im Code ist noch alt; neu zeichnen bleibt Aufgabe von Instanz A für Website und künftige Videos.
 - **17.11.2026 09:55** – Instanz B: `drawVan` neu gezeichnet (Alkoven-Wohnmobil, Ducato-Stil: Kabine mit Windschutzscheibe, Alkoven, Fenster mit Vorhängen, Tür, navy/grüne Swooshes, graue Schürze, Dachfenster, 2 kleine Roststellen). Optionen `k`, `flat`, `rusty`, `smoke` funktionieren weiter. Gilt automatisch auch für künftige Videos.
+- **17.11.2026 12:20** – Instanz B: **Tag 4** eingetragen: +323 Bewohner (168 aus Aufnahme + 155 vom Chrome-Poller) → **4.984**, Bank **€108,00**, `live.json` base 4984. 🌷 Blumen in der 2D-Karte für Treue-Stufe ≥ 1 (`drawFlowers`). Palette `bluepurple` für @haste50fps. Liste: `data/new_2026-11-17.json`.
