@@ -6150,11 +6150,11 @@ function suggest() {
 }
 function goBenny() {
   selected = null; const BNg = bennyNow(), [wx, wy] = BNg && !BNg.sit ? isoW(BNg.pos[0], BNg.pos[1]) : isoW(3.5, 3.65); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
-  $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · sleeps on the street';
+  $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · ' + (TOWN.milestones.van ? 'lives in a campervan' : 'sleeps on the street');
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
-  $('cardMsg').textContent = (TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
+  $('cardMsg').textContent = (TOWN.milestones.van ? 'Finally sleeps in a campervan 🚐 (no tires yet)' : TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
 let hintT = 0;
