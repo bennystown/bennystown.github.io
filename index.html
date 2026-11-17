@@ -402,11 +402,12 @@ function drawBenny(c, x, y, s, o) {
   rrect(c, -34, ty + 74, 68, 34, 12); c.fillStyle = HOOD_D; c.fill();
   c.fillStyle = '#9a7b56'; c.fillRect(20, ty + 26, 20, 20); c.strokeStyle = 'rgba(60,40,25,.6)'; c.lineWidth = 2; c.strokeRect(20, ty + 26, 20, 20);
   line(c, -13, ty + 8, -15, ty + 50, '#e6e6ee', 4); line(c, 13, ty + 8, 15, ty + 50, '#e6e6ee', 4);
-  if (sit) { // hands resting on the knees
+  if (sit && !o.wave) { // hands resting on the knees
     for (const sd of [-1, 1]) { armLine(c, sd * 50, ty + 24, sd * 34, -74, HOOD); circle(c, sd * 32, -76, 15, SKIN, OUT, lw); }
   } else if (o.wave) {   // one arm out to the side, hand waving next to the head
     const wb = Math.sin(S.T * 12) * 14;
-    armLine(c, -52, ty + 20, -64, ty + 102, HOOD); circle(c, -64, ty + 108, 15, SKIN, OUT, lw);
+    if (sit) { armLine(c, -50, ty + 24, -34, -74, HOOD); circle(c, -32, -76, 15, SKIN, OUT, lw); }
+    else { armLine(c, -52, ty + 20, -64, ty + 102, HOOD); circle(c, -64, ty + 108, 15, SKIN, OUT, lw); }
     armLine(c, 52, ty + 24, 118 + wb * .3, ty - 30, HOOD); circle(c, 126 + wb, ty - 44, 17, SKIN, OUT, lw);
   } else if (o.armsUp) {
     for (const sd of [-1, 1]) { armLine(c, sd * 48, ty + 22, sd * 40, ty - 100, HOOD); circle(c, sd * 40, ty - 108, 16, SKIN, OUT, lw); }
@@ -5999,7 +6000,7 @@ function draw() {
   const BN = bennyNow();
   if (BN && !BN.sit) {
     objs.push({ d: 7.1, f: () => { const [x, y] = uvS(3.5, 3.65); poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z); } });
-    objs.push({ d: BN.pos[0] + BN.pos[1] + .05, f: () => { const [x, y] = uvS(BN.pos[0], BN.pos[1]); ellipse(ctx, x, y + 2 * z, 14 * z, 6 * z, 'rgba(0,0,0,.25)'); drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'stand', shortLegs: true, mood: 'happy', walk: BN.walk || 0, wave: !!BN.wave, look: BN.look || [0, 0], blink: (S.T % 3.7) < .12 }); } });
+    objs.push({ d: BN.pos[0] + BN.pos[1] + .05, f: () => { const [x, y] = uvS(BN.pos[0], BN.pos[1]); ellipse(ctx, x, y + 2 * z, 14 * z, 6 * z, 'rgba(0,0,0,.25)'); const bob = BN.walk ? Math.abs(Math.sin(BN.walk)) * 5 * z : 0; drawBenny(ctx, x, y + 4 * z - bob, .25 * z, { pose: 'sit', mood: 'happy', walk: BN.walk || 0, wave: !!BN.wave, look: BN.look || [0, 0], blink: (S.T % 3.7) < .12 }); } });
   } else
   objs.push({ d: 7.15, f: () => {
     const [x, y] = uvS(3.5, 3.65);
