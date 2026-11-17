@@ -6,6 +6,8 @@ import { TikTokLiveClient, EventType, checkOnline, HostNotOnlineError, UserNotFo
 
 export const name = 'piratetok (direkt, ohne Signatur-Dienst)';
 
+const mid = d => d?.common?.msgId ?? d?.msgId ?? null;
+
 export async function session(ctx) {
   const { USER, PROXY, OFFLINE_CHECK, setState, emit, emitFollow, onConnected, isStopping, userOf, num } = ctx;
 
@@ -26,13 +28,14 @@ export async function session(ctx) {
   const client = new TikTokLiveClient(USER).maxRetries(10).staleTimeout(90_000);
   if (PROXY) client.proxy(PROXY);
 
-  client.on(EventType.follow, d => emitFollow(userOf(d)));
-  client.on(EventType.share, d => emit('share', { user: userOf(d) }));
-  client.on(EventType.chat, d => emit('chat', { user: userOf(d), comment: String(d.content ?? '') }));
-  client.on(EventType.like, d => emit('like', { user: userOf(d), likeCount: num(d.count) || 1, totalLikeCount: num(d.total) }));
+  client.on(EventType.follow, d => emitFollow(userOf(d), mid(d)));
+  client.on(EventType.share, d => emit('share', { _id: mid(d), user: userOf(d) }));
+  client.on(EventType.chat, d => emit('chat', { _id: mid(d), user: userOf(d), comment: String(d.content ?? '') }));
+  client.on(EventType.like, d => emit('like', { _id: mid(d), user: userOf(d), likeCount: num(d.count) || 1, totalLikeCount: num(d.total) }));
   client.on(EventType.gift, d => {
     const g = d.gift || {};
     emit('gift', {
+      _id: mid(d),
       user: userOf(d),
       giftId: num(d.giftId ?? g.id),
       giftName: String(g.name || ('Gift #' + (d.giftId ?? g.id))),
@@ -43,7 +46,7 @@ export async function session(ctx) {
       groupId: d.groupId != null ? String(d.groupId) : undefined
     });
   });
-  client.on(EventType.join, d => emit('join', { user: userOf(d) }));
+  client.on(EventType.join, d => emit('join', { _id: mid(d), user: userOf(d) }));
   client.on(EventType.roomUserSeq, d => emit('viewers', { viewerCount: num(d.viewerCount), totalUser: num(d.totalUser) }));
   client.on(EventType.reconnecting, () => setState('reconnecting', 'Verbindung kurz weg – Bibliothek verbindet neu'));
   client.on(EventType.connected, () => { if (ctx.S.state === 'reconnecting') setState('connected', null); });

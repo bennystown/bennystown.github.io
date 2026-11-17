@@ -47,6 +47,12 @@ const WS_PORT = +(process.env.WS_PORT || 21213);
 const STATUS_PORT = +(process.env.STATUS_PORT || 21214);
 const OFFLINE_CHECK = Math.max(30, +(process.env.OFFLINE_CHECK_SECONDS || 30)) * 1000;
 const EULER_API_KEY = (process.env.EULER_API_KEY || '').trim() || undefined;
+// Grobe Geld-Schätzung (TikTok veröffentlicht keine offiziellen Kurse):
+// Ein Geschenk mit N 💎 kostet den Zuschauer N Coins. Davon bekommt der Creator ca. 50 %,
+// üblich genannt werden ~0,005 $ pro 💎. Werte bei Bedarf in .env anpassen.
+const DIAMOND_EUR = +(process.env.DIAMOND_EUR || 0.0045); // dein Anteil pro 💎 in €
+const COIN_EUR = +(process.env.COIN_EUR || 0.0125);       // was ein Zuschauer ca. pro Coin zahlt
+const BENNY_CENTS_PER_FOLLOW = 10;                         // Story-Geld: Benny bekommt 10 ¢ pro Follow
 const ENGINE_FIXED = !!(opt('--engine') || process.env.ENGINE);
 const ENGINE = String(opt('--engine') || process.env.ENGINE || 'piratetok').toLowerCase();
 
@@ -69,6 +75,54 @@ const S = {
   counts: { follow: 0, like: 0, gift: 0, diamonds: 0, chat: 0, join: 0, share: 0 },
   recent: [], engine: MOCK ? 'Demo' : null
 };
+// ---------- Kennzahlen pro LIVE (für das Dashboard) ----------
+let L;
+function resetLive() {
+  L = { start: null, follows: [], likeEvents: 0, totalLikes: null, likesSum: 0, gifts: 0, diamonds: 0,
+        gifters: new Map(), giftTypes: new Map(), chat: 0, joins: 0, shares: 0,
+        viewers: null, peakViewers: 0, viewerSeries: [], lastSample: 0 };
+}
+resetLive();
+// Wendet ein Event auf die Kennzahlen an – live und beim Wiederherstellen aus der Logdatei.
+function account(event, d, t, dup) {
+  const ms = Date.parse(t);
+  if (!L.start) L.start = t;
+  if (event === 'follow' && !dup) L.follows.push({ t, uniqueId: d.user?.uniqueId, nickname: d.user?.nickname || '' });
+  else if (event === 'like') { L.likeEvents++; L.likesSum += d.likeCount || 0; if (d.totalLikeCount != null) L.totalLikes = d.totalLikeCount; }
+  else if (event === 'gift' && d.repeatEnd) {
+    const dia = (d.diamondCount || 0) * (d.repeatCount || 1);
+    L.gifts += d.repeatCount || 1; L.diamonds += dia;
+    const k = d.user?.uniqueId || '?';
+    const g = L.gifters.get(k) || { uniqueId: k, nickname: d.user?.nickname || '', diamonds: 0, gifts: 0 };
+    g.diamonds += dia; g.gifts += d.repeatCount || 1; L.gifters.set(k, g);
+    const n = d.giftName || '?';
+    const gt = L.giftTypes.get(n) || { name: n, each: d.diamondCount || 0, count: 0, diamonds: 0 };
+    gt.count += d.repeatCount || 1; gt.diamonds += dia; L.giftTypes.set(n, gt);
+  }
+  else if (event === 'chat') L.chat++;
+  else if (event === 'join') L.joins++;
+  else if (event === 'share') L.shares++;
+  else if (event === 'viewers' && d.viewerCount != null) {
+    L.viewers = d.viewerCount; L.peakViewers = Math.max(L.peakViewers, d.viewerCount);
+    if (ms - L.lastSample >= 20000) { L.viewerSeries.push([t, d.viewerCount]); L.lastSample = ms; if (L.viewerSeries.length > 1500) L.viewerSeries.shift(); }
+  }
+}
+function liveSummary() {
+  const top = (m, n) => [...m.values()].sort((a, b) => b.diamonds - a.diamonds).slice(0, n);
+  return {
+    start: L.start, follows: L.follows, likeEvents: L.likeEvents, likesSum: L.likesSum, totalLikes: L.totalLikes,
+    gifts: L.gifts, diamonds: L.diamonds, chat: L.chat, joins: L.joins, shares: L.shares,
+    viewers: L.viewers, peakViewers: L.peakViewers, viewerSeries: L.viewerSeries,
+    topGifters: top(L.gifters, 10), giftTypes: top(L.giftTypes, 12), gifterCount: L.gifters.size,
+    money: {
+      diamondEur: DIAMOND_EUR, coinEur: COIN_EUR,
+      viewersPaidEur: L.diamonds * COIN_EUR,
+      yourShareEur: L.diamonds * DIAMOND_EUR,
+      bennyBankEur: L.follows.length * BENNY_CENTS_PER_FOLLOW / 100
+    }
+  };
+}
+
 function setState(state, err) {
   if (S.state !== state) { S.state = state; S.since = now(); log('Status:', state, err ? '– ' + err : ''); }
   if (err !== undefined) S.lastError = err;
@@ -84,6 +138,18 @@ function openLog(roomId) {
   fs.mkdirSync(dir, { recursive: true });
   const existing = fs.readdirSync(dir).find(f => f.endsWith('_' + roomId + '.jsonl'));
   const file = path.join(dir, existing || `${stamp()}_${roomId}.jsonl`);
+  resetLive(); followSeen.clear(); seenIds.clear();
+  if (existing) { // Listener neu gestartet, LIVE läuft noch -> Kennzahlen aus dem Log wiederherstellen
+    let n = 0;
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      let e; try { e = JSON.parse(line); } catch { continue; }
+      if (!e.event || e.event.startsWith('_')) continue;
+      if (e.id) seenIds.add(e.id);
+      if (e.event === 'follow' && e.data?.user?.uniqueId) followSeen.add(e.data.user.uniqueId.toLowerCase());
+      account(e.event, e.data || {}, e.t, e.dup); n++;
+    }
+    log(`Kennzahlen aus ${n} Log-Einträgen wiederhergestellt`);
+  }
   logStream = fs.createWriteStream(file, { flags: 'a' }); logRoom = roomId; S.logFile = path.relative(DIR, file);
   log('Logdatei:', S.logFile);
 }
@@ -107,9 +173,15 @@ function broadcast(msg) {
 
 // ---------- Event an Website + Log + Statusseite ----------
 const followSeen = new Set();
+// TikTok schickt nach jedem (Neu-)Verbinden die letzten Nachrichten nochmal.
+// Über die Nachrichten-ID werden sie erkannt und nicht doppelt gezählt/weitergeleitet.
+const seenIds = new Set();
 function emit(event, data, extra = {}) {
+  const id = data._id != null && data._id !== '0' ? String(data._id) : null; delete data._id;
+  if (id) { if (seenIds.has(id)) return; seenIds.add(id); if (seenIds.size > 200000) seenIds.clear(); }
   const msg = { event, data: clean(data) };
-  writeLog({ ...msg, ...extra });
+  writeLog({ ...msg, ...(id ? { id } : {}), ...extra });
+  account(event, msg.data, now(), extra.dup);
   if (!extra.dup) broadcast(msg);
   if (event in S.counts) S.counts[event]++;
   if (event === 'gift' && data.repeatEnd) S.counts.diamonds += (data.diamondCount || 0) * (data.repeatCount || 1);
@@ -131,10 +203,11 @@ const PROXY = process.env.HTTPS_PROXY || process.env.https_proxy || '';
 if (PROXY) log('Nutze Proxy aus HTTPS_PROXY');
 let stopping = false;
 
-function emitFollow(user) {
+function emitFollow(user, _id) {
   const key = user.uniqueId.toLowerCase();
   const dup = followSeen.has(key); followSeen.add(key);
-  emit('follow', { user }, dup ? { dup: true } : {});
+  if (_id && seenIds.has(String(_id))) return; // Wiederholung nach Neuverbinden, nicht als doppelt markieren
+  emit('follow', { user, _id }, dup ? { dup: true } : {});
 }
 
 const ctx = {
@@ -187,7 +260,7 @@ async function mainLoop() {
 async function mockLoop() {
   const names = ['test_anna', 'test_ben', 'test_cleo', 'test_dave', 'test_emil', 'test_fynn'];
   const gifts = [['Rose', 1, 1], ['GG', 1, 1], ['Doughnut', 30, 0], ['Hand Hearts', 100, 0], ['Galaxy', 1000, 0]];
-  S.roomId = 'mock'; openLog('mock'); setState('connected', null);
+  S.roomId = 'mock-' + Date.now(); openLog(S.roomId); setState('connected', null);
   broadcast({ event: 'connected', data: { roomId: 'mock' } });
   let i = 0;
   while (!stopping) {
@@ -208,11 +281,11 @@ async function mockLoop() {
 }
 
 // ---------- Statusseite ----------
-const PAGE = fs.readFileSync(path.join(DIR, 'status.html'), 'utf8');
+const PAGE = fs.readFileSync(path.join(DIR, 'dashboard.html'), 'utf8');
 http.createServer((req, res) => {
   if (req.url.startsWith('/status.json')) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
-    return res.end(JSON.stringify({ ...S, wsPort: WS_PORT, now: now() }));
+    return res.end(JSON.stringify({ ...S, live: liveSummary(), wsPort: WS_PORT, now: now() }));
   }
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
   res.end(PAGE);

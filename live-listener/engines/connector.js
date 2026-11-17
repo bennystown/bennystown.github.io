@@ -11,6 +11,8 @@ export const name = 'tiktok-live-connector (über Euler-Stream-Signatur)';
 IsLiveRouteConfig.skipFetchRoomIdFromEulerRoute = true;
 let unclearChecks = 0;
 
+const mid = d => d?.common?.msgId ?? d?.msgId ?? null;
+
 export async function session(ctx) {
   const { USER, PROXY, OFFLINE_CHECK, EULER_API_KEY, setState, emit, emitFollow, onConnected, isStopping, userOf, num } = ctx;
   const agent = PROXY ? new HttpsProxyAgent(PROXY) : undefined;
@@ -38,14 +40,15 @@ export async function session(ctx) {
   let lastData = Date.now();
   conn.on(ControlEvent.DECODED_DATA, () => { lastData = Date.now(); });
   conn.on(ControlEvent.ERROR, e => { ctx.S.lastError = String(e?.exception?.message || e?.info || e?.message || e); });
-  conn.on(WebcastEvent.FOLLOW, d => emitFollow(userOf(d)));
-  conn.on(WebcastEvent.SHARE, d => emit('share', { user: userOf(d) }));
-  conn.on(WebcastEvent.CHAT, d => emit('chat', { user: userOf(d), comment: d.comment || '' }));
-  conn.on(WebcastEvent.LIKE, d => emit('like', { user: userOf(d), likeCount: num(d.likeCount) || 1, totalLikeCount: num(d.totalLikeCount) }));
+  conn.on(WebcastEvent.FOLLOW, d => emitFollow(userOf(d), mid(d)));
+  conn.on(WebcastEvent.SHARE, d => emit('share', { _id: mid(d), user: userOf(d) }));
+  conn.on(WebcastEvent.CHAT, d => emit('chat', { _id: mid(d), user: userOf(d), comment: d.comment || '' }));
+  conn.on(WebcastEvent.LIKE, d => emit('like', { _id: mid(d), user: userOf(d), likeCount: num(d.likeCount) || 1, totalLikeCount: num(d.totalLikeCount) }));
   conn.on(WebcastEvent.GIFT, d => {
     const g = d.giftDetails || {};
     const giftType = num(g.giftType) ?? 0;
     emit('gift', {
+      _id: mid(d),
       user: userOf(d),
       giftId: num(d.giftId),
       giftName: g.giftName || ('Gift #' + d.giftId),
@@ -56,7 +59,7 @@ export async function session(ctx) {
       groupId: d.groupId != null ? String(d.groupId) : undefined
     });
   });
-  conn.on(WebcastEvent.MEMBER, d => emit('join', { user: userOf(d) }));
+  conn.on(WebcastEvent.MEMBER, d => emit('join', { _id: mid(d), user: userOf(d) }));
   conn.on(WebcastEvent.ROOM_USER, d => emit('viewers', { viewerCount: num(d.viewerCount ?? d.total) }));
 
   setState('connecting');

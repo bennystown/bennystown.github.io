@@ -278,7 +278,8 @@ Pro Video ein Ordner, z. B. `/tmp/ep7`. Vorlagen liegen in `docs-team/video/`.
   - `gh` = Fine-grained GitHub-Token (nur Repo bennystown.github.io, Contents: Read and write). Er schreibt alle 45 s `live.json`.
   - `key` = Tik.Tools-API-Key (wss://api.tik.tools). Nur noch Reserve, Standard ist jetzt der eigene Listener.
 - **Eigener Listener `live-listener/`** (fertig, 16.11.). Doku: `live-listener/README.md`.
-  - Start auf Kierans Mac: `cd live-listener && npm start` (Node ≥ 22.19). Statusseite: http://localhost:21214. WebSocket: `ws://localhost:21213`.
+  - Start auf Kierans Mac: `cd live-listener && npm start` (Node ≥ 22.19). **Dashboard: http://localhost:21214** (Follower, Gewinn ca. €, Zuschauer, Likes, Geschenke, Top-Unterstützer, Diagramme, Live-Feed). WebSocket: `ws://localhost:21213`.
+  - Gewinn ca. = Diamanten × 0,0045 € (≈ 0,005 $, ca. 50 % nach TikTok-Anteil), vor Steuern. Inoffizielle Richtwerte, anpassbar über `DIAMOND_EUR`/`COIN_EUR` in `.env`.
   - Er liest anonym nur über den Benutzernamen, ohne Login und ohne Cookies, und sendet nie etwas. Solange Kieran nicht live ist, wartet er; bei Abbruch verbindet er neu.
   - Standard-Bibliothek: `piratetok-live-js`, **ohne fremden Dienst**. Reserve: `tiktok-live-connector` über den Euler-Stream-Signaturdienst (gratis 1.500 Anfragen/Tag). Auf die Reserve wechselt er automatisch nach 3 Fehlern.
   - Test mit fremdem LIVE: `npm run test-live -- <user>`. Demo ohne TikTok: `npm run mock`. Beim Test die Website **ohne `&gh=`** öffnen.
@@ -347,3 +348,6 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Getestet mit fremden LIVEs (@lofigirl, @bossmetri, @adryanacotisel): Follows, Likes, Geschenke inkl. Combo-Ende, Chat, Beitritte und Zuschauer kommen an. Mit `index.html?live&ws=…` hat die Website 19 echte Live-Follows als 19 Häuser in richtiger Reihenfolge gebaut.
   - `index.html`: Event `like` ergänzt (kleiner Herz-Effekt, kein Haus).
   - Hinweis: Mit `tiktok-live-connector` meldete TikTok aus der Cloud „DEVICE_BLOCKED“ (Rechenzentrums-IP). Auf Kierans Mac nicht geprüft. Der Standard `piratetok` lief in der Cloud ohne Probleme.
+- **17.11.2026 07:05** – Instanz C (Listener-Chat):
+  - Statusseite → **Dashboard** (`live-listener/dashboard.html`, http://localhost:21214): neue Follower, Gewinn ca. nach TikTok-Anteil, Zuschauer + Höchststand, Likes, Geschenke/Diamanten, Chat, Beitritte, Benny's Bank, Diagramme, Follower-Liste mit „Namen kopieren“, Top-Unterstützer, Geschenke nach Art, Live-Feed. Hell/Dunkel, auch mobil.
+  - Nach einem Neustart im laufenden LIVE werden die Kennzahlen aus dem Log wiederhergestellt. Nachrichten, die TikTok beim Neuverbinden wiederholt, werden über die Nachrichten-ID nicht doppelt gezählt. Getestet mit fremden LIVEs (@dominikiminaj, @colesy_media).

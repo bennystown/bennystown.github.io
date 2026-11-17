@@ -37,8 +37,26 @@ Das Fenster bleibt offen und zeigt alle Follows, Geschenke und Chat-Nachrichten.
 - **Bricht die Verbindung ab**, verbindet er sich automatisch neu.
 - Endet das LIVE, schließt er die Logdatei und wartet auf das nächste LIVE.
 
-**Statusseite:** http://localhost:21214
-Sie zeigt den Verbindungsstatus, die Zähler (Follows, Likes, Geschenke + 💎, Chat, Beitritte, Zuschauer) und die letzten Events. Du kannst sie auch als OBS-Dock einbinden: *Docks → Benutzerdefinierte Browser-Docks*.
+**Dashboard:** http://localhost:21214 (im Browser öffnen oder als OBS-Dock: *Docks → Benutzerdefinierte Browser-Docks*)
+
+| Bereich | Inhalt |
+|---|---|
+| Kopfzeile | Verbindungsstatus, LIVE-Dauer, ob OBS/Website verbunden ist |
+| Große Zahlen | neue Follower, **dein Gewinn ca. in €**, Zuschauer jetzt (+ Höchststand), Likes |
+| Kleine Zahlen | Geschenke, Diamanten, Chat, Beitritte, Geteilt, Benny's Bank (Story-Geld, 10 ¢ pro Follow) |
+| Diagramme | Zuschauer im Verlauf, neue Follower pro Minute (mit Hover) |
+| Listen | neue Follower in Einzugsreihenfolge (Knopf „Namen kopieren“), Top-Unterstützer, Geschenke nach Art |
+| Gewinn-Rechnung | was Zuschauer ausgegeben haben, was TikTok behält, dein Anteil |
+| Live-Feed | letzte Events, filterbar |
+
+Startest du den Listener neu, während das LIVE noch läuft, stellt er alle Zahlen aus der Logdatei wieder her. Nachrichten, die TikTok nach dem Neuverbinden noch einmal schickt, erkennt er an der Nachrichten-ID und zählt sie nicht doppelt.
+
+### Wie der Gewinn geschätzt wird
+TikTok veröffentlicht keine offiziellen Kurse. Die Rechnung im Dashboard nutzt die üblichen Richtwerte:
+- Ein Geschenk mit N 💎 kostet den Zuschauer N Coins, ca. **0,0125 € pro Coin** (`COIN_EUR`).
+- Du bekommst davon etwa die Hälfte, ca. **0,005 $ ≈ 0,0045 € pro 💎** (`DIAMOND_EUR`).
+- Steuern sind nicht abgezogen. Ausgezahlt wird erst ab 10.000 💎. Je nach Land und Agentur kann es weniger sein.
+- Die echten Werte siehst du in der TikTok-App unter LIVE-Belohnungen. Passen sie nicht, trag sie in `.env` ein.
 
 ## 3. OBS-URL
 
@@ -103,6 +121,8 @@ Follows, die im selben LIVE doppelt kommen (z. B. entfolgen und wieder folgen), 
 | `ENGINE` | leer (= `piratetok`) | `piratetok` oder `connector`, siehe unten |
 | `EULER_API_KEY` | leer | nur für `connector`: kostenloser Euler-Key für höhere Limits |
 | `OFFLINE_CHECK_SECONDS` | `30` | Prüfabstand, solange du offline bist |
+| `DIAMOND_EUR` | `0.0045` | dein Anteil pro 💎 in € (für „Gewinn ca.“) |
+| `COIN_EUR` | `0.0125` | was ein Zuschauer ca. pro Coin zahlt |
 
 Weitere Schalter: `--debug` (zeigt auch Likes und Beitritte im Terminal) und `--engine connector`.
 
@@ -143,7 +163,7 @@ Die bewährten Bibliotheken (TikTok-Live-Connector für Node, TikTokLive für Py
 | `listener.js` | Hauptprogramm: WebSocket-Server, Statusseite, Logdateien, Neuverbinden |
 | `engines/piratetok.js` | Anbindung piratetok-live-js (Standard) |
 | `engines/connector.js` | Anbindung tiktok-live-connector (Reserve) |
-| `status.html` | Statusseite |
+| `dashboard.html` | Dashboard (http://localhost:21214) |
 | `follows.js` | Follower aus einer Logdatei auslesen |
 | `start.sh` | Start mit automatischer Erstinstallation |
 | `.env.example` | Vorlage für die lokale `.env` (wird nicht committet) |

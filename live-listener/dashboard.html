@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benny LIVE-Dashboard</title>
+<style>
+  :root {
+    --page:#f9f9f7; --surface:#fcfcfb; --line:#e4e3de; --grid:#ecebe7;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --series:#2a78d6; --series-soft:rgba(42,120,214,.14);
+    --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+    --pill-ok-ink:#06210f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:#0d0d0d; --surface:#1a1a19; --line:#2c2c2a; --grid:#262624;
+      --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+      --series:#3987e5; --series-soft:rgba(57,135,229,.18);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:#0d0d0d; --surface:#1a1a19; --line:#2c2c2a; --grid:#262624;
+    --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+    --series:#3987e5; --series-soft:rgba(57,135,229,.18);
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding:16px; }
+  .wrap { max-width:1280px; margin:0 auto; }
+  header { display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; margin-bottom:14px; }
+  h1 { font-size:20px; margin:0; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:99px; font-weight:600; font-size:13px; border:1px solid var(--line); }
+  .pill .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .s-connected .dot { background:var(--good) } .s-error .dot { background:var(--crit) }
+  .s-checking .dot,.s-connecting .dot,.s-reconnecting .dot,.s-starting .dot { background:var(--warn) }
+  .meta { color:var(--ink2); font-size:13px; }
+  .muted { color:var(--muted); }
+  .err { color:var(--crit); font-size:13px; margin:-6px 0 12px; }
+  .grid { display:grid; gap:12px; }
+  .hero { grid-template-columns:repeat(4, minmax(0,1fr)); margin-bottom:12px; }
+  .small { grid-template-columns:repeat(6, minmax(0,1fr)); margin-bottom:12px; }
+  .two { grid-template-columns:minmax(0,1fr) minmax(0,1fr); margin-bottom:12px; }
+  .three { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); margin-bottom:12px; }
+  @media (max-width:1000px) { .hero { grid-template-columns:repeat(2,minmax(0,1fr)) } .small { grid-template-columns:repeat(3,minmax(0,1fr)) } .two,.three { grid-template-columns:minmax(0,1fr) } }
+  @media (max-width:520px) { .small { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-width:0; }
+  .k { color:var(--ink2); font-size:12px; text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+  .big { font-size:40px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; margin-top:4px; }
+  .v { font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .sub { color:var(--ink2); font-size:13px; font-variant-numeric:tabular-nums; }
+  h2 { font-size:14px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .chart { position:relative; height:180px; }
+  .chart svg { width:100%; height:100%; display:block; overflow:visible; }
+  .tip { position:absolute; pointer-events:none; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 9px; font-size:12px; box-shadow:0 4px 14px rgba(0,0,0,.15); white-space:nowrap; display:none; z-index:2; }
+  .tip b { font-variant-numeric:tabular-nums; }
+  .empty { color:var(--muted); font-size:13px; padding:20px 0; text-align:center; }
+  ol, ul { margin:0; padding:0; list-style:none; }
+  .list { max-height:320px; overflow:auto; }
+  .list li { display:flex; gap:8px; align-items:baseline; padding:5px 0; border-top:1px solid var(--grid); font-size:14px; }
+  .list li:first-child { border-top:0; }
+  .list .n { color:var(--muted); font-variant-numeric:tabular-nums; min-width:2.6em; text-align:right; }
+  .list .who { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .list .num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bar { height:6px; border-radius:3px; background:var(--series); margin-top:3px; min-width:2px; }
+  button { font:inherit; font-size:12px; padding:3px 9px; border-radius:7px; border:1px solid var(--line); background:var(--page); color:var(--ink); cursor:pointer; }
+  button:hover { border-color:var(--muted); }
+  .money { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:14px; font-variant-numeric:tabular-nums; }
+  .money .r { text-align:right; }
+  .note { color:var(--muted); font-size:12px; margin-top:8px; }
+  table.feed { width:100%; border-collapse:collapse; font-size:13px; }
+  table.feed td { padding:5px 6px; border-top:1px solid var(--grid); vertical-align:top; }
+  table.feed td.t { color:var(--muted); white-space:nowrap; width:1%; font-variant-numeric:tabular-nums; }
+  table.feed td.e { white-space:nowrap; width:1%; font-weight:600; color:var(--ink2); }
+  .filters { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:13px; color:var(--ink2); }
+  .dup { opacity:.5 }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏠 Benny's Town · LIVE</h1>
+    <span id="state" class="pill"><span class="dot"></span><span id="stateTxt">…</span></span>
+    <span class="meta" id="user"></span>
+    <span class="meta" id="dur"></span>
+    <span class="meta" id="obs"></span>
+    <span style="flex:1"></span>
+    <button id="theme" title="Hell/Dunkel">◐</button>
+  </header>
+  <div class="err" id="err"></div>
+
+  <section class="grid hero">
+    <div class="card"><div class="k">Neue Follower</div><div class="big" id="h-follow">0</div><div class="sub" id="h-follow-sub">&nbsp;</div></div>
+    <div class="card"><div class="k">Dein Gewinn ca.</div><div class="big" id="h-money">0,00 €</div><div class="sub" id="h-money-sub">&nbsp;</div></div>
+    <div class="card"><div class="k">Zuschauer jetzt</div><div class="big" id="h-view">–</div><div class="sub" id="h-view-sub">&nbsp;</div></div>
+    <div class="card"><div class="k">Likes</div><div class="big" id="h-like">0</div><div class="sub" id="h-like-sub">&nbsp;</div></div>
+  </section>
+
+  <section class="grid small">
+    <div class="card"><div class="k">Geschenke</div><div class="v" id="s-gifts">0</div><div class="sub" id="s-gifters">&nbsp;</div></div>
+    <div class="card"><div class="k">Diamanten</div><div class="v" id="s-dia">0 💎</div><div class="sub">nach Combo-Ende</div></div>
+    <div class="card"><div class="k">Chat</div><div class="v" id="s-chat">0</div><div class="sub">Nachrichten</div></div>
+    <div class="card"><div class="k">Beitritte</div><div class="v" id="s-join">0</div><div class="sub">Zuschauer kamen rein</div></div>
+    <div class="card"><div class="k">Geteilt</div><div class="v" id="s-share">0</div><div class="sub">mal</div></div>
+    <div class="card"><div class="k">Benny's Bank (Story)</div><div class="v" id="s-bank">+0,00 €</div><div class="sub">10 ¢ pro Follow</div></div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>Zuschauer im Verlauf <span class="muted" id="c1-range"></span></h2>
+      <div class="chart" id="c-view"></div>
+    </div>
+    <div class="card">
+      <h2>Neue Follower pro Minute <span class="muted" id="c2-range"></span></h2>
+      <div class="chart" id="c-follow"></div>
+    </div>
+  </section>
+
+  <section class="grid three">
+    <div class="card">
+      <h2>Neue Follower (Einzugsreihenfolge) <button id="copy">Namen kopieren</button></h2>
+      <ol class="list" id="followers"></ol>
+    </div>
+    <div class="card">
+      <h2>Top-Unterstützer</h2>
+      <ol class="list" id="gifters"></ol>
+    </div>
+    <div class="card">
+      <h2>Gewinn ca. – so gerechnet</h2>
+      <div class="money" id="money"></div>
+      <div class="note">Schätzung, TikTok nennt keine offiziellen Kurse. Ein Geschenk mit N 💎 kostet den Zuschauer N Coins; du bekommst davon etwa die Hälfte (~0,005 $ pro 💎). Vor Steuern; Auszahlung erst ab 10.000 💎. Kurse in <code>.env</code> anpassbar (<code>DIAMOND_EUR</code>, <code>COIN_EUR</code>).</div>
+      <h2 style="margin-top:14px">Geschenke nach Art</h2>
+      <ul class="list" id="gifttypes" style="max-height:180px"></ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Live-Feed
+      <span class="filters">
+        <label><input type="checkbox" data-f="follow" checked> Follows</label>
+        <label><input type="checkbox" data-f="gift" checked> Geschenke</label>
+        <label><input type="checkbox" data-f="chat" checked> Chat</label>
+        <label><input type="checkbox" data-f="like"> Likes</label>
+        <label><input type="checkbox" data-f="join"> Beitritte</label>
+        <label><input type="checkbox" data-f="share"> Geteilt</label>
+      </span>
+    </h2>
+    <table class="feed"><tbody id="feed"></tbody></table>
+  </section>
+  <p class="note" id="foot"></p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nf = n => (n ?? 0).toLocaleString('de-DE');
+const eur = n => (n ?? 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+const hm = t => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+const hms = t => new Date(t).toLocaleTimeString('de-DE');
+const STATE = { connected: 'verbunden', offline: 'nicht live – warte', checking: 'prüfe …', connecting: 'verbinde …', reconnecting: 'verbinde neu …', error: 'Fehler', starting: 'startet …' };
+
+// Theme: per Viewer gemerkt (nur Komfort)
+const root = document.documentElement;
+try { const th = localStorage.getItem('benny-dash-theme'); if (th) root.dataset.theme = th; } catch {}
+$('theme').onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('benny-dash-theme', root.dataset.theme); } catch {}
+};
+
+// Feed-Filter merken
+const filt = {};
+document.querySelectorAll('[data-f]').forEach(cb => {
+  try { const v = localStorage.getItem('benny-dash-f-' + cb.dataset.f); if (v !== null) cb.checked = v === '1'; } catch {}
+  filt[cb.dataset.f] = cb.checked;
+  cb.onchange = () => { filt[cb.dataset.f] = cb.checked; try { localStorage.setItem('benny-dash-f-' + cb.dataset.f, cb.checked ? '1' : '0'); } catch {} render(); };
+});
+
+// ---------- kleine SVG-Charts (eine Reihe, eine Farbe, Hover-Tooltip) ----------
+function niceMax(v) { if (v <= 4) return 4; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function chart(el, pts, kind, fmtTip) {
+  // pts: [{x: ms, y: number, label}]
+  if (!pts.length) { el.innerHTML = '<div class="empty">Noch keine Daten</div>'; return; }
+  const W = el.clientWidth || 400, H = el.clientHeight || 180, L = 36, R = 8, T = 8, B = 22;
+  const iw = W - L - R, ih = H - T - B;
+  const x0 = pts[0].x, x1 = Math.max(pts[pts.length - 1].x, x0 + 60000);
+  const ymax = niceMax(Math.max(...pts.map(p => p.y), 1));
+  const X = x => L + (kind === 'bar' ? ((x - x0) / (x1 - x0 + 60000)) * iw : ((x - x0) / (x1 - x0)) * iw);
+  const Y = y => T + ih - (y / ymax) * ih;
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = ymax * i / 4, y = Y(v); g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="var(--grid)" stroke-width="1"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${nf(Math.round(v))}</text>`; }
+  // x-Achse: nur volle Minuten, höchstens ~5 Beschriftungen, nie doppelt
+  const spanMin = (x1 - x0) / 60000, step = [1, 2, 5, 10, 15, 30, 60].find(v => spanMin / v <= 5) || 120;
+  for (let m = Math.ceil(x0 / 60000 / step) * step; m * 60000 <= x1; m += step) {
+    const t = m * 60000, x = X(t) + (kind === 'bar' ? Math.min(48, Math.max(2, iw / (spanMin + 1) - 2)) / 2 : 0);
+    g += `<text x="${x}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${hm(t)}</text>`;
+  }
+  let m = '';
+  if (kind === 'line') {
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + X(p.x).toFixed(1) + ' ' + Y(p.y).toFixed(1)).join(' ');
+    m = `<path d="${d} L${X(pts[pts.length - 1].x)} ${Y(0)} L${X(pts[0].x)} ${Y(0)} Z" fill="var(--series-soft)"/><path d="${d}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round"/>`;
+    const last = pts[pts.length - 1]; m += `<circle cx="${X(last.x)}" cy="${Y(last.y)}" r="4" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/>`;
+    m += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${T + ih}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/><circle class="xd" r="5" fill="var(--series)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  } else {
+    const bw = Math.min(48, Math.max(2, iw / ((x1 - x0) / 60000 + 1) - 2));
+    for (const p of pts) { if (!p.y) continue; const x = X(p.x) + 1, y = Y(p.y), h = Y(0) - y, r = Math.min(4, bw / 2, h);
+      m += `<path d="M${x} ${Y(0)} V${y + r} Q${x} ${y} ${x + r} ${y} H${x + bw - r} Q${x + bw} ${y} ${x + bw} ${y + r} V${Y(0)} Z" fill="var(--series)"/>`; }
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${kind === 'line' ? 'Zuschauer im Verlauf' : 'Neue Follower pro Minute'}">${g}${m}<line x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)" stroke-width="1"/><rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/></svg><div class="tip"></div>`;
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip');
+  svg.onmousemove = ev => {
+    const r = svg.getBoundingClientRect(), mx = (ev.clientX - r.left) * W / r.width;
+    let best = pts[0]; for (const p of pts) if (Math.abs(X(p.x) - mx) < Math.abs(X(best.x) - mx)) best = p;
+    if (kind === 'bar') { const step = iw / ((x1 - x0) / 60000 + 1); best = pts.find(p => mx >= X(p.x) && mx < X(p.x) + step) || best; }
+    tip.innerHTML = fmtTip(best); tip.style.display = 'block';
+    const px = (kind === 'bar' ? X(best.x) + 6 : X(best.x)) * r.width / W;
+    tip.style.left = Math.min(r.width - tip.offsetWidth, Math.max(0, px - tip.offsetWidth / 2)) + 'px'; tip.style.top = '-6px';
+    if (kind === 'line') { const xh = svg.querySelector('.xh'), xd = svg.querySelector('.xd'); xh.setAttribute('x1', X(best.x)); xh.setAttribute('x2', X(best.x)); xh.setAttribute('visibility', 'visible'); xd.setAttribute('cx', X(best.x)); xd.setAttribute('cy', Y(best.y)); xd.setAttribute('visibility', 'visible'); }
+  };
+  svg.onmouseleave = () => { tip.style.display = 'none'; svg.querySelectorAll('.xh,.xd').forEach(e => e.setAttribute('visibility', 'hidden')); };
+}
+
+function describe(e) {
+  const d = e.data || {}, u = d.user ? '<b>@' + esc(d.user.uniqueId) + '</b> ' + (d.user.nickname ? '<span class="muted">' + esc(d.user.nickname) + '</span> ' : '') : '';
+  if (e.event === 'gift') return u + '🎁 ' + esc(d.giftName) + ' ×' + d.repeatCount + ' · ' + nf(d.diamondCount * d.repeatCount) + ' 💎' + (d.giftType === 1 ? (d.repeatEnd ? ' · Combo-Ende' : ' · Combo läuft') : '');
+  if (e.event === 'chat') return u + '💬 ' + esc(d.comment);
+  if (e.event === 'like') return u + '❤️ +' + d.likeCount;
+  if (e.event === 'follow') return u + '➕ folgt jetzt' + (e.dup ? ' (doppelt)' : '');
+  if (e.event === 'join') return u + 'ist beigetreten';
+  if (e.event === 'share') return u + 'hat geteilt';
+  return esc(JSON.stringify(d));
+}
+
+let S = null, lastChartKey = '';
+function render() {
+  if (!S) return;
+  const L = S.live || {}, M = L.money || {};
+  // Kopf
+  $('state').className = 'pill s-' + S.state;
+  $('stateTxt').textContent = (S.mode === 'mock' ? 'DEMO · ' : '') + (STATE[S.state] || S.state);
+  $('user').textContent = '@' + S.user;
+  if (L.start) { const min = Math.floor((Date.parse(S.now) - Date.parse(L.start)) / 60000); $('dur').textContent = 'LIVE seit ' + hm(L.start) + ' · ' + (min >= 60 ? Math.floor(min / 60) + ' h ' : '') + (min % 60) + ' min'; } else $('dur').textContent = '';
+  $('obs').textContent = 'OBS/Website: ' + (S.wsClients ? '✓ verbunden' : '✗ nicht verbunden');
+  $('err').textContent = S.lastError ? '⚠ ' + S.lastError : '';
+  // Kennzahlen
+  const fol = L.follows || [];
+  $('h-follow').textContent = nf(fol.length);
+  const lastF = fol[fol.length - 1]; $('h-follow-sub').textContent = lastF ? 'zuletzt @' + lastF.uniqueId + ' · ' + hm(lastF.t) : 'noch keiner in diesem LIVE';
+  $('h-money').textContent = eur(M.yourShareEur);
+  $('h-money-sub').textContent = nf(L.diamonds) + ' 💎 × ' + (M.diamondEur ?? 0).toLocaleString('de-DE', { maximumFractionDigits: 4 }) + ' €';
+  $('h-view').textContent = L.viewers != null ? nf(L.viewers) : '–';
+  $('h-view-sub').textContent = L.peakViewers ? 'Höchststand ' + nf(L.peakViewers) : ' ';
+  $('h-like').textContent = nf(L.totalLikes ?? L.likesSum);
+  $('h-like-sub').textContent = L.totalLikes != null ? '+' + nf(L.likesSum) + ' seit Start des Listeners' : ' ';
+  $('s-gifts').textContent = nf(L.gifts); $('s-gifters').textContent = nf(L.gifterCount) + ' Unterstützer';
+  $('s-dia').textContent = nf(L.diamonds) + ' 💎';
+  $('s-chat').textContent = nf(L.chat); $('s-join').textContent = nf(L.joins); $('s-share').textContent = nf(L.shares);
+  $('s-bank').textContent = '+' + eur(M.bennyBankEur);
+  // Geld
+  $('money').innerHTML = [
+    ['Diamanten', nf(L.diamonds) + ' 💎'],
+    ['Zuschauer haben ausgegeben ca.', eur(M.viewersPaidEur)],
+    ['TikTok behält ca.', '− ' + eur((M.viewersPaidEur || 0) - (M.yourShareEur || 0))],
+    ['<b>Dein Anteil ca.</b>', '<b>' + eur(M.yourShareEur) + '</b>']
+  ].map(([a, b]) => `<span>${a}</span><span class="r">${b}</span>`).join('');
+  // Listen
+  $('followers').innerHTML = fol.length ? fol.map((f, i) => `<li><span class="n">${i + 1}.</span><span class="who"><b>@${esc(f.uniqueId)}</b> <span class="muted">${esc(f.nickname)}</span></span><span class="num muted">${hm(f.t)}</span></li>`).join('') : '<li class="empty" style="border:0;display:block">Noch keine neuen Follower</li>';
+  const tg = L.topGifters || [], maxG = Math.max(1, ...tg.map(g => g.diamonds));
+  $('gifters').innerHTML = tg.length ? tg.map((g, i) => `<li style="display:block"><div style="display:flex;gap:8px"><span class="n">${i + 1}.</span><span class="who"><b>@${esc(g.uniqueId)}</b> <span class="muted">${esc(g.nickname)}</span></span><span class="num">${nf(g.diamonds)} 💎 · ${eur(g.diamonds * (M.diamondEur || 0))}</span></div><div class="bar" style="width:${(g.diamonds / maxG * 100).toFixed(1)}%;margin-left:calc(2.6em + 8px)"></div></li>`).join('') : '<li class="empty" style="border:0;display:block">Noch keine Geschenke</li>';
+  const gt = L.giftTypes || [];
+  $('gifttypes').innerHTML = gt.length ? gt.map(g => `<li><span class="who">${esc(g.name)} <span class="muted">(${nf(g.each)} 💎)</span></span><span class="num">×${nf(g.count)} = ${nf(g.diamonds)} 💎</span></li>`).join('') : '<li class="empty" style="border:0;display:block">–</li>';
+  // Feed
+  $('feed').innerHTML = (S.recent || []).filter(e => filt[e.event] !== false && (e.event in filt)).slice(0, 60)
+    .map(e => `<tr class="${e.dup ? 'dup' : ''}"><td class="t">${hms(e.t)}</td><td class="e">${e.event}</td><td>${describe(e)}</td></tr>`).join('') || '<tr><td class="empty" colspan="3">Noch nichts</td></tr>';
+  // Charts (nur neu zeichnen, wenn sich etwas geändert hat)
+  const vs = L.viewerSeries || [];
+  const key = vs.length + ':' + fol.length + ':' + (vs.length ? vs[vs.length - 1][1] : '') + ':' + $('c-view').clientWidth;
+  if (key !== lastChartKey) {
+    lastChartKey = key;
+    chart($('c-view'), vs.map(([t, v]) => ({ x: Date.parse(t), y: v })), 'line', p => `${hm(p.x)} · <b>${nf(p.y)}</b> Zuschauer`);
+    const perMin = new Map(); const startMin = L.start ? Math.floor(Date.parse(L.start) / 60000) : null;
+    for (const f of fol) { const m = Math.floor(Date.parse(f.t) / 60000); perMin.set(m, (perMin.get(m) || 0) + 1); }
+    const pts = []; if (startMin != null) { const endMin = Math.floor(Date.parse(S.now) / 60000); for (let m = Math.max(startMin, endMin - 179); m <= endMin; m++) pts.push({ x: m * 60000, y: perMin.get(m) || 0 }); }
+    chart($('c-follow'), fol.length ? pts : [], 'bar', p => `${hm(p.x)} · <b>${nf(p.y)}</b> neue Follower`);
+    $('c2-range').textContent = pts.length > 1 ? 'letzte ' + pts.length + ' min' : '';
+  }
+  $('foot').textContent = (S.engine ? 'Bibliothek: ' + S.engine + ' · ' : '') + (S.logFile ? 'Log: ' + S.logFile : '');
+}
+$('copy').onclick = async () => {
+  const names = (S?.live?.follows || []).map(f => f.uniqueId);
+  try { await navigator.clipboard.writeText(JSON.stringify(names)); $('copy').textContent = '✓ ' + names.length + ' kopiert'; }
+  catch { prompt('Namen kopieren:', JSON.stringify(names)); }
+  setTimeout(() => { $('copy').textContent = 'Namen kopieren'; }, 2000);
+};
+async function tick() {
+  try { S = await fetch('/status.json', { cache: 'no-store' }).then(r => r.json()); render(); }
+  catch { $('state').className = 'pill s-error'; $('stateTxt').textContent = 'Listener aus'; }
+}
+addEventListener('resize', () => { lastChartKey = ''; render(); });
+tick(); setInterval(tick, 1500);
+</script>
+</body>
+</html>
