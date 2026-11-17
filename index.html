@@ -626,7 +626,7 @@ function lampGlow(alpha) {   // warm light pools, drawn on top of the night over
 }
 function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato style)
   o = o || {}; const z = cam.z, k = o.k == null ? 1 : o.k; if (k <= .01) return;
-  const L = .6, Wd = .27, h = 34 * k, lift = 5 * k;
+  const L = .6, Wd = .27, h = 44 * k, lift = 5 * k;
   const TOPC = '#fbf9f3', LEFT = '#ece7dc', RIGHT = '#cfc8b8', GL = '#2b3550', GH = '#6b7aa6', SK = '#a3a1aa', NAVY = '#2c3a78', GRN = '#3d8a55';
   const u0 = u - L, u1 = u + L, v0 = v - Wd, v1 = v + Wd, uc = u + L * .44, ua = u + L * .84;
   const S = (uu, vv, hh) => { const [x, y] = uvS(uu, vv); return [x, y - hh * z]; };
