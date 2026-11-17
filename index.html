@@ -631,7 +631,7 @@ function lampGlow(alpha) {   // warm light pools, drawn on top of the night over
 }
 function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato style)
   o = o || {}; const z = cam.z, k = o.k == null ? 1 : o.k; if (k <= .01) return;
-  const L = .6, Wd = .27, h = 44 * k, lift = 5 * k;
+  const L = .6, Wd = .27, h = 44 * k, lift = (o.noTires ? 1.5 : 5) * k;
   const TOPC = '#fbf9f3', LEFT = '#ece7dc', RIGHT = '#cfc8b8', GL = '#2b3550', GH = '#6b7aa6', SK = '#a3a1aa', NAVY = '#2c3a78', GRN = '#3d8a55';
   const u0 = u - L, u1 = u + L, v0 = v - Wd, v1 = v + Wd, uc = u + L * .44, ua = u + L * .84;
   const S = (uu, vv, hh) => { const [x, y] = uvS(uu, vv); return [x, y - hh * z]; };
@@ -644,7 +644,7 @@ function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato 
   const front = (uu, b0, b1, z0, z1, col, lw) => poly(ctx, [S(uu, b1, z0), S(uu, b0, z0), S(uu, b0, z1), S(uu, b1, z1)], col, lw ? OUT : null, lw ? lw * z : 0);
   const wheel = (uu, vv) => { const [wx, wy] = uvS(uu, vv); ellipse(ctx, wx, wy - 3 * z, 7.5 * z, 6.5 * z, '#1f2233', OUT, 1 * z); circle(ctx, wx, wy - 3 * z, 3 * z, o.flat ? '#555' : '#b9bdcc'); circle(ctx, wx, wy - 3 * z, 1.1 * z, '#555a6e'); };
   { const [sx, sy] = uvS(u + .05, v + .05); ellipse(ctx, sx, sy, 46 * z, 17 * z, 'rgba(0,0,0,.22)'); }
-  wheel(u1 - .12, v0);                                   // far front wheel
+  if (!o.noTires) wheel(u1 - .12, v0);                  // far front wheel (noTires: van sits on the ground)
   box(u0, uc, v0, v1, lift, h, TOPC, LEFT, RIGHT);       // living box
   box(uc, u1, v0 + .025, v1 - .025, lift, h * .52, '#f4f1e8', LEFT, RIGHT);   // cab
   box(uc, ua, v0, v1, h * .58, h, TOPC, LEFT, RIGHT);    // alcove over the cab
@@ -681,7 +681,7 @@ function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato 
   { const p = [S(u0 + .2, v - .1, h + .2), S(u0 + .38, v - .1, h + .2), S(u0 + .38, v + .1, h + .2), S(u0 + .2, v + .1, h + .2)]; poly(ctx, p, '#b6bccc', OUT, 1 * z); }
   { const [x, y] = S(u0 + .62, v, h); ellipse(ctx, x, y - 1.5 * z, 5 * z, 2.5 * z, '#d6d2c8', OUT, .8 * z); }
   // near wheels with dark arches
-  for (const uu of [u0 + .16, u1 - .12]) { const vv = uu > uc ? cv : v1, [ax, ay] = S(uu, vv, lift); ellipse(ctx, ax, ay - 2 * z, 9 * z, 6 * z, '#3d3a46'); wheel(uu, vv); }
+  for (const uu of [u0 + .16, u1 - .12]) { const vv = uu > uc ? cv : v1, [ax, ay] = S(uu, vv, lift); ellipse(ctx, ax, ay - 2 * z, 9 * z, 6 * z, '#3d3a46'); if (o.noTires) { const [bx, by] = uvS(uu, vv); ctx.fillStyle = '#8d8a84'; ctx.fillRect(bx - 7 * z, by - 6 * z, 14 * z, 6 * z); } else wheel(uu, vv); }
   // a little rust: it's an old van
   if (o.rusty !== false && z > .4) for (const [f, hh, r] of [[.22, 8, 2.6], [.6, 10, 2]]) { const [x, y] = S(lerp(u0, uc, f), v1, hh * k); ellipse(ctx, x, y, r * z, r * .6 * z, '#a0522d'); }
   if (o.smoke > 0) { const [ex, ey] = uvS(u0 - .05, v + .1); for (let k2 = 0; k2 < 6; k2++) { const q = (o.smoke + k2 * .17) % 1; ctx.globalAlpha = (1 - q) * .8; circle(ctx, ex - q * 40 * z, ey - 6 * z - q * 50 * z, (6 + q * 16) * z, '#7c7f8f'); } ctx.globalAlpha = 1; }
