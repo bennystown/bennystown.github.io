@@ -311,7 +311,7 @@ Siehe `NAECHSTE_VIDEOS.md` (4 Skript-Entwürfe).
 
 ## 9b. Offene Aufgaben (Stand 16.11. 22:50)
 
-1. **Campervan realistischer zeichnen.** Kieran will ihn wie einen echten Alkoven-Wohnmobil (Fiat-Ducato-Stil): weiß, Fahrerkabine vorne mit Windschutzscheibe, Alkoven über der Kabine, Fenster, grüne/blaue Swoosh-Streifen, Räder. Gilt für `drawVan` (Website + Videos). Danach ggf. das Abendvideo Folge 7 neu rendern (Kieran: „everything is perfect except the campervan“).
+1. ✅ *(erledigt 17.11., Instanz B: neues `drawVan` mit Alkoven, Fahrerkabine, Windschutzscheibe, Swooshes)* **Campervan realistischer zeichnen.** Kieran will ihn wie einen echten Alkoven-Wohnmobil (Fiat-Ducato-Stil): weiß, Fahrerkabine vorne mit Windschutzscheibe, Alkoven über der Kabine, Fenster, grüne/blaue Swoosh-Streifen, Räder. Gilt für `drawVan` (Website + Videos). Danach ggf. das Abendvideo Folge 7 neu rendern (Kieran: „everything is perfect except the campervan“).
 2. **Bauvideo Di 17.11.**: neue Follower, **erste Treue-Blumen** (34 Tag-1-Bewohner), Blumen auch in 2D einbauen.
 3. Palette `bluepurple` für @haste50fps.
 4. LIVE-Start vorbereiten (Stream-Key, sobald freigeschaltet), eigener Listener (andere Instanz).
@@ -334,3 +334,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Follower seit dem letzten Update ausgewertet (Aufnahme 22:50 + exakte Web-Namen): **168 neue** → `data/pending_day4.json`. Noch **nicht** in `index.html` eingetragen (kommt morgens mit Tag 4). Darunter **@haste50fps** → Palette `bluepurple` jetzt nötig.
   - Chrome-Poller für neue Follower gestartet (Abschnitt 6), liest nur die Follower-Liste, nicht die Benachrichtigungen.
   - **Folge 7 (Campervan):** Instanz B hat im fertigen Video nur den Van durch ein Alkoven-Wohnmobil ersetzt (Datei `Benny_Folge6_Campervan_neu.mp4` an Kieran geschickt). `drawVan` im Code ist noch alt; neu zeichnen bleibt Aufgabe von Instanz A für Website und künftige Videos.
+- **17.11.2026 09:55** – Instanz B: `drawVan` neu gezeichnet (Alkoven-Wohnmobil, Ducato-Stil: Kabine mit Windschutzscheibe, Alkoven, Fenster mit Vorhängen, Tür, navy/grüne Swooshes, graue Schürze, Dachfenster, 2 kleine Roststellen). Optionen `k`, `flat`, `rusty`, `smoke` funktionieren weiter. Gilt automatisch auch für künftige Videos.
