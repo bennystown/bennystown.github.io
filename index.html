@@ -107,7 +107,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-ac
     <div class="stats">
       <div class="chip"><b id="sBank">€0.00</b><span>BANK</span></div>
       <div class="chip"><b id="sTen">0</b><span>TENANTS</span></div>
-      <div class="chip"><b id="sDay">1</b><span>DAY</span></div>
+      <div class="chip"><b id="sDay">1</b><span id="sWx">DAY</span></div>
     </div>
   </div>
   <div class="search"><input id="q" placeholder="Find your house: name or @username" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="find">Find</button></div>
@@ -5862,6 +5862,99 @@ function drawStand(x, y, z, st) {
   ctx.restore();
 }
 function crown(x, y, s) { ctx.font = EF(Math.round(s)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('👑', x, y); }
+
+/* ---- living town: real day/night, seasonal random weather, Benny walking around ---- */
+// test any combination with #weather=snow&hour=22 (weather: clear, cloudy, rain, storm, snow, fog)
+function envHour() { const d = new Date(); const o = location.hash.match(/hour=([\d.]+)/); return o ? +o[1] : d.getHours() + d.getMinutes() / 60; }
+function sunTimes() {   // rough sunrise/sunset for central Europe by day of year
+  const d = new Date(), doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+  const len = 12.2 + 4.1 * Math.sin(2 * Math.PI * (doy - 80) / 365), noon = 12.4 + (d.getTimezoneOffset() === -120 ? 1 : 0);
+  return [noon - len / 2, noon + len / 2];
+}
+function nightAmount() {   // 0 = full day, 1 = night (45-min twilight)
+  const h = envHour(), [rise, set] = sunTimes();
+  if (h >= rise + .75 && h <= set - .75) return 0;
+  if (h > set + .75 || h < rise - .75) return 1;
+  return h < 12 ? clamp((rise + .75 - h) / 1.5, 0, 1) : clamp((h - set + .75) / 1.5, 0, 1);
+}
+function duskAmount() { const n = nightAmount(); return n > 0 && n < 1 ? Math.sin(n * Math.PI) : 0; }
+const WEATHER_TABLE = {   // by month: chance of each weather (random, but fits the season)
+  w: [['snow', .35], ['clear', .25], ['cloudy', .2], ['fog', .1], ['rain', .1]],                      // Dec–Feb
+  t: [['rain', .3], ['cloudy', .25], ['clear', .2], ['fog', .15], ['snow', .1]],                      // Nov, Mar
+  s: [['clear', .4], ['rain', .25], ['cloudy', .25], ['fog', .1]],                                    // Apr, May, Oct
+  u: [['clear', .55], ['cloudy', .2], ['rain', .15], ['storm', .1]],                                  // Jun–Sep
+};
+function weatherNow() {
+  const o = location.hash.match(/weather=(\w+)/); if (o) return o[1];
+  const d = new Date(), m = d.getMonth(), tab = WEATHER_TABLE[[11, 0, 1].includes(m) ? 'w' : [10, 2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
+  const slot = Math.floor(d.getHours() / 3), r = seeded(d.getFullYear() * 10000 + (m + 1) * 100 * 10 + d.getDate() * 10 + slot + 7)();   // same weather for everyone, changes every 3 hours
+  let acc = 0; for (const [w, p] of tab) { acc += p; if (r < acc) return w; } return 'clear';
+}
+const WX = { kind: 'clear', drops: [], flakes: [], clouds: [], flash: 0, nextFlash: 4 };
+{ const r = seeded(4242); for (let k = 0; k < 260; k++) WX.drops.push([r(), r(), .6 + r() * .6]); for (let k = 0; k < 220; k++) WX.flakes.push([r(), r(), .5 + r(), r() * 6.28]); for (let k = 0; k < 7; k++) WX.clouds.push([r(), r(), .6 + r() * .8]); }
+let GLOW_SPR = null;
+function glowSprite() { if (GLOW_SPR) return GLOW_SPR; const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 1, 32, 32, 32); gr.addColorStop(0, 'rgba(255,214,120,.95)'); gr.addColorStop(1, 'rgba(255,190,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return GLOW_SPR = c; }
+function envActive() { return !(typeof VIDEO !== 'undefined' && VIDEO); }
+function envOverlay(dt) {
+  if (!envActive()) { ctx.fillStyle = 'rgba(8,10,34,.18)'; ctx.fillRect(0, 0, VW, VH); return; }
+  const n = nightAmount(), dusk = duskAmount(), z = cam.z; WX.kind = weatherNow();
+  const wet = ['rain', 'storm'].includes(WX.kind), grey = wet || WX.kind === 'cloudy' || WX.kind === 'fog';
+  // sky light: day is bright, night is deep blue, dusk is warm
+  ctx.fillStyle = `rgba(6,8,36,${.06 + .6 * n + (grey ? .08 : 0)})`; ctx.fillRect(0, 0, VW, VH);
+  if (dusk > 0) { ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(255,120,60,${.45 * dusk})`; ctx.fillRect(0, 0, VW, VH); ctx.restore(); }
+  if (WX.kind === 'snow') { ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(200,215,240,${.16 - .08 * n})`; ctx.fillRect(0, 0, VW, VH); ctx.restore(); }
+  // at night: lit windows + street lamps
+  if (n > .05) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = n * .8; const spr = glowSprite(), R = Math.max(7, 40 * z);
+    if (z > .14) for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 80) continue; if ((h.idx * 7) % 5 === 0) continue; ctx.drawImage(spr, sx + 6 * z - R / 2, sy - 22 * z - R / 2, R, R); }
+    ctx.restore();
+    if (TOWN.milestones.lights) lampGlow(n);
+  }
+  // clouds: soft shadows drifting over the town
+  if (grey && WX.kind !== 'fog') { ctx.save(); for (const [x, y, s] of WX.clouds) { const cx = ((x + S.T * .012 * s) % 1.4 - .2) * VW, cy = y * VH, r = 260 * s; const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r); g.addColorStop(0, 'rgba(10,12,30,.22)'); g.addColorStop(1, 'rgba(10,12,30,0)'); ctx.fillStyle = g; ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r); } ctx.restore(); }
+  if (WX.kind === 'fog') { const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, 'rgba(210,215,230,.42)'); g.addColorStop(.6, 'rgba(210,215,230,.18)'); g.addColorStop(1, 'rgba(210,215,230,.32)'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH); }
+  if (wet) {
+    const heavy = WX.kind === 'storm' ? 1 : .6; ctx.save(); ctx.strokeStyle = 'rgba(190,210,255,.45)'; ctx.lineWidth = 1.3; ctx.beginPath();
+    const cnt = Math.floor(WX.drops.length * heavy);
+    for (let k = 0; k < cnt; k++) { const [x, y, sp] = WX.drops[k], yy = ((y + S.T * 1.1 * sp) % 1) * (VH + 40) - 20, xx = ((x + S.T * .12 * sp) % 1) * VW; ctx.moveTo(xx, yy); ctx.lineTo(xx - 5, yy + 18 * sp); }
+    ctx.stroke(); ctx.restore();
+    if (WX.kind === 'storm') { if (S.T > WX.nextFlash) { WX.flash = 1; WX.nextFlash = S.T + 5 + Math.random() * 9; } if (WX.flash > 0) { ctx.fillStyle = `rgba(230,235,255,${.55 * WX.flash})`; ctx.fillRect(0, 0, VW, VH); WX.flash = Math.max(0, WX.flash - (dt || .016) * 4); } }
+  }
+  if (WX.kind === 'snow') {
+    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.9)';
+    for (const [x, y, sp, ph] of WX.flakes) { const yy = ((y + S.T * .06 * sp) % 1) * (VH + 20) - 10, xx = ((x + Math.sin(S.T * .8 + ph) * .01 + S.T * .01) % 1) * VW; ctx.beginPath(); ctx.arc(xx, yy, 1.4 + sp * 1.6, 0, 6.28); ctx.fill(); }
+    ctx.restore();
+  }
+}
+const WX_LABEL = { clear: ['☀️', 'Sunny'], cloudy: ['☁️', 'Cloudy'], rain: ['🌧️', 'Rain'], storm: ['⛈️', 'Storm'], snow: ['❄️', 'Snow'], fog: ['🌫️', 'Fog'] };
+function updateEnvChip() { const el = document.getElementById('sWx'); if (!el) return; const n = nightAmount(), w = weatherNow(), L = WX_LABEL[w] || WX_LABEL.clear; el.textContent = 'DAY ' + (n > .5 && w === 'clear' ? '🌙' : L[0]); el.parentElement.title = (n > .5 ? 'Night · ' : '') + L[1]; }
+
+/* Benny walks to a random neighbour, waves, and walks home (website only, not in videos) */
+const BHOME = [3.5, 3.65];
+const BW = { cyc: -1, path: null, target: null, t0: 0 };
+function bennyRoute(h) {
+  const tu = h.i + 1, tv = h.j;                      // stand on the street next to the house (odd lots, streets on even lines)
+  const pts = [BHOME, [3.5, 6], [tu, 6], [tu, tv]];
+  for (let k = 1; k < pts.length; k++) { const [a, b] = [pts[k - 1], pts[k]], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])); for (let q = 1; q < n; q++) { const u = lerp(a[0], b[0], q / n), v = lerp(a[1], b[1], q / n); if (k > 1 && (isPlaza(Math.floor(u), Math.floor(v)) && !(Math.abs(v - 6) < .1))) return null; } }
+  return pts;
+}
+function pathLen(P) { let L = 0; for (let k = 1; k < P.length; k++) L += Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]); return L; }
+function pathAt(P, d) { for (let k = 1; k < P.length; k++) { const l = Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]); if (d <= l) { const f = l ? d / l : 0; return [lerp(P[k - 1][0], P[k][0], f), lerp(P[k - 1][1], P[k][1], f), P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]]; } d -= l; } const e = P[P.length - 1]; return [e[0], e[1], 0, 0]; }
+const BCYC = 75, BSPD = 1.1;   // seconds per outing, tiles per second
+function bennyNow() {
+  if (!envActive()) return null;
+  const cyc = Math.floor(S.T / BCYC), tt = S.T - cyc * BCYC;
+  if (cyc !== BW.cyc) {
+    BW.cyc = cyc; BW.path = null; const r = seeded(cyc * 977 + 13);
+    for (let tries = 0; tries < 40 && !BW.path; tries++) { const h = HOUSES[Math.floor(r() * Math.min(HOUSES.length, 900))]; if (!h || Math.hypot(h.i - 3, h.j - 3) > 16) continue; const P = bennyRoute(h); if (P) { BW.path = P; BW.target = h; } }
+  }
+  if (!BW.path || tt < 18) return { pos: BHOME, sit: true };
+  const L = pathLen(BW.path), walk = L / BSPD, t = tt - 18;
+  if (t < walk) { const [u, v, du, dv] = pathAt(BW.path, t * BSPD); return { pos: [u, v], walk: S.T * 9, look: [clamp(du - dv, -1, 1) * .7, .2] }; }
+  if (t < walk + 6) { const [u, v] = pathAt(BW.path, L); return { pos: [u, v], wave: true, look: [-.6, -.3], at: BW.target }; }
+  if (t < 2 * walk + 6) { const [u, v, du, dv] = pathAt(BW.path, L - (t - walk - 6) * BSPD); return { pos: [u, v], walk: S.T * 9, look: [clamp(dv - du, -1, 1) * .7, .2] }; }
+  return { pos: BHOME, sit: true };
+}
 function draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const z = cam.z;
@@ -5899,6 +5992,11 @@ function draw() {
   if (TOWN.milestones.townHall) [[0.95, 16.95, '#ff8a3d'], [2.0, 16.95, '#4da3ff'], [4.1, 16.95, '#3ddc84'], [5.15, 16.95, '#e2483a']].forEach(([u, v, c]) => objs.push({ d: u + v, f: () => drawMarketStall(u, v, c) }));
   objs.push({ d: 6, f: () => drawBench(1.9, 4.2) }); objs.push({ d: 6, f: () => drawBench(4.2, 1.9) });
   for (const [u, v] of [[1.4, 4.6], [4.6, 1.4], [1.4, 1.4]]) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v + .1, f: () => drawTree(ctx, tx, ty, cam.z * .85, 0) }); }
+  const BN = bennyNow();
+  if (BN && !BN.sit) {
+    objs.push({ d: 7.1, f: () => { const [x, y] = uvS(3.5, 3.65); poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z); } });
+    objs.push({ d: BN.pos[0] + BN.pos[1] + .05, f: () => { const [x, y] = uvS(BN.pos[0], BN.pos[1]); ellipse(ctx, x, y + 2 * z, 14 * z, 6 * z, 'rgba(0,0,0,.25)'); drawBenny(ctx, x, y + 4 * z, .25 * z, { pose: 'stand', mood: 'happy', walk: BN.walk || 0, armsUp: BN.wave && (S.T * 2.5 % 1) < .5, look: BN.look || [0, 0], blink: (S.T % 3.7) < .12 }); } });
+  } else
   objs.push({ d: 7.15, f: () => {
     const [x, y] = uvS(3.5, 3.65);
     poly(ctx, [[x - 36 * z, y], [x, y + 15 * z], [x + 36 * z, y], [x, y - 15 * z]], '#a77b4f', '#7a5636', 1.5 * z);
@@ -5908,10 +6006,10 @@ function draw() {
   if (TOWN.milestones.lights) lampObjs(objs);
   if (TOWN.milestones.van) objs.push({ d: 9.45, f: () => drawVan(4.55, 4.85, { k: 1 }) });
   objs.sort((a, b) => a.d - b.d); for (const o of objs) o.f();
-  ctx.fillStyle = 'rgba(8,10,34,.18)'; ctx.fillRect(0, 0, VW, VH);
+  envOverlay(1 / 60);
   // labels
-  const [bx, by] = uvS(3.5, 3.65);
-  if (z > .45) tag(bx, by - 104 * z - 6, 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1);
+  const BNl = bennyNow(), [bx, by] = BNl && !BNl.sit ? uvS(BNl.pos[0], BNl.pos[1]) : uvS(3.5, 3.65);
+  if (z > .45) tag(bx, by - 104 * z - 6, BNl && BNl.wave ? '👋 hi @' + trunc(BNl.at.name, 14) + '!' : 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1);
   if (z > 1.0 && !selected) { let shown = 0; for (const h of HOUSES) { if (h === selected) continue; const [sx, sy] = uvS(h.i, h.j); if (sx < 0 || sx > VW || sy < 60 || sy > VH) continue; if (++shown > 25) break; const st = STY[styleOf(h.v)]; tag(sx, sy - (st.wall + st.roofH + st.f * 32 + 12) * z, '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); } }
   if (selected) {
     const h = selected, [sx, sy] = uvS(h.i, h.j), st = STY[styleOf(h.v)], pu = 1 + Math.sin(S.T * 5) * .06;
@@ -6046,7 +6144,7 @@ function suggest() {
   box.classList.add('on');
 }
 function goBenny() {
-  selected = null; const [wx, wy] = isoW(3.5, 3.65); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
+  selected = null; const BNg = bennyNow(), [wx, wy] = BNg && !BNg.sit ? isoW(BNg.pos[0], BNg.pos[1]) : isoW(3.5, 3.65); target.x = wx; target.y = wy - 30 + (VH * .12) / 1.7; target.z = 1.7;
   $('cardTitle').textContent = '🧢 Benny'; $('cardMeta').textContent = 'Owner of the whole town · sleeps on the street';
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
@@ -6617,7 +6715,8 @@ function startLive() {
 }
 
 window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
-function start() { loadLiveJoins(true).then(n => { if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
+setInterval(() => { try { updateEnvChip(); } catch (e) {} }, 30000);
+function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
 
 const go = () => CONTROL ? startControl() : LIVE ? startLive() : start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
