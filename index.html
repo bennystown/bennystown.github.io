@@ -334,9 +334,33 @@ function mkSprite(v, sc) {
   drawHouse(g, ax, ay, sc, v, { yard: true, seed: hashStr('s' + v) });
   return { c, ax, ay, sc };
 }
-const FLOWER_COLS = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff'];
-function drawFlowers(h, z) {   // loyalty tier 1 (3 days): a little flower bed in front of the house
-  for (let k = 0; k < 5; k++) { const [x, y] = uvS(h.i - .3 + k * .15, h.j + .42); ellipse(ctx, x, y, 5.5 * z, 2.6 * z, '#4b9a5a'); circle(ctx, x - 1.5 * z, y - 2.6 * z, 2.3 * z, FLOWER_COLS[(k + h.idx) % 5]); circle(ctx, x + 2 * z, y - 1.8 * z, 1.8 * z, FLOWER_COLS[(k + h.idx + 2) % 5]); }
+const FLOWER_COLS = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff', '#ff4d6d', '#7fb2ec'];
+function drawFlowers(h, z) {   // loyalty tier 1 (3 days): flower beds along the two front sides of the house
+  const H = h.idx * 7919;
+  const rnd = k => { const x = Math.sin(H + k * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  if (z < .3) {   // zoomed out: colourful patches so the gardens still read from far away
+    const s = Math.max(1.5, 4 * z);
+    const bedF = (a, b, c, d) => poly(ctx, [uvS(...a), uvS(...b), uvS(...c), uvS(...d)], '#3f8f4c');
+    bedF([h.i - .36, h.j + .29], [h.i + .29, h.j + .29], [h.i + .36, h.j + .42], [h.i - .36, h.j + .42]);
+    bedF([h.i + .29, h.j - .36], [h.i + .29, h.j + .29], [h.i + .42, h.j + .36], [h.i + .42, h.j - .36]);
+    for (let k = 0; k < 16; k++) { const f = (k % 8) / 7, [x, y] = k < 8 ? uvS(h.i - .32 + f * .62, h.j + .355) : uvS(h.i + .355, h.j - .32 + f * .62); const c = FLOWER_COLS[(k * 3 + h.idx) % FLOWER_COLS.length]; circle(ctx, x, y - s * .6, s, c); if (s > 1.8) circle(ctx, x, y - s * .6, s * .38, '#ffd23f'); }
+    return;
+  }
+  const bed = (a, b, c, d) => poly(ctx, [uvS(...a), uvS(...b), uvS(...c), uvS(...d)], '#6e4a2e', '#5a3a22', .8 * z);
+  bed([h.i - .36, h.j + .29], [h.i + .29, h.j + .29], [h.i + .36, h.j + .4], [h.i - .36, h.j + .4]);
+  bed([h.i + .29, h.j - .36], [h.i + .29, h.j + .29], [h.i + .4, h.j + .36], [h.i + .4, h.j - .36]);
+  const pts = [];
+  for (let k = 0; k < 16; k++) pts.push([h.i - .33 + k * .044 + (rnd(k) - .5) * .02, h.j + .345 + (rnd(k + 50) - .5) * .07]);
+  for (let k = 0; k < 16; k++) pts.push([h.i + .345 + (rnd(k + 90) - .5) * .07, h.j - .33 + k * .044 + (rnd(k + 20) - .5) * .02]);
+  pts.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+  pts.forEach(([u, v], k) => {
+    const [x, y] = uvS(u, v), hgt = (7 + rnd(k + 7) * 6) * z, col = FLOWER_COLS[Math.floor(rnd(k + 3) * FLOWER_COLS.length)];
+    line(ctx, x, y, x, y - hgt, '#2f7d3a', Math.max(1, 1.4 * z));
+    ellipse(ctx, x - 2.2 * z, y - hgt * .45, 2.4 * z, 1.1 * z, '#4b9a5a'); ellipse(ctx, x + 2.2 * z, y - hgt * .6, 2.4 * z, 1.1 * z, '#4b9a5a');
+    const r = (2 + rnd(k + 11) * 1.2) * z, cy = y - hgt;
+    if (rnd(k + 33) < .3) { poly(ctx, [[x - r, cy - r * .2], [x - r * .6, cy - r * 1.6], [x, cy - r * .7], [x + r * .6, cy - r * 1.6], [x + r, cy - r * .2], [x, cy + r * .9]], col, shade(col, .7), .8 * z); }   // tulip
+    else { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2 + k; circle(ctx, x + Math.cos(a) * r * .9, cy + Math.sin(a) * r * .55, r * .62, col); } circle(ctx, x, cy, r * .5, '#ffd23f'); }
+  });
 }
 function sprite(v, lo) { const A = lo ? SPR_LO : SPR_HI; return A[v] || (A[v] = mkSprite(v, lo ? .56 : 1.6)); }
 
@@ -5858,7 +5882,7 @@ function draw() {
   }
   drawPlazaGround(); drawParkGround(); drawBlockParks(); drawHallGround(); drawSiteGround(); drawFeatureGrounds();
   const objs = [], lo = z < .6, maxD = (A1 - CEN) * 1.45;
-  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc, kx = k * (h.bt ? clamp(bk, 0, 1.2) : 1), ky = k * bk; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * kx, sy - sp_.ay * ky, sp_.c.width * kx, sp_.c.height * ky); ctx.globalAlpha = 1; if (z > .3 && !fade && bk >= 1 && tierOf(h) >= 1) drawFlowers(h, z); } }); }
+  for (const h of HOUSES) { const [sx, sy] = uvS(h.i, h.j); if (sx < -150 || sx > VW + 150 || sy < -60 || sy > VH + 300) continue; if (h.stand && z > .3) { const su = h.i + .62, sv = h.j + .1; const [tx, ty] = uvS(su, sv); const st = h.stand; objs.push({ d: su + sv + .01, f: () => drawStand(tx, ty, z, st) }); } const fade = selected && h !== selected && Math.abs(h.i - selected.i) <= 2 && Math.abs(h.j - selected.j) <= 2 && h.i + h.j > selected.i + selected.j; objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc, kx = k * (h.bt ? clamp(bk, 0, 1.2) : 1), ky = k * bk; ctx.globalAlpha = fade ? .3 : 1; ctx.drawImage(sp_.c, sx - sp_.ax * kx, sy - sp_.ay * ky, sp_.c.width * kx, sp_.c.height * ky); ctx.globalAlpha = 1; if (z > .1 && !fade && bk >= 1 && tierOf(h) >= 1) drawFlowers(h, z); } }); }
   for (let idx = HOUSES.length; idx < LOTA.length && LOTA[idx].d <= maxD; idx++) {
     const L = LOTA[idx]; if (L.i < A0 + .5 || L.i > A1 - .5 || L.j < A0 + .5 || L.j > A1 - .5) continue;
     const [sx, sy] = uvS(L.i, L.j); if (sx < -80 || sx > VW + 80 || sy < -60 || sy > VH + 100) continue;
@@ -6092,8 +6116,27 @@ function buildHouse3D(h, tier) {
   const mb = box(.7, .45, .4, M('#e2483a'), 2.4, 1.3, 3.7);
   const plate = new T.Mesh(new T.PlaneGeometry(1.6, .4), new T.MeshBasicMaterial({ map: canvasTex((c, w, hh) => { c.fillStyle = '#fbf3df'; c.fillRect(0, 0, w, hh); c.strokeStyle = '#1b1728'; c.lineWidth = 8; c.strokeRect(0, 0, w, hh); c.fillStyle = '#1b1728'; let fs = 64; c.font = '700 ' + fs + 'px Poppins, sans-serif'; while (c.measureText('@' + h.name).width > w - 30 && fs > 20) { fs -= 2; c.font = '700 ' + fs + 'px Poppins, sans-serif'; } c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('@' + h.name, w / 2, hh / 2 + 3); }, 512, 128) }));
   plate.position.set(2.4, 1.85, 3.92); g.add(plate);
-  // tier 1: flowers
-  if (tier >= 1) { const cols = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff']; for (let k = 0; k < 14; k++) { const x = -1.8 + (k % 7) * .55 + (k > 6 ? .25 : 0), z = 1.95 + (k > 6 ? .35 : 0); if (Math.abs(x + .6) < .6) continue; box(.05, .3, .05, M('#2f7d3a'), x, .15, z); const fl = new T.Mesh(new T.SphereGeometry(.13, 10, 8), M(cols[k % 5])); fl.position.set(x, .35, z); g.add(fl); } }
+  // tier 1: flower beds — soil beds along the front and sides, ~90 mixed flowers (daisies + tulips), shrubs
+  if (tier >= 1) {
+    const cols = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff', '#ff4d6d', '#7fb2ec'], R = seeded(h.idx * 31 + 7);
+    const soil = M('#6e4a2e'), stemM = M('#2f7d3a'), leafM = M('#4b9a5a'), mid = M('#ffd23f'), edge = M('#b9b0a0');
+    const petalG = new T.SphereGeometry(.09, 8, 6), cupG = new T.ConeGeometry(.11, .22, 8, 1, true), midG = new T.SphereGeometry(.06, 8, 6), stemG = new T.CylinderGeometry(.018, .018, 1, 5), leafG = new T.SphereGeometry(.09, 6, 4);
+    const pm = cols.map(c => M(c, { side: T.DoubleSide }));
+    const beds = [[-2.15, 2.0, 1.1, .65], [1.0, 2.0, 1.9, .65], [-2.15, 0, .6, 3.2], [2.15, 0, .6, 3.2]];
+    for (const [x0, z0, w, d] of beds) {
+      box(w + .14, .14, d + .14, edge, x0, .05, z0); box(w, .16, d, soil, x0, .07, z0);
+      const n = Math.round(w * d * 30);
+      for (let k = 0; k < n; k++) {
+        const x = x0 + (R() - .5) * (w - .15), zz = z0 + (R() - .5) * (d - .15), hh = .25 + R() * .3, col = pm[Math.floor(R() * pm.length)];
+        const st = new T.Mesh(stemG, stemM); st.scale.y = hh; st.position.set(x, .15 + hh / 2, zz); g.add(st);
+        const lf = new T.Mesh(leafG, leafM); lf.scale.set(1, .3, .5); lf.position.set(x + .06, .2 + hh * .4, zz); g.add(lf);
+        const top = .15 + hh;
+        if (R() < .3) { const c = new T.Mesh(cupG, col); c.rotation.x = Math.PI; c.position.set(x, top + .06, zz); g.add(c); }
+        else { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2, pt = new T.Mesh(petalG, col); pt.scale.set(1, .35, 1); pt.position.set(x + Math.cos(a) * .085, top, zz + Math.sin(a) * .085); g.add(pt); } const c = new T.Mesh(midG, mid); c.position.set(x, top + .02, zz); g.add(c); }
+      }
+    }
+    for (const [x, zz] of [[-3.5, 3.4], [3.3, 3.2], [-3.4, -1.6], [3.4, -1.5]]) { const b = new T.Mesh(new T.SphereGeometry(.42, 10, 8), M('#3e8a4c')); b.scale.y = .8; b.position.set(x, .3, zz); b.castShadow = true; g.add(b); for (let p = 0; p < 6; p++) { const f = new T.Mesh(petalG, pm[(p + h.idx) % pm.length]); f.position.set(x + Math.cos(p) * .3, .45 + (p % 2) * .1, zz + Math.sin(p) * .3); g.add(f); } }
+  }
   // tier 2: fence + tree
   if (tier >= 2) {
     const fm = M('#f4efe4');
