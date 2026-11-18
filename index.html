@@ -166,7 +166,10 @@ function shade(hex, k) {
 }
 
 /* ---------------------------------------------------------- draw helpers */
-function poly(c, pts, fill, stroke, lw) { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) c.lineTo(pts[k][0], pts[k][1]); c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); } }
+// ❄️ first snow (day 5): snow lies on the ground for two days (18.–19.11.2026), test with #snowcover
+const SNOWY = (() => { if (/snowcover/.test(location.hash)) return true; if (/nosnow/.test(location.hash)) return false; const d = new Date(), k = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); return k >= 20261118 && k <= 20261119; })();
+const SNOW_MAP = { '#4f985c': '#e7eef5', '#3f8a4e': '#d9e3ec', '#4b9a5a': '#e0e8f0', '#5aa868': '#eef3f8', '#3e8fc9': '#a9cbe3', '#2b6f9e': '#8fb6d2', '#4fa3d9': '#b9d8ec' };
+function poly(c, pts, fill, stroke, lw) { if (SNOWY && fill && SNOW_MAP[fill]) fill = SNOW_MAP[fill]; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) c.lineTo(pts[k][0], pts[k][1]); c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); } }
 function rrect(c, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function panel(x, y, w, h, r, fill, stroke, lw) { rrect(ctx, x, y, w, h, r); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.stroke(); } }
 function txt(s, x, y, sz, col, al, bl) { ctx.font = F(sz); ctx.fillStyle = col; ctx.textAlign = al || 'left'; ctx.textBaseline = bl || 'alphabetic'; ctx.fillText(s, x, y); }
@@ -205,7 +208,128 @@ const MEADOWS = [];
 const meadowRad = (m, a) => m.R * (1 + .12 * Math.sin(3 * a + m.ph) + .07 * Math.sin(5 * a + m.ph * 2));
 const meadowDist = (m, u, v) => { const du = u - m.c[0], dv = v - m.c[1]; return Math.hypot(du, dv) - meadowRad(m, Math.atan2(dv, du)); };
 const inPark = (i, j) => parkDist(i, j) < 1.75 || MEADOWS.some(m => meadowDist(m, i, j) < 1.15);
-const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)] || inPark(i, j);
+/* ---- 5k marketplace (day 5): a big paved plaza that reaches across the streets into the neighbouring blocks ---- */
+// rectangles in tile coords [u0, v0, u1, v1]; the streets around stay, the ones inside are paved over
+const MK_RECTS = [[-23.62, -23.62, -12.38, -18.38], [-23.62, -18.38, -18.38, -12.38], [-27.62, -21.62, -23.62, -18.38], [-18.38, -18.38, -14.38, -14.38]];
+const inMarket = (u, v) => MK_RECTS.some(r => u > r[0] && u < r[2] && v > r[1] && v < r[3]);
+const MK_TOWER = [-20.9, -19.9];
+const MK_LAMPS = [[-23.35, -19.0], [-18.6, -22.3], [-13.0, -18.75], [-18.6, -18.6], [-23.35, -12.7], [-18.75, -12.7], [-27.4, -18.7], [-14.6, -14.6]];
+const MK_PARK = [-15.9, -21.5, -12.7, -18.7];
+const MK_SHOPS = [
+  ['🥐', 'BAKERY', '#f2d6a2', '#c75f1d'], ['☕', 'CAFÉ', '#d7efd2', '#2f7d6b'], ['🍦', 'ICE CREAM', '#f6c9cf', '#d6457a'], ['🍕', 'PIZZA', '#f7e27a', '#e2483a'],
+  ['🧸', 'TOYS', '#fbd0e0', '#e05596'], ['🍔', 'BURGER', '#fde2c3', '#b4521c'], ['💐', 'FLOWERS', '#e9d8f2', '#7b4b94'], ['📰', 'KIOSK', '#cfe3f2', '#3c5a99'], ['🍎', 'FRUIT', '#dff2c7', '#4f9b3a']];
+// every thing on the market with the moment (0..1 of the build) it pops up
+const MK_ITEMS = (function () {
+  const it = [], add = (t, d, f) => it.push({ t, d, f });
+  // shop row along the back (fronts face the viewer)
+  [-23.35, -21.65, -19.95, -18.25, -16.55, -14.85].forEach((u, k) => add(.18 + k * .07, u + 1.25 + -23.4 + 1.1 - .1, g => drawShopF(u, -23.4, MK_SHOPS[k], g, 'v')));
+  // shops along the west side of the south arm (fronts face east)
+  [-17.75, -16.05, -14.35].forEach((v, k) => add(.6 + k * .07, -23.4 + 1.1 + v + 1.25 - .1, g => drawShopF(-23.4, v, MK_SHOPS[6 + k], g, 'u')));
+  // umbrella stalls
+  const ST = [[-26.5, -20.7, '#ff8a3d'], [-25.0, -20.7, '#4da3ff'], [-26.5, -19.3, '#3ddc84'], [-25.0, -19.3, '#e2483a'],
+    [-20.6, -16.6, '#ffd23f'], [-19.4, -15.2, '#c77dff'], [-20.6, -13.8, '#ff5d8f'], [-18.2, -20.9, '#4da3ff'], [-17.0, -19.6, '#ff8a3d']];
+  ST.forEach(([u, v, c], k) => add(.42 + k * .035, u + v, g => drawUmbrellaStall(u, v, c, g, k)));
+  // clock tower in the middle
+  add(.05, MK_TOWER[0] + MK_TOWER[1] + .9, g => drawMarketTower(MK_TOWER[0], MK_TOWER[1], g));
+  // trees in planters + benches
+  [[-22.6, -19.0], [-19.2, -21.8], [-16.4, -16.4], [-15.0, -17.6], [-22.4, -13.1], [-26.9, -18.9]].forEach(([u, v], k) => add(.3 + k * .03, u + v, g => drawPlanterTree(u, v, g, k)));
+  [[-21.9, -18.3], [-19.6, -21.0], [-15.7, -15.4], [-17.4, -15.0]].forEach(([u, v], k) => add(.36 + k * .03, u + v, g => g >= 1 && drawBench(u, v)));
+  // parked cars
+  [[-15.3, '#e2483a'], [-14.3, '#4da3ff'], [-13.3, '#ffd23f']].forEach(([u, c], k) => add(.8 + k * .04, u + -19.8, g => g >= 1 && drawCar({ axis: 'v', line: u + .2, pos: -19.8, dir: 1, col: c })));
+  // lamps with bunting
+  MK_LAMPS.forEach(([u, v], k) => add(.12 + k * .02, u + v, g => g >= 1 && drawMarketLamp(u, v)));
+  return it;
+})();
+function mkPath(gr) {
+  ctx.beginPath();
+  for (const r of MK_RECTS) { const a = uvS(r[0] - gr, r[1] - gr), b = uvS(r[2] + gr, r[1] - gr), c = uvS(r[2] + gr, r[3] + gr), d = uvS(r[0] - gr, r[3] + gr); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.closePath(); }
+}
+function drawMarketGround(p) {
+  const z = cam.z; ctx.save(); ctx.globalAlpha = clamp(p * 4, 0, 1);
+  mkPath(.14); ctx.fillStyle = '#8d846f'; ctx.fill();
+  mkPath(0); ctx.fillStyle = '#d3c6aa'; ctx.fill();
+  ctx.save(); mkPath(0); ctx.clip();
+  // paving: fine stone grid, plus warmer bands where the old streets ran
+  for (const k of [-22, -20, -18, -16, -14, -26]) { poly(ctx, [uvS(k - .3, -30), uvS(k + .3, -30), uvS(k + .3, -10), uvS(k - .3, -10)], 'rgba(176,140,98,.28)'); }
+  poly(ctx, [uvS(-30, -18.3), uvS(-10, -18.3), uvS(-10, -17.7), uvS(-30, -17.7)], 'rgba(176,140,98,.28)');
+  if (z > .25) { ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = Math.max(.6, 1.1 * z); ctx.beginPath(); for (let t = -28; t <= -12; t += .5) { let a = uvS(t, -24), b = uvS(t, -12); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); a = uvS(-28, t); b = uvS(-12, t); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
+  // mosaic rings around the tower
+  const [cx, cy] = uvS(MK_TOWER[0], MK_TOWER[1]);
+  for (const [r, col] of [[2.3, 'rgba(160,110,70,.35)'], [1.8, 'rgba(255,255,255,.25)'], [1.35, 'rgba(160,110,70,.4)']]) ellipse(ctx, cx, cy, r * TW / 2 * z * 1.41, r * TH / 2 * z * 1.41, null, col, 5 * z);
+  // car park
+  const P = MK_PARK; poly(ctx, [uvS(P[0], P[1]), uvS(P[2], P[1]), uvS(P[2], P[3]), uvS(P[0], P[3])], '#5d6175', '#3f4256', 2 * z);
+  for (let u = P[0] + .5; u < P[2]; u += 1) { const a = uvS(u, P[1] + .5), b = uvS(u, P[3] - .3); line(ctx, a[0], a[1], b[0], b[1], 'rgba(255,255,255,.75)', 1.6 * z); }
+  if (z > .35) { const [x, y] = uvS(P[2] - .5, P[1] + .45); emoji(ctx, '🅿️', x, y, Math.max(8, 20 * z)); }
+  ctx.restore(); ctx.restore();
+}
+function drawShopF(u, v, sh, g, face) {
+  const z = cam.z, W = 1.25, D = 1.1, H = 40 * g;
+  const u1 = face === 'v' ? u + W : u + D, v1 = face === 'v' ? v + D : v + W;
+  isoBox(u, v, u1, v1, H, shade(sh[3], .9), sh[2], shade(sh[2], .85));
+  if (g < 1) return;
+  const A = face === 'v' ? uvS(u, v1) : uvS(u1, v1), B = face === 'v' ? uvS(u1, v1) : uvS(u1, v);
+  for (let k = 0; k < 6; k++) { const f0 = k / 6, f1 = (k + 1) / 6, x0 = lerp(A[0], B[0], f0), y0 = lerp(A[1], B[1], f0), x1 = lerp(A[0], B[0], f1), y1 = lerp(A[1], B[1], f1), ox = face === 'v' ? 6 : 9, oy = face === 'v' ? 8 : 4;
+    poly(ctx, [[x0, y0 - 26 * z], [x1, y1 - 26 * z], [x1 + (face === 'v' ? 6 : 8) * z, y1 - 18 * z + (face === 'v' ? 0 : 3 * z)], [x0 + (face === 'v' ? 6 : 8) * z, y0 - 18 * z + (face === 'v' ? 0 : 3 * z)]], k % 2 ? '#fff4e0' : sh[3], OUT, .8 * z); }
+  const mx = lerp(A[0], B[0], .3), my = lerp(A[1], B[1], .3); ctx.fillStyle = '#6b4a33'; ctx.fillRect(mx - 4 * z, my - 16 * z, 8 * z, 16 * z);
+  const wx = lerp(A[0], B[0], .72), wy = lerp(A[1], B[1], .72); ctx.fillStyle = '#ffd56b'; ctx.fillRect(wx - 6 * z, wy - 15 * z, 12 * z, 9 * z);
+  const [tx, ty] = uvS((u + u1) / 2, (v + v1) / 2); emoji(ctx, sh[0], tx, ty - 58 * z, Math.max(8, 26 * z));
+  if (z > .7) tag(tx, ty - 80 * z, sh[1], sh[3], 1);
+}
+function drawUmbrellaStall(u, v, col, g, k) {
+  if (g <= 0) return; const z = cam.z * eBack(g), [x, y] = uvS(u, v);
+  ellipse(ctx, x + 3 * z, y + 2 * z, 22 * z, 8 * z, 'rgba(0,0,0,.2)');
+  poly(ctx, [[x - 16 * z, y - 10 * z], [x, y - 2 * z], [x + 16 * z, y - 10 * z], [x, y - 18 * z]], '#c9925c', OUT, .8 * z);
+  poly(ctx, [[x - 16 * z, y - 10 * z], [x, y - 2 * z], [x, y + 4 * z], [x - 16 * z, y - 4 * z]], '#a06b3e'); poly(ctx, [[x, y - 2 * z], [x + 16 * z, y - 10 * z], [x + 16 * z, y - 4 * z], [x, y + 4 * z]], '#8a5a33');
+  const goods = ['#e2483a', '#ffd23f', '#3ddc84', '#ff8a3d', '#c77dff'];
+  for (let q = 0; q < 6; q++) circle(ctx, x - 9 * z + (q % 3) * 9 * z, y - 12 * z + Math.floor(q / 3) * 4 * z - (q % 3) * 1 * z, 2.6 * z, goods[(q + k) % 5]);
+  line(ctx, x, y - 10 * z, x, y - 40 * z, '#5b4630', 2 * z);
+  for (let s = 0; s < 8; s++) { const a0 = s / 8 * Math.PI * 2, a1 = (s + 1) / 8 * Math.PI * 2; poly(ctx, [[x, y - 50 * z], [x + Math.cos(a0) * 26 * z, y - 36 * z + Math.sin(a0) * 10 * z], [x + Math.cos(a1) * 26 * z, y - 36 * z + Math.sin(a1) * 10 * z]], s % 2 ? '#fff4e0' : col); }
+  ellipse(ctx, x, y - 36 * z, 26 * z, 10 * z, null, OUT, .8 * z);
+}
+function drawPlanterTree(u, v, g, k) {
+  if (g <= 0) return; const z = cam.z * eBack(g), [x, y] = uvS(u, v);
+  poly(ctx, [[x - 14 * z, y - 6 * z], [x, y + 1 * z], [x + 14 * z, y - 6 * z], [x, y - 13 * z]], '#9a8f78', OUT, .8 * z);
+  poly(ctx, [[x - 14 * z, y - 6 * z], [x, y + 1 * z], [x, y + 6 * z], [x - 14 * z, y - 1 * z]], '#857b66'); poly(ctx, [[x, y + 1 * z], [x + 14 * z, y - 6 * z], [x + 14 * z, y - 1 * z], [x, y + 6 * z]], '#736a57');
+  drawTree(ctx, x, y - 6 * z, z * .8, k % 3 === 2 ? 1 : 0);
+}
+function drawMarketTower(u, v, g) {
+  if (g <= 0) return; const z = cam.z, s = .45, H = 150 * eOut(g);
+  const b = isoBox(u - s, v - s, u + s, v + s, H, '#e9e2d0', '#d8cfb8', '#c2b89f');
+  isoBox(u - s - .08, v - s - .08, u + s + .08, v + s + .08, 14, '#cfc4ad', '#b7ab92', '#a3977f');
+  if (g < 1) return;
+  const [tx, ty] = uvS(u, v), top = ty - H * z;
+  // clock faces on both visible sides
+  for (const [fx, fy] of [[lerp(b.A[0], b.B[0], .5), lerp(b.A[1], b.B[1], .5)], [lerp(b.B[0], b.C[0], .5), lerp(b.B[1], b.C[1], .5)]]) {
+    const cy = fy - (H - 26) * z; ellipse(ctx, fx, cy, 10 * z, 11 * z, '#fbf7ee', OUT, 1.2 * z);
+    const t = (S.T * .05) % 1; line(ctx, fx, cy, fx + Math.sin(t * 6.28) * 6 * z, cy - Math.cos(t * 6.28) * 7 * z, OUT, 1.4 * z); line(ctx, fx, cy, fx + 4 * z, cy + 1 * z, OUT, 1.4 * z);
+  }
+  // little arched windows
+  for (const f of [.5]) { const x = lerp(b.A[0], b.B[0], f), y = lerp(b.A[1], b.B[1], f); ctx.fillStyle = '#6b4a33'; ctx.fillRect(x - 5 * z, y - 22 * z, 10 * z, 22 * z); }
+  // roof
+  const R = [uvS(u - s - .1, v + s + .1), uvS(u + s + .1, v + s + .1), uvS(u + s + .1, v - s - .1)].map(p => [p[0], p[1] - H * z]);
+  { const ap = [tx, top - 50 * z]; poly(ctx, [R[0], R[1], R[2], ap], '#9e2a20', OUT, 1.2 * z); poly(ctx, [R[0], R[1], ap], '#c23a2d', OUT, 1.2 * z); poly(ctx, [R[1], R[2], ap], '#9e2a20', OUT, 1.2 * z); }
+  line(ctx, tx, top - 50 * z, tx, top - 72 * z, '#555', 1.6 * z); poly(ctx, [[tx, top - 72 * z], [tx + 18 * z, top - 66 * z + Math.sin(S.T * 4) * 2 * z], [tx, top - 60 * z]], '#ffd23f', OUT, .8 * z);
+  if (z > .28) tag(tx, top - 100 * z, '🛍️ MARKETPLACE', '#ff8a3d', 1);
+}
+function drawMarketLamp(u, v) {
+  const z = cam.z, [x, y] = uvS(u, v);
+  line(ctx, x, y, x, y - 62 * z, '#2a2e45', Math.max(1, 3.6 * z)); circle(ctx, x, y - 64 * z, 6 * z, '#fff2c4', OUT, .8 * z);
+}
+const MK_BUNTING = [[0, 3], [1, 3], [3, 2], [0, 4], [4, 5], [5, 3], [0, 6], [3, 7]].filter(([a, b]) => !(a === 3 && b === 7));
+function drawBunting(g) {
+  if (g < 1 || cam.z < .25) return; const z = cam.z, cols = ['#e2483a', '#ffd23f', '#4da3ff', '#3ddc84', '#ff8a3d', '#c77dff'];
+  for (const [a, b] of MK_BUNTING) {
+    const A = uvS(MK_LAMPS[a][0], MK_LAMPS[a][1]), B = uvS(MK_LAMPS[b][0], MK_LAMPS[b][1]); A[1] -= 62 * z; B[1] -= 62 * z;
+    const n = Math.max(4, Math.round(Math.hypot(B[0] - A[0], B[1] - A[1]) / (14 * z))), sag = 22 * z;
+    ctx.beginPath(); for (let q = 0; q <= 20; q++) { const t = q / 20, x = lerp(A[0], B[0], t), y = lerp(A[1], B[1], t) + Math.sin(t * Math.PI) * sag; q ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.strokeStyle = 'rgba(40,40,50,.7)'; ctx.lineWidth = 1 * z; ctx.stroke();
+    for (let q = 1; q < n; q++) { const t = q / n, x = lerp(A[0], B[0], t), y = lerp(A[1], B[1], t) + Math.sin(t * Math.PI) * sag; poly(ctx, [[x - 4 * z, y], [x + 4 * z, y], [x, y + 9 * z]], cols[q % 6]); }
+  }
+}
+function marketObjs(objs, p) {
+  for (const it of MK_ITEMS) { const g = clamp((p - it.t) / .12, 0, 1); if (g > 0) objs.push({ d: it.d, f: () => it.f(g) }); }
+  if (p >= 1) objs.push({ d: -28, f: () => drawBunting(1) });
+}
+const isPlaza = (i, j) => !!RESERVED[blockOf(i) + ',' + blockOf(j)] || inPark(i, j) || inMarket(i + .5, j + .5);
 const isPlazaOld = (i, j) => !!OLD_RESERVED[blockOf(i) + ',' + blockOf(j)] || inPark(i, j);
 const LOTS = [];
 (function () {
@@ -222,7 +346,21 @@ const LOTA = (function () {
   for (let k = 0; k < LOT_FREEZE; k++) { if (blocked(LOTS[k])) { out.push(null); moved.push(k); } else out.push(LOTS[k]); }
   const pool = LOTS.slice(LOT_FREEZE).filter(L => !blocked(L));
   for (const k of moved) out[k] = pool.shift();
-  return out.concat(pool);
+  // day 5: the marketplace grew into the neighbouring blocks; the few houses standing there move to the first free lots outside
+  // they move in a chain: each one shifts one lot further out along its street, pushing the next house out, until a free lot at the edge
+  const all = out.concat(pool), MK_FREEZE = 4984, res = all.slice(0, MK_FREEZE), K = L => L.i + ',' + L.j;
+  const byKey = new Map(), owner = new Map(); for (const L of LOTS) byKey.set(K(L), L); res.forEach((L, k) => owner.set(K(L), k));
+  const okLot = L => L && !inMarket(L.i, L.j) && !RESERVED[blockOf(L.i) + ',' + blockOf(L.j)];
+  // push direction: straight out (towards -u or -v), whichever leaves the market sooner
+  const exitSteps = (i, j, du, dv) => { let n = 0; while (inMarket(i, j)) { i += du; j += dv; n++; } return n; };
+  const lines = {}; res.forEach((L, k) => { if (!inMarket(L.i, L.j)) return; const ax = exitSteps(L.i, L.j, -2, 0) < exitSteps(L.i, L.j, 0, -2) ? 'u' : 'v', key = ax + (ax === 'u' ? L.j : L.i); (lines[key] = lines[key] || []).push(k); });
+  for (const key in lines) {
+    const ax = key[0], c = +key.slice(1), q = lines[key].sort((a, b) => ax === 'u' ? res[b].i - res[a].i : res[b].j - res[a].j);
+    let t0 = Math.min(...q.map(k => ax === 'u' ? res[k].i : res[k].j)) - 2;
+    while (q.length && t0 > -150) { const kk = ax === 'u' ? t0 + ',' + c : c + ',' + t0, L = byKey.get(kk); if (okLot(L)) { const o = owner.get(kk); if (o != null) q.push(o); const t = q.shift(); res[t] = L; owner.set(kk, t); } t0 -= 2; }
+  }
+  const taken = new Set(res.map(K)), rest = all.slice(MK_FREEZE).filter(L => !inMarket(L.i, L.j) && !taken.has(K(L)));
+  return res.concat(rest);
 })();
 const lotUV = k => LOTA[Math.min(k, LOTA.length - 1)];
 const isoW = (u, v) => [(u - v) * TW / 2, (u + v) * TH / 2];
@@ -240,8 +378,9 @@ const STY = [
 ];
 const PAL = [['#f3e3c3', '#d9534f'], ['#cfe3f2', '#3c5a99'], ['#f6c9cf', '#7b4b94'], ['#d7efd2', '#2f7d6b'], ['#f2d6a2', '#8a4b2e'], ['#e4e4ec', '#e07a2e'],
   ['#f7e27a', '#7b4b94'], ['#7fb2ec', '#2b4f8f'], ['#e8737a', '#8e2430'], ['#d9c8f2', '#5b3f8f'], ['#f7c8a8', '#b5523a'], ['#f4f4f4', '#3f7d4f'],
-  ['#7fb2ec', '#7b4b94']];   // 12 = bluepurple (wish only, never random)
-const COLOR_NAMES = { cream: 0, lightblue: 1, pink: 2, mint: 3, sand: 4, grey: 5, yellowpurple: 6, blue: 7, red: 8, lavender: 9, peach: 10, white: 11, bluepurple: 12 };
+  ['#7fb2ec', '#7b4b94'],    // 12 = bluepurple (wish only, never random)
+  ['#3b3b46', '#18181f']];   // 13 = black (wish only, never random)
+const COLOR_NAMES = { cream: 0, lightblue: 1, pink: 2, mint: 3, sand: 4, grey: 5, yellowpurple: 6, blue: 7, red: 8, lavender: 9, peach: 10, white: 11, bluepurple: 12, black: 13 };
 const styleOf = v => 0;   // every house: same one-storey cottage with a pitched roof (upgrades come later)
 const WIN = {
   0: { L: [[.18, 0, .2, .68, 'd'], [.55, .32, .26, .36, 'w']], R: [[.36, .32, .28, .36, 'w']] },
@@ -314,11 +453,12 @@ function drawHouse(c, x, y, s, v, o) {
       poly(c, [Bu, Ru, P2], shade(pal[0], .7), ol, olw);
       poly(c, [Lu, Bu, P2, P1], pal[1], ol, olw);
       line(c, P1[0], P1[1], P2[0], P2[1], shade(pal[1], 1.3), Math.max(.6, 1.8 * s));
+      if (SNOWY) { const Lp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; poly(c, [Lp(Tu, P1, .2), Lp(Ru, P2, .2), P2, P1], '#d3dce8'); poly(c, [Lp(Lu, P1, .16), Lp(Bu, P2, .16), P2, P1], '#f7f9fc'); line(c, P1[0], P1[1], P2[0], P2[1], '#ffffff', Math.max(.6, 1.6 * s)); }
     } else {
       poly(c, [Lu, Bu, Ru, Tu], shade(pal[1], 1.1), ol, olw);
       const k = .76, cx = (Lu[0] + Ru[0]) / 2, cy = (Tu[1] + Bu[1]) / 2;
       const ins = p => [cx + (p[0] - cx) * k, cy + (p[1] - cy) * k];
-      poly(c, [ins(Lu), ins(Bu), ins(Ru), ins(Tu)], shade(pal[1], .86));
+      poly(c, [ins(Lu), ins(Bu), ins(Ru), ins(Tu)], SNOWY ? '#eef3f8' : shade(pal[1], .86));
       if (styleOf(v) === 3) { line(c, cx + 4 * s, cy, cx + 4 * s, cy - 26 * s, '#9aa0b5', Math.max(.6, 2 * s)); circle(c, cx + 4 * s, cy - 27 * s, 2.6 * s, '#ff4d4d'); }
       else { const bx = cx - 8 * s, by = cy + 1 * s; poly(c, [[bx - 7 * s, by], [bx, by + 3.5 * s], [bx + 7 * s, by], [bx, by - 3.5 * s]], '#cfd2de', ol, olw * .6); }
     }
@@ -538,9 +678,7 @@ function drawFeatureGrounds() {
   for (const key in FEATURES) {
     const p = featP(key); if (p <= 0) continue; const [bu, bv] = key.split(',').map(Number), Z = blk(bu, bv), f = FEATURES[key], z = cam.z;
     ctx.globalAlpha = clamp(p * 3, 0, 1);
-    if (f.kind === 'market') {
-      roundRectUV(Z, 1.3, '#b9ad97', '#8d846f', 2 * z); roundRectUV({ u0: Z.u0 + .6, u1: Z.u1 - .6, v0: Z.v0 + .6, v1: Z.v1 - .6 }, 1, '#cfc4ad');
-      if (z > .3) { ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 1.2 * z; ctx.beginPath(); for (let t = Z.u0 + .6; t < Z.u1 - .5; t += .5) { const a = uvS(t, Z.v0 + .6), b = uvS(t, Z.v1 - .6); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); }
+    if (f.kind === 'market') { ctx.globalAlpha = 1; drawMarketGround(p);
     } else if (f.kind === 'coaster') {
       roundRectUV(Z, 1.3, '#5aa868', '#3f8a4e', 2 * z);
       ctx.beginPath(); for (let k = 0; k <= 60; k++) { const a = k / 60 * Math.PI * 2, [x, y] = uvS(Z.u0 + 2.6 + Math.cos(a) * 2.4, Z.v0 + 2.6 + Math.sin(a) * 2.2); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.closePath(); ctx.fillStyle = '#d9c9a0'; ctx.fill();
@@ -557,11 +695,7 @@ function drawFeatureGrounds() {
 function featureObjs(objs) {
   for (const key in FEATURES) {
     const p = featP(key); if (p <= 0) continue; const [bu, bv] = key.split(',').map(Number), Z = blk(bu, bv), f = FEATURES[key];
-    if (f.kind === 'market') {
-      const spots = [[1.0, 1.0], [2.6, 1.0], [4.2, 1.0], [1.0, 2.7], [1.0, 4.3], [4.2, 4.3]];
-      spots.forEach(([du, dv], k) => { const g = clamp(p * 7 - k * .8, 0, 1); if (g > 0) objs.push({ d: Z.u0 + du + Z.v0 + dv + .6, f: () => drawShop(Z.u0 + du, Z.v0 + dv, SHOPS[k], g) }); });
-      if (p >= 1) [[2.9, 3.2, '#ff8a3d'], [3.9, 3.2, '#4da3ff'], [2.9, 4.0, '#3ddc84']].forEach(([du, dv, c]) => objs.push({ d: Z.u0 + du + Z.v0 + dv, f: () => drawMarketStall(Z.u0 + du, Z.v0 + dv, c) }));
-      if (p >= 1) for (const [du, dv] of [[.5, .5], [5.5, .5], [.5, 5.5], [5.5, 5.5]]) objs.push({ d: Z.u0 + du + Z.v0 + dv, f: () => drawLamp(Z.u0 + du, Z.v0 + dv) });
+    if (f.kind === 'market') { marketObjs(objs, p);
     } else if (f.kind === 'coaster') objs.push({ d: Z.u0 + Z.v0 + 5.2, f: () => drawCoaster(Z, p) });
     else if (f.kind === 'fountain') objs.push({ d: (Z.u0 + Z.u1) / 2 + (Z.v0 + Z.v1) / 2, f: () => drawFountain(Z, p) });
   }
@@ -589,7 +723,7 @@ function carObjs(objs) {
     if (c.line < A0 || c.line > A1) continue;
     const u = c.axis === 'u' ? c.pos : c.line, v = c.axis === 'u' ? c.line : c.pos; const [sx, sy] = uvS(u, v);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
-    if (inPark(u, v) || RESERVED[blockOf(Math.floor(u)) + ',' + blockOf(Math.floor(v))]) continue;
+    if (inPark(u, v) || inMarket(u, v) || RESERVED[blockOf(Math.floor(u)) + ',' + blockOf(Math.floor(v))]) continue;
     objs.push({ d: u + v + .05, f: () => drawCar(c) });
   }
 }
@@ -659,11 +793,12 @@ function lampGlow(alpha) {   // warm light pools, drawn on top of the night over
   ctx.restore();
 }
 function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato style)
-  o = o || {}; const z = cam.z, k = o.k == null ? 1 : o.k; if (k <= .01) return;
-  const L = .6, Wd = .27, h = 44 * k, lift = (o.noTires ? 1.5 : 5) * k;
+  o = o || {}; const VS = o.alongV ? (a, b) => uvS(u + (b - v), v + (a - u)) : uvS;
+  const z = cam.z, k = o.k == null ? 1 : o.k; if (k <= .01) return;
+  const L = .6, Wd = .27, h = 44 * k, lift = (o.lift != null ? o.lift : (o.noTires ? 1.5 : 5)) * k;
   const TOPC = '#fbf9f3', LEFT = '#ece7dc', RIGHT = '#cfc8b8', GL = '#2b3550', GH = '#6b7aa6', SK = '#a3a1aa', NAVY = '#2c3a78', GRN = '#3d8a55';
   const u0 = u - L, u1 = u + L, v0 = v - Wd, v1 = v + Wd, uc = u + L * .44, ua = u + L * .84;
-  const S = (uu, vv, hh) => { const [x, y] = uvS(uu, vv); return [x, y - hh * z]; };
+  const S = (uu, vv, hh) => { const [x, y] = VS(uu, vv); return [x, y - hh * z]; };
   const box = (a0, a1, b0, b1, z0, z1, top, left, right) => {
     poly(ctx, [S(a0, b1, z0), S(a1, b1, z0), S(a1, b1, z1), S(a0, b1, z1)], left, OUT, 1.2 * z);
     poly(ctx, [S(a1, b1, z0), S(a1, b0, z0), S(a1, b0, z1), S(a1, b1, z1)], right, OUT, 1.2 * z);
@@ -671,9 +806,9 @@ function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato 
   };
   const side = (vv, a0, a1, z0, z1, col, lw) => poly(ctx, [S(a0, vv, z0), S(a1, vv, z0), S(a1, vv, z1), S(a0, vv, z1)], col, lw ? OUT : null, lw ? lw * z : 0);
   const front = (uu, b0, b1, z0, z1, col, lw) => poly(ctx, [S(uu, b1, z0), S(uu, b0, z0), S(uu, b0, z1), S(uu, b1, z1)], col, lw ? OUT : null, lw ? lw * z : 0);
-  const wheel = (uu, vv) => { const [wx, wy] = uvS(uu, vv); ellipse(ctx, wx, wy - 3 * z, 7.5 * z, 6.5 * z, '#1f2233', OUT, 1 * z); circle(ctx, wx, wy - 3 * z, 3 * z, o.flat ? '#555' : '#b9bdcc'); circle(ctx, wx, wy - 3 * z, 1.1 * z, '#555a6e'); };
-  { const [sx, sy] = uvS(u + .05, v + .05); ellipse(ctx, sx, sy, 46 * z, 17 * z, 'rgba(0,0,0,.22)'); }
-  if (!o.noTires) wheel(u1 - .12, v0);                  // far front wheel (noTires: van sits on the ground)
+  const wheel = (uu, vv) => { const [wx, wy] = VS(uu, vv); ellipse(ctx, wx, wy - 3 * z, 7.5 * z, 6.5 * z, '#1f2233', OUT, 1 * z); circle(ctx, wx, wy - 3 * z, 3 * z, o.flat ? '#555' : '#b9bdcc'); circle(ctx, wx, wy - 3 * z, 1.1 * z, '#555a6e'); if (o.spin != null) line(ctx, wx, wy - 3 * z, wx + Math.cos(o.spin) * 3 * z, wy - 3 * z + Math.sin(o.spin) * 2.6 * z, '#555a6e', 1.2 * z); };
+  { const [sx, sy] = VS(u + .05, v + .05); ellipse(ctx, sx, sy, 46 * z, 17 * z, 'rgba(0,0,0,.22)'); }
+  if (o.tires != null ? o.tires >= 3 : !o.noTires) wheel(u1 - .12, v0);                  // far front wheel (noTires: van sits on the ground)
   box(u0, uc, v0, v1, lift, h, TOPC, LEFT, RIGHT);       // living box
   box(uc, u1, v0 + .025, v1 - .025, lift, h * .52, '#f4f1e8', LEFT, RIGHT);   // cab
   box(uc, ua, v0, v1, h * .58, h, TOPC, LEFT, RIGHT);    // alcove over the cab
@@ -710,10 +845,10 @@ function drawVan(u, v, o) {   // class-C motorhome (alcove over the cab, Ducato 
   { const p = [S(u0 + .2, v - .1, h + .2), S(u0 + .38, v - .1, h + .2), S(u0 + .38, v + .1, h + .2), S(u0 + .2, v + .1, h + .2)]; poly(ctx, p, '#b6bccc', OUT, 1 * z); }
   { const [x, y] = S(u0 + .62, v, h); ellipse(ctx, x, y - 1.5 * z, 5 * z, 2.5 * z, '#d6d2c8', OUT, .8 * z); }
   // near wheels with dark arches
-  for (const uu of [u0 + .16, u1 - .12]) { const vv = uu > uc ? cv : v1, [ax, ay] = S(uu, vv, lift); ellipse(ctx, ax, ay - 2 * z, 9 * z, 6 * z, '#3d3a46'); if (o.noTires) { const [bx, by] = uvS(uu, vv); ctx.fillStyle = '#8d8a84'; ctx.fillRect(bx - 7 * z, by - 6 * z, 14 * z, 6 * z); } else wheel(uu, vv); }
+  for (const [wi, uu] of [u0 + .16, u1 - .12].entries()) { const vv = uu > uc ? cv : v1, [ax, ay] = S(uu, vv, lift); ellipse(ctx, ax, ay - 2 * z, 9 * z, 6 * z, '#3d3a46'); if (o.tires != null ? o.tires <= wi : o.noTires) { const [bx, by] = VS(uu, vv); ctx.fillStyle = '#8d8a84'; ctx.fillRect(bx - 7 * z, by - 6 * z, 14 * z, 6 * z); } else wheel(uu, vv); }
   // a little rust: it's an old van
   if (o.rusty !== false && z > .4) for (const [f, hh, r] of [[.22, 8, 2.6], [.6, 10, 2]]) { const [x, y] = S(lerp(u0, uc, f), v1, hh * k); ellipse(ctx, x, y, r * z, r * .6 * z, '#a0522d'); }
-  if (o.smoke > 0) { const [ex, ey] = uvS(u0 - .05, v + .1); for (let k2 = 0; k2 < 6; k2++) { const q = (o.smoke + k2 * .17) % 1; ctx.globalAlpha = (1 - q) * .8; circle(ctx, ex - q * 40 * z, ey - 6 * z - q * 50 * z, (6 + q * 16) * z, '#7c7f8f'); } ctx.globalAlpha = 1; }
+  if (o.smoke > 0) { const [ex, ey] = VS(u0 - .05, v + .1); for (let k2 = 0; k2 < 6; k2++) { const q = (o.smoke + k2 * .17) % 1; ctx.globalAlpha = (1 - q) * .8; circle(ctx, ex - q * 40 * z, ey - 6 * z - q * 50 * z, (6 + q * 16) * z, '#7c7f8f'); } ctx.globalAlpha = 1; }
 }
 function drawHallGround() {
   const z = cam.z;
@@ -816,10 +951,10 @@ function tag(x, y, label, col, alpha, prog) {
 /* ===================== BENNY'S TOWN — "Find your house" ===================== */
 /* ---- DATA: update this block every day (move-in order = tenant number) ---- */
 const TOWN = {
-  day: 4,
+  day: 5,
   milestones: { park: true, townHall: true, tent: true, van: true, lights: true },   // 500 followers = park, 1,000 followers = town hall + market (switch on after the video)
   startDate: '2026-11-14',   // date of Day 1 (move-in dates are counted from here)
-  bankCents: 10800,         // Benny's bank in cents (e.g. 210 = €2.10)
+  bankCents: 8270,         // Benny's bank in cents (e.g. 210 = €2.10)
   ogLimit: 100,           // first X tenants get the OG crown
   tiktokUrl: 'https://www.tiktok.com/@bennys.town',
   // optional per tenant: color: cream | lightblue | pink | mint | sand | grey | yellowpurple | blue | red | lavender | peach | white
@@ -2221,7 +2356,7 @@ const TOWN = {
     { name: "khadijamadiq1", day: 2 , nick: "luqman" },
     { name: "wills64135", day: 2 , nick: "Wills" },
     { name: "lvv0631", day: 2 , nick: "1-800-eatshit" },
-    { name: "lethimgoplease0", day: 2 , nick: "Pjrisxim" },
+    { name: "lethimgoplease0", day: 2 , nick: "Pjrisxim", color: 'black' },
     { name: "samsung.naples", day: 2 , nick: "Wolfgang Amadeus Mozart" },
     { name: "orsettinoino_boy", day: 2 , nick: "Vince𐙚" },
     { name: "yassin6930", day: 2 , nick: "penis" },
@@ -5808,6 +5943,653 @@ const TOWN = {
     { name: "tom.svozil13", day: 4 },
     { name: "upthecelticx", day: 4 },
     { name: "lynarrr__", day: 4 },
+    { name: "ry4n_1a", day: 5, a: "Ry4n" },
+    { name: "jorn3307", day: 5, a: "jor$$$n" },
+    { name: "george_evagg1", day: 5 },
+    { name: "aimankhourshid", day: 5 },
+    { name: "aaron28313", day: 5, a: "Aaron.21606" },
+    { name: "maxjd13", day: 5, a: "maybe" },
+    { name: "jakubino.bombino", day: 5, a: "piggy biggest fan ever" },
+    { name: "joestarranter", day: 5, a: "Joestar rants" },
+    { name: "1art2is3peak", day: 5, a: "𒈓𒐫⏁⊑⟒ ⟒⊬⟒𒀱" },
+    { name: "unknowe72", day: 5, a: "UnknownA😎" },
+    { name: "bubbles_quixy", day: 5, a: "⋆🐾 𐙚 ˚─୨𝑸𝒖𝒊𝒙𝒚ৎ─⋆. 𐙚 🪽" },
+    { name: "nuclear_farts696969", day: 5 },
+    { name: "potatoe_cz", day: 5 },
+    { name: "edycosma783", day: 5 },
+    { name: "broskidenny16", day: 5, a: "𝙳𝙴𝙽𝙽Ỵ̷̡̛̟̱̑̍̀̉̿̿̉ 🇩🇪🥥" },
+    { name: "ignas.kosz", day: 5, a: "ichigoat" },
+    { name: "sk8_waterson", day: 5, a: "🛹Sk8🛹" },
+    { name: "connor.haycocks", day: 5, a: "Connor Haycocks" },
+    { name: "romeotamminga", day: 5, a: "#N.W.A FL" },
+    { name: "sdev9731", day: 5 },
+    { name: "l4m1ney4m4l0", day: 5, a: "🇪🇦Lamine_Yamal🇪🇦" },
+    { name: "keithbargerbos", day: 5, a: "Ƙ-0342☄️" },
+    { name: "pips.spammxo", day: 5, a: "pips X" },
+    { name: "adamt4984", day: 5, a: "Adam" },
+    { name: "dont.williams", day: 5, a: "Y.7Dontewg" },
+    { name: "billybusta6", day: 5, a: "billybusta" },
+    { name: "altair.rozenbeige", day: 5, a: "Altair" },
+    { name: "kristians.sokolov", day: 5, a: "Kriksis🔥💪" },
+    { name: "leniboy67676741", day: 5, a: "Leniboy67676741" },
+    { name: "alucardthebridofhermes", day: 5, a: "alucard" },
+    { name: "karl.santos.natha", day: 5, a: "|♦️ Sou_l ♣️ |" },
+    { name: "thehistoricdude1", day: 5, a: "thehistoricdude" },
+    { name: "zyroedits064", day: 5, a: "ZYRO" },
+    { name: "ppetkov_10", day: 5, a: "Ppetkov" },
+    { name: "mythicmax15", day: 5 },
+    { name: "marikesinivee5", day: 5, a: "maku" },
+    { name: "lujsoon", day: 5, a: "Lujson" },
+    { name: "alexvolkanovskilover1", day: 5, a: "Alexandervolkanovskilover" },
+    { name: "lari.larisa5866", day: 5, a: "☃️✨plankton✨☃️" },
+    { name: "teo.rider6", day: 5, a: "Teo Rider" },
+    { name: "vladputina5", day: 5, a: "Cristi" },
+    { name: "xx_alexfn_xx", day: 5, a: "XX_ALEXFN_XX" },
+    { name: "crocodielgreg", day: 5, a: "Greg👍" },
+    { name: "del78978", day: 5, a: "￴ ￴ ￴ ￴ ￴￴ ￴ ￴ ￴ ￴" },
+    { name: "stelakos01", day: 5, a: "S_Stelios:/" },
+    { name: "aldinpriv__", day: 5, a: "Aldinpriv__" },
+    { name: "tani8622", day: 5, a: "/-<🐾Riley🐾>-\\" },
+    { name: "darina.rabianska", day: 5, a: "Darina Rabianska Kováčová" },
+    { name: "tomek27087", day: 5, a: "Timak" },
+    { name: "severi368", day: 5, a: "seppe" },
+    { name: "stayfit155", day: 5, a: "ysj🤠" },
+    { name: "mrdauwe", day: 5, a: "MrDauwe" },
+    { name: "champ.0300", day: 5, a: "Champ" },
+    { name: "kostek.famous", day: 5, a: "kostek famous" },
+    { name: "preslav585", day: 5, a: "𝓐𝔂𝓻𝓽𝓸𝓷 𝓢𝓮𝓷𝓷𝓪 🇧🇷" },
+    { name: "peterkaratzias", day: 5, a: "Petros_1948☘️" },
+    { name: "raimis406", day: 5, a: "Raimis" },
+    { name: "christos_011", day: 5, a: "🎰" },
+    { name: "bro3e0", day: 5, a: "Bro3e32" },
+    { name: "luukiepuukie13", day: 5, a: "𝓛𝓾𝓾𝓴-13🐉" },
+    { name: "user6246181508803", day: 5, a: "Gabi" },
+    { name: "bella_theoverthinker", day: 5, a: "Bella" },
+    { name: "user194698260", day: 5, a: "Nightdrift" },
+    { name: "nezinau.kas18", day: 5, a: "nezinau kas" },
+    { name: "user4996814546603", day: 5, a: "🍑👋⬜️⬜️" },
+    { name: "jordananastacio8", day: 5, a: "jojo" },
+    { name: "matja96", day: 5, a: "HO2SO4🔥" },
+    { name: "kreweta_01", day: 5, a: "2007" },
+    { name: "joannanowakowska15", day: 5, a: "Ronaldo is The goat" },
+    { name: "rowanpayne6", day: 5, a: "world wars/ Rowan" },
+    { name: "mikro_makro5", day: 5, a: "Mikro_Makro5" },
+    { name: "neymar.jr10275", day: 5, a: "neymar.jr10" },
+    { name: "marco123297", day: 5, a: "Marco123" },
+    { name: "basedalak", day: 5, a: "Manuel mino 🍋" },
+    { name: "v1_plays_roblox", day: 5, a: "V1" },
+    { name: "thehonoured6", day: 5, a: "OmniManム" },
+    { name: "offical._.skid2", day: 5, a: "Skid_VR" },
+    { name: "neymaroski0", day: 5, a: "Neymaroski" },
+    { name: "its_me11782", day: 5, a: "tahir🇷🇸" },
+    { name: "kiwi_editz2", day: 5, a: "Kiwi_editz" },
+    { name: "rares.tiktoc", day: 5, a: "???" },
+    { name: "gooneygooney7", day: 5, a: "Gooneygooney" },
+    { name: "jens.warmolts", day: 5, a: "Jens Warmolts" },
+    { name: "romanek374", day: 5, a: "Romanek" },
+    { name: "ermes807", day: 5, a: "🏎️🔥⭐️💎Matteo:)👍💎⭐️🔥🏎️🦈" },
+    { name: "raioonus", day: 5, a: "Raioonus" },
+    { name: "zencca1", day: 5, a: "zen_60v🎃" },
+    { name: "samppa492", day: 5, a: "samppa" },
+    { name: "shadow.void05", day: 5, a: "unknwn.lele👥🃏" },
+    { name: "piccola_be8", day: 5, a: "Piccola_Be" },
+    { name: "noah.ekeland", day: 5, a: "Noah Elias" },
+    { name: "petarjeli84", day: 5, a: "Petarzd" },
+    { name: "tortoes5brother", day: 5, a: "totro es5 brother" },
+    { name: "lorenzoooo_.0", day: 5, a: "𝒮𝒶𝓇𝒶𝓉𝒾𝒶𝓂ℴ🤍" },
+    { name: "elliot.toille8", day: 5, a: "Elliottheswedishboy" },
+    { name: "tsgdovke", day: 5, a: "Justaeditor" },
+    { name: "eere179", day: 5, a: "Larper" },
+    { name: "brawlstarscuroblox", day: 5, a: "fan brawlstars" },
+    { name: "usernbr5mx2tuh", day: 5, a: "ོ" },
+    { name: "itsmelucas691", day: 5, a: "Lucas_tfb_69" },
+    { name: "gogo13584", day: 5, a: "gogo" },
+    { name: "rokenzunas0", day: 5, a: "rokenzenus" },
+    { name: "alekkeki", day: 5, a: "Cesxx19" },
+    { name: "geometry12341", day: 5, a: "CLUB STEP IS IMPOSSIBLE" },
+    { name: "lollipopy_cand", day: 5, a: "Lollipop_🍭🍬" },
+    { name: "milonoel.bross", day: 5, a: "MiloNoel Bross" },
+    { name: "billybobjr809", day: 5, a: "N" },
+    { name: "nico.kster", day: 5, a: "Nico Köster" },
+    { name: "duspara.r..nadina", day: 5, a: "tinko" },
+    { name: "appleuser5392645", day: 5, a: "Rens Donk" },
+    { name: "lukasho_ok", day: 5, a: "Lukas" },
+    { name: "bmw45743", day: 5, a: "bmw fanas" },
+    { name: "sophnchillll", day: 5, a: "S0phNch!ll" },
+    { name: "jellaballa", day: 5, a: "Jelle T" },
+    { name: "nagy.kos42", day: 5, a: "a_kos🐘" },
+    { name: "szymon.manus", day: 5, a: "Szymon Manus" },
+    { name: "aryan123784", day: 5, a: "Aryan" },
+    { name: "graciasleo7", day: 5, a: "Leo messi…" },
+    { name: "bob019202", day: 5, a: "Bob" },
+    { name: "poallestudio", day: 5, a: "𝕡𝕠𝕒𝕝𝕝𝕖𝕤𝕥𝕦𝕕𝕚𝕠" },
+    { name: "n0kai3", day: 5, a: "𝖓𝟎𝖐𝖆𝖎🀄" },
+    { name: "_.thiiaago0._", day: 5 },
+    { name: "innebandy_snubben2", day: 5, a: "✌️🥲LOLO😌🐣" },
+    { name: "reubz144", day: 5, a: "reubz14!" },
+    { name: "tudor6204", day: 5, a: "Tudor" },
+    { name: "ramin8157", day: 5, a: "ramin⚽️🇦🇫" },
+    { name: "bobuss01", day: 5, a: "bobuss" },
+    { name: "alex.of.the.zander01", day: 5, a: "Alexander 🇬🇧😪🟡⚫️" },
+    { name: "lelo43781", day: 5, a: "LeLo" },
+    { name: "leon.schmidt215", day: 5, a: "Leon.s✌🏾👑" },
+    { name: "tom_076hb", day: 5, a: "Tom_076" },
+    { name: "cr7.is.goat6676", day: 5, a: "DAVIDE🇧🇦🤙" },
+    { name: "dimisoo4", day: 5, a: "Specter" },
+    { name: "raffyteletubbies", day: 5 },
+    { name: "sj297401", day: 5, a: "✨Brilliant ✨" },
+    { name: "haljala.scooter.g", day: 5, a: "Hst Ayrox" },
+    { name: "johnny.doe59", day: 5, a: "𝓢𝓾𝓼𝓪𝓷 𝓦𝓸𝓸𝓭𝓲𝓷𝓰𝓼" },
+    { name: "emanuel_dogan_22", day: 5, a: "✞ 𝑬𝒎𝒂𝒏𝒖𝒆𝒍 ✞" },
+    { name: "teamcapypara0", day: 5, a: "PIŦŦI NEUE TASSE TIMGIOH😈😈😈" },
+    { name: "m.070233", day: 5, a: "M.23070" },
+    { name: "123lol12348", day: 5, a: "123lol123" },
+    { name: "this.guy6102", day: 5, a: "Lucas🪄" },
+    { name: "fedde0303", day: 5, a: "🌟Fedde🌟" },
+    { name: "joshavis0", day: 5, a: "Josh Avis" },
+    { name: "dodo569076", day: 5, a: "☃️❄️dominik❄️☃️" },
+    { name: "kris_skyyy", day: 5, a: "SuctionCupMan" },
+    { name: "werner_plscomment8", day: 5, a: "TURKEY🇹🇷🇵🇱" },
+    { name: "karlerik.raid7", day: 5, a: "Karlova27" },
+    { name: "rava.033", day: 5, a: "THE BIKE KINH" },
+    { name: "patko.smolko", day: 5 },
+    { name: "ale_whatfg", day: 5 },
+    { name: "kacper999996", day: 5 },
+    { name: "gabibbo670", day: 5, a: "gabibbo" },
+    { name: "yuji_thebest0", day: 5, a: "Just_Mattias" },
+    { name: "davvid.ionescu", day: 5, a: "⚜️itz_davidz⚜️☦️🇷🇴" },
+    { name: "hiswhatstory", day: 5 },
+    { name: "vinz05472", day: 5, a: "vinz" },
+    { name: "mathijs_0428", day: 5, a: "Mathijs" },
+    { name: "lennu3315", day: 5, a: "Lennu" },
+    { name: "stan30378", day: 5, a: "Stan" },
+    { name: "diego_ghiazza", day: 5, a: "diego" },
+    { name: "kakiii3566467", day: 5, a: "Kullikeisari💥🔥" },
+    { name: "jackpanico._", day: 5, a: "Jack😜⚽️" },
+    { name: "alexanderwannabe67", day: 5, a: "hello" },
+    { name: "kendrickkarbunk8", day: 5, a: "K-dawg" },
+    { name: "fede.bog", day: 5, a: "Fede" },
+    { name: "vinylscratch21", day: 5, a: "big Macces" },
+    { name: "swagontop88", day: 5, a: "🍊" },
+    { name: "brysonmir", day: 5 },
+    { name: "scootsemi", day: 5, a: "samki236" },
+    { name: "mylan.84", day: 5, a: "Mylan.024" },
+    { name: "user5454009723939", day: 5, a: "JayKoppig" },
+    { name: "me.e2013", day: 5, a: "Me." },
+    { name: "jaylinv20", day: 5, a: "🎄❄️⛄️ ᥕіᥣᥣ᥆ᥕ⛄️❄️🎄" },
+    { name: "nathan_spapen", day: 5, a: "Nathan⚽️💫" },
+    { name: "parecek3355", day: 5 },
+    { name: "d4niboy4", day: 5, a: "D4NIB0Y" },
+    { name: "emushi56", day: 5, a: ".xo" },
+    { name: "ernestsk11", day: 5, a: "ErnestsK11" },
+    { name: "legendshadowedits", day: 5, a: "SHADOW-edits" },
+    { name: "kankiaro", day: 5, a: "pierii.‼️" },
+    { name: "zaktank5", day: 5, a: "zaktank3" },
+    { name: "crone2115", day: 5, a: "Crone46" },
+    { name: "dawson.truman8", day: 5, a: "be back soon" },
+    { name: "footballendulger", day: 5, a: "footballendulger⎕" },
+    { name: "mocro_amiri0", day: 5, a: "🫆" },
+    { name: "caseydeving420", day: 5 },
+    { name: "sprint529", day: 5, a: "Ivan" },
+    { name: "benjaminhume", day: 5, a: "Benjamin Hume" },
+    { name: "omczako", day: 5, a: "Omczako" },
+    { name: "shorty.theclown", day: 5, a: "GOG" },
+    { name: "parnu_mini_ratta_soitja", day: 5, a: "jalakaijakaspar" },
+    { name: "notokandy1", day: 5, a: "AtomS🐦‍🔥" },
+    { name: "frenchyy_assyy", day: 5, a: "🩵💜 ƒιᩚƶƶყ 💙 💛" },
+    { name: "a.idiot81", day: 5, a: "latvian/idiot/daunis" },
+    { name: "ale.spam89", day: 5, a: "✨𝓐𝓵𝓮𝓼𝓼𝓪𝓷𝓭𝓻𝓸✨" },
+    { name: "eddy.power0", day: 5, a: "Eddy.Tennis" },
+    { name: "juho0451", day: 5, a: "Juho" },
+    { name: "rayanslh40", day: 5, a: "slhrayan.34kk" },
+    { name: "alessandra.oranio0", day: 5, a: "Alessandra Oranio" },
+    { name: "ilhankiki", day: 5, a: "." },
+    { name: "_dylan15837", day: 5, a: "️" },
+    { name: "anton_123456789", day: 5, a: "idk" },
+    { name: "gb475058l9o", day: 5, a: "BENTOS 🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+    { name: "giuseppemonacoo_", day: 5, a: "Giuseppe" },
+    { name: "thebible500", day: 5, a: "💸SHaD@w💸" },
+    { name: "a.ddorf7891", day: 5, a: "アラン🐉🃏" },
+    { name: "mahlapakk0", day: 5, a: "MahlaPakk" },
+    { name: "kingallvanyyy", day: 5, a: "Kingalvanyy" },
+    { name: "zihang622", day: 5, a: "nojo" },
+    { name: "alambomboclat", day: 5, a: "Rejan.m" },
+    { name: "michele.komut", day: 5, a: "M.K" },
+    { name: "mathias.selin", day: 5, a: "Mathias selin" },
+    { name: "dy1an6741", day: 5, a: "Dylan1️⃣🧤⚽️" },
+    { name: "_rokenzo_0", day: 5, a: "rokenzo" },
+    { name: "arthur_morgan635", day: 5, a: "Arthur Morgan" },
+    { name: "soyj4m4l", day: 5, a: "Soyj4m4l" },
+    { name: "eeghkhuejgy2", day: 5, a: "eeghkhuejgy" },
+    { name: "goshobebrat67", day: 5, a: "G_niamov" },
+    { name: "jure.likar", day: 5, a: "Jure Likar" },
+    { name: "rondog158", day: 5, a: "Rondog" },
+    { name: "janszli13", day: 5, a: "janszli" },
+    { name: "dhufejdj", day: 5, a: "louis" },
+    { name: "aliengambitisnono", day: 5, a: "Spiffo The Raccoon" },
+    { name: "cauky.j4k_se_mate", day: 5, a: "." },
+    { name: "lev_edits1", day: 5, a: "•★⁺₊どうま₊⁺★•" },
+    { name: "tezzxoo", day: 5, a: "tezza" },
+    { name: "markunjapateta300", day: 5, a: "■MARK■" },
+    { name: "mccauleyevans5", day: 5, a: "McCauleyEvans" },
+    { name: "floris0316", day: 5, a: "F_I0316" },
+    { name: "user56035231295817", day: 5, a: "jesse" },
+    { name: "an_07666", day: 5, a: "An_076" },
+    { name: "harrykanewillwintheball", day: 5, a: "blogiukas" },
+    { name: "fabiopavan88", day: 5, a: "spearos.@pavan" },
+    { name: "ilovesnowleopardme", day: 5, a: "ILOVESNOWLEOPARDMEIMEI_ILYK🤍" },
+    { name: "bonnix01302", day: 5, a: "bonny013" },
+    { name: "bugsy_bug", day: 5, a: "bug" },
+    { name: "kebaba759", day: 5, a: "██████████" },
+    { name: "hermanitospozuelo", day: 5, a: "Felipe" },
+    { name: "olie772012", day: 5 },
+    { name: "matteo.pavleski8", day: 5, a: "Mate10" },
+    { name: "djacko145", day: 5, a: "ܓܓܛܓ" },
+    { name: "asmae.bahha", day: 5, a: "Asmae Bahha" },
+    { name: "evan.curran", day: 5, a: "Evan Curran" },
+    { name: "maxi2680", day: 5, a: "Victor🐢🥕" },
+    { name: "louislaird4", day: 5, a: "louis" },
+    { name: "bombastic_171", day: 5 },
+    { name: "potatolight21", day: 5, a: "potatolight-21" },
+    { name: "sofia_cassandra13579", day: 5, a: "white – 💫🪽" },
+    { name: "maurice.gldenpfen", day: 5, a: "Maurice 325" },
+    { name: "noah.3361", day: 5, a: "Noah🏑" },
+    { name: "marcuszijnbaas", day: 5, a: "Tom_0172😴" },
+    { name: "milencia190", day: 5, a: "⤹ ℳilena" },
+    { name: "oskari_nas", day: 5, a: "Oskar🤍" },
+    { name: "mikailthe_editor", day: 5, a: "Mikailwrld" },
+    { name: "hannahhh183", day: 5, a: "H💗" },
+    { name: "lucarazvanpatrascu17", day: 5, a: "- 🎃~Gourdy~🍂 - {🇷🇴}" },
+    { name: "2lest.31", day: 5, a: "2lest31" },
+    { name: "that_bacon_yeep", day: 5, a: "￴ ￴ ￴ ￴ ￴ ￴ ￴ ￴ ￴ ￴ ￴" },
+    { name: "vedranajosip", day: 5, a: "MarijaN" },
+    { name: "francesca.spirido", day: 5, a: "🦋🪽꧁❀francy❀꧂🪽🦋" },
+    { name: "circlerants1", day: 5, a: "🫀AM rants🫀" },
+    { name: "fs.jayke", day: 5, a: "jake" },
+    { name: "its_lcano", day: 5, a: "Its_lcano" },
+    { name: "officalbigback", day: 5, a: "ʟɪʟʏ🐈" },
+    { name: "giorgio1907", day: 5, a: "愛" },
+    { name: "theo.s89", day: 5, a: "theo" },
+    { name: "mrsaid.yaura", day: 5, a: "🏆Mrsaidy🏆" },
+    { name: "bob2acc4", day: 5, a: "edin džeko💎" },
+    { name: "nibyfranek", day: 5, a: "nova" },
+    { name: "haha95959595", day: 5, a: "ŕrrrrrrr" },
+    { name: "ijustfarted603", day: 5, a: "alma🍎" },
+    { name: "itsmebabychicken", day: 5, a: "Kyx" },
+    { name: "abrilly", day: 5, a: "LILA" },
+    { name: "almin.demiri0", day: 5, a: "Almin 🇳🇱" },
+    { name: "tadeas_7", day: 5, a: "Tade" },
+    { name: "mb_0361", day: 5, a: "mb_0316" },
+    { name: "gamingwithme246", day: 5, a: "Gaming with me 246" },
+    { name: "blazrer_random13", day: 5, a: "Blazer|hell" },
+    { name: "mihaifcsb3", day: 5, a: "mihaifcsb❤️💙❤️💙❤️💙💙❤️❤️💙1" },
+    { name: "eriiik_mm", day: 5, a: "Erik" },
+    { name: "bmw_is_da", day: 5, a: "Ben_nervensege" },
+    { name: "dommebrunetteee", day: 5, a: "❤️" },
+    { name: "antonio.vergara26_", day: 5, a: "Antonio Vergara" },
+    { name: "brandonf220", day: 5, a: "Brandonf22" },
+    { name: "aiden.keir", day: 5, a: "Aiden Keir" },
+    { name: "podkinoneear", day: 5, a: "Podkin" },
+    { name: "emileck225", day: 5, a: "emileck225emileck225Auch folgen" },
+    { name: "martien896", day: 5, a: "Martienmartien896Auch folgen" },
+    { name: "plb_kingzy", day: 5, a: "Plb_kingzyplb_kingzyAuch folgen" },
+    { name: "dekaaslover", day: 5, a: "LennartdekaasloverAuch folgen" },
+    { name: "mahir.ayaz.ztrk", day: 5, a: "mahirayazztrkmahir.ayaz.ztrkAuch folgen" },
+    { name: "karpik.000", day: 5, a: "Olafkarpik.000Auch folgen" },
+    { name: "kirokiroboomboom", day: 5, a: "kiroekirokiroboomboomAuch folgen" },
+    { name: "funky.ehhh93", day: 5, a: "funky ehhhfunky.ehhh93Auch folgen" },
+    { name: "laceyreywhyte", day: 5, a: "𝒍𝒂𝒄𝒆𝒚 🌨️" },
+    { name: "leighton.thompson94", day: 5, a: "Leighton Thompson" },
+    { name: "i.h...that.guy", day: 5, a: "1w@n" },
+    { name: "bestieboy270386", day: 5, a: "Joshh" },
+    { name: "user95866128818126", day: 5, a: "Теодор Яшов" },
+    { name: "oakleyloach", day: 5, a: "oak" },
+    { name: "grougu2", day: 5, a: "hakari" },
+    { name: "mpj383", day: 5, a: "I like fishing" },
+    { name: "fandybalaforever", day: 5, a: "₴_Sasha_₴" },
+    { name: "ebenezerscrooge12", day: 5, a: "𝗲𝗯𝗼𝗻𝗶𝗲🪽" },
+    { name: "atrox_160", day: 5, a: "atrox" },
+    { name: "jackg.34", day: 5, a: "JG" },
+    { name: "unkknownpriv", day: 5, a: "Unkknown_priv✝️🍋" },
+    { name: "jimbob9539", day: 5, a: "James Lynch" },
+    { name: "sonnyboy049", day: 5, a: "Sonny Andrews" },
+    { name: "roomba960", day: 5, a: "Luki" },
+    { name: "jsfc.98", day: 5, a: "Jack" },
+    { name: "shaysssssssss0", day: 5, a: "Shay" },
+    { name: "thecouncilofseals", day: 5, a: "Priest" },
+    { name: "gryzo.official", day: 5, a: "gryzo" },
+    { name: "0jimmy59", day: 5, a: "Jimmy" },
+    { name: "ems.priv.123", day: 5, a: "em 🤍" },
+    { name: "eboar110", day: 5, a: "Eboar110" },
+    { name: "bigboyvr", day: 5 },
+    { name: "ffrosty_editz", day: 5, a: "數|𝒁𝑬𝑵々シ" },
+    { name: "alot_0f_huzz", day: 5, a: "your boii💙" },
+    { name: "brodiemchaffey", day: 5, a: "Brodie" },
+    { name: "harryflanghan70031", day: 5, a: "H⚽🥊" },
+    { name: "mjjph", day: 5, a: "Heki nation" },
+    { name: "coconutella_coconut", day: 5, a: "𖤐⭒๋࣭ ⭑𝑿𝒊𝒏⋆·˚ ༘ *" },
+    { name: "kenny.billoquet", day: 5, a: "Kenny Billoquet" },
+    { name: "willow_lolz", day: 5, a: "🌕Luna🌕" },
+    { name: "emilytt65", day: 5, a: "✨️#Emilyy$✨️" },
+    { name: "tychiesque", day: 5, a: "|30🏀⚽️" },
+    { name: "denkatabenzmusic", day: 5, a: "🍾" },
+    { name: "bubbles.vrfs00", day: 5, a: "JJW VR💷💷" },
+    { name: "benwheelhouse", day: 5 },
+    { name: "seppe_ptrs1", day: 5, a: "Seppe†" },
+    { name: "ronkosztyu", day: 5, a: "K Áron" },
+    { name: "gigi.apo", day: 5, a: "𝐆𝐞𝐨𝐫𝐠𝐢𝐧𝐚🧟‍♀️🚦" },
+    { name: "kitty_alien_onaskate", day: 5, a: "cutie tasque" },
+    { name: "tuure.trappeniers", day: 5, a: "🇧🇪🏃‍♂️Tuure🚴‍♂️🛡" },
+    { name: "cjishereg", day: 5, a: "Cj is back 😵‍💫✝️" },
+    { name: "tinkerbell251115", day: 5, a: "Annabelle👩🏻‍🦰💞" },
+    { name: "harley9623", day: 5, a: "Harley" },
+    { name: "robert.p294", day: 5, a: "⚽️🏊‍♂️ Robert16⚡️🔨" },
+    { name: "lucas.evans87", day: 5, a: "🇬🇧Lucas🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+    { name: "manvz11", day: 5, a: "Mz💸" },
+    { name: "n0tfunnyf1n", day: 5, a: "NotFunnyFin" },
+    { name: "jackquarmby1", day: 5, a: "jack🫩✌️" },
+    { name: "arch1e.92", day: 5, a: "Archie" },
+    { name: "daisywright_ifykyk", day: 5, a: "Daisy" },
+    { name: "charlielufc3", day: 5, a: "🎅❄️CW🧼🤙" },
+    { name: "aftonsparv4life", day: 5, a: "🐞Afton_Editz🐞" },
+    { name: "kevfooty6", day: 5, a: "kevfooty" },
+    { name: "lx10926", day: 5, a: "Lx" },
+    { name: "lewis.cassidy3", day: 5, a: "Lewis Cassidy" },
+    { name: "maariaa.m1", day: 5, a: "María 🍞🧣" },
+    { name: "loganwood2012", day: 5, a: "Logan⚽️🧤" },
+    { name: "or.kr4", day: 5, a: "🇱🇹orio🇬🇧" },
+    { name: "remora71", day: 5, a: "t5_zcxcy" },
+    { name: "harperpegg14", day: 5, a: "𝐻𝑜𝑙𝑙𝑦 ℎ𝑎𝑟𝑝𝑖𝑒 ☃️🎄" },
+    { name: "georgeroberts75", day: 5, a: "￴ ￴ ￴ ￴ ￴ ￴ ￴ ￴￴ ￴ ￴ ￴ ￴ ￴ ￴" },
+    { name: "dav1dvr", day: 5, a: "🩵🦕David!🦕🩵" },
+    { name: "rileybuxton8", day: 5, a: "R-BuX.C.777" },
+    { name: "i.have.no.idea88", day: 5, a: "I have no idea" },
+    { name: "r10thebest2", day: 5, a: "GabitzuuuR10" },
+    { name: "pozolito1234567", day: 5, a: "pozole" },
+    { name: "ag.still.on.dat", day: 5, a: "Biggie-cheese🧀" },
+    { name: "alfiebarker30", day: 5, a: "Nocha_Alfie" },
+    { name: "willrl.61alt", day: 5, a: "Willrl.61 🏄‍♂️ 🇧🇷 ⭐️ 💫" },
+    { name: "quinn_turner15", day: 5, a: "Quinn" },
+    { name: "meta2223", day: 5, a: "☆Stan!☆" },
+    { name: "emircuk_rbx", day: 5, a: "emircuk" },
+    { name: "rip3659", day: 5, a: "Shedletsky_2.0" },
+    { name: "jake14238", day: 5, a: "Gogeta" },
+    { name: "jiji.risck", day: 5, a: "Juliette🎈" },
+    { name: "toby19324", day: 5, a: "MtB Toby ⚽️🔥🚲" },
+    { name: "alex12345678986521234577", day: 5, a: "Alex 🏙️🌆" },
+    { name: "lauravoj2no", day: 5, a: "Grayson13🏴󠁧󠁢󠁷󠁬󠁳󠁿" },
+    { name: "eva.anamaria.bote", day: 5, a: "🎀Evi Banani🎀" },
+    { name: "maash_tag", day: 5, a: "matthew✝️" },
+    { name: "usery5oxjbuxgu", day: 5, a: "Mapper from 🇵🇱 and edits" },
+    { name: "zwm2342", day: 5, a: "zwm23" },
+    { name: "kalebs.pea", day: 5, a: "Kalebs Pea" },
+    { name: "soup_xx0", day: 5, a: "MJ🕸️" },
+    { name: "adam112101", day: 5, a: "Older" },
+    { name: "aggeloutsos.gouts", day: 5, a: "Aggeloutsos Goutsios" },
+    { name: "adamgeur", day: 5, a: "Yeez🌪️" },
+    { name: "ver2ky", day: 5, a: "￴" },
+    { name: "thebros7941", day: 5, a: "thebros" },
+    { name: "banana_26_insted_of_67", day: 5, a: "banana" },
+    { name: "user0d1oota8a1", day: 5, a: "A cute thing" },
+    { name: "kasaiaizawahades", day: 5, a: "Kasai Aizawa" },
+    { name: "silasdetroyer", day: 5 },
+    { name: "breakkers_biggest_fan", day: 5, a: "Breakkers_biggest_fan" },
+    { name: "onyxcrypt", day: 5, a: "☾𝖍𝖔𝖑𝖑𝖎𝖊☾" },
+    { name: "keilen.moreman", day: 5, a: "🎮⚽️keilen⚽️🎮" },
+    { name: "pikapika1109", day: 5, a: "ALiteralPikachu" },
+    { name: "joshua.allary", day: 5, a: "Joshua Allary" },
+    { name: "rm_15.4", day: 5, a: "raf🇲🇩" },
+    { name: "daniza69", day: 5, a: "Dani" },
+    { name: "rques4", day: 5, a: "Rques" },
+    { name: "abdulrahman.saleh58", day: 5, a: "Abdulrahman Saleh" },
+    { name: "67_idk_678", day: 5, a: "سليمان" },
+    { name: "ilovebigoilymen6", day: 5, a: "fucking dumbass" },
+    { name: "vitorio3830", day: 5, a: "🇻🇦vitorio🇻🇦" },
+    { name: "albonannetti", day: 5, a: "albo🍀" },
+    { name: "spam050754", day: 5, a: "spam🫶🏻" },
+    { name: "mally.colley", day: 5, a: "Mally Colley🥒" },
+    { name: "juicedmonster6", day: 5, a: "juicedmonster" },
+    { name: "donat_88888", day: 5 },
+    { name: "cyan4900", day: 5, a: "Cyan (Ernie)" },
+    { name: "spen095", day: 5, a: "𝐒𝐟🔮" },
+    { name: "kend505", day: 5, a: "kend" },
+    { name: "unknown1313521", day: 5, a: "Unknown_13" },
+    { name: "frank.ykyk", day: 5, a: "frank" },
+    { name: "kb.bcfc", day: 5, a: "KB" },
+    { name: "abandoned.brit", day: 5, a: "Abandoned brit" },
+    { name: "henry.zhang00", day: 5, a: "henry" },
+    { name: "jaekinney", day: 5, a: "Jae" },
+    { name: "markjr737", day: 5, a: "MarkJr" },
+    { name: "himothy12330", day: 5, a: "@/fi£" },
+    { name: "david60773", day: 5, a: "David" },
+    { name: "user952382113", day: 5, a: "ktoś" },
+    { name: "henry.ro11", day: 5, a: "HR_3💫" },
+    { name: "hi305027", day: 5, a: "SioneTuipuloto12" },
+    { name: "younes63631", day: 5, a: "𝖄𝖔𝖚𝖓𝖊𝖘😴" },
+    { name: "jawhn6", day: 5, a: "Jawhn" },
+    { name: "iloveglaggle", day: 5, a: "glaggle_rants" },
+    { name: "thomasvictory16", day: 5, a: "Thomas☃️🎄🤝✝️🇻🇨" },
+    { name: "eloisa.navas", day: 5, a: "Dorina Reyes" },
+    { name: "reconsquad1889", day: 5, a: "SEACADETLOVER1009" },
+    { name: "dylanwap0", day: 5, a: "Dylanwap" },
+    { name: "mr.tubbz", day: 5, a: "MR TUBBZ" },
+    { name: "1413adam1413", day: 5, a: "αdαm ☪︎🇦🇪" },
+    { name: "georgec663", day: 5, a: "georgec" },
+    { name: "monkeyking1249", day: 5, a: "Abdi the king" },
+    { name: "dominic.ciocolata", day: 5, a: "Dominic Ciocolata" },
+    { name: "haraldsb7", day: 5, a: "wh0s_hbz02🇱🇻🇱🇻🇱🇻" },
+    { name: "ryanportsmouth", day: 5, a: "Goblin king" },
+    { name: "isak_henningsson", day: 5, a: "Isak_henningsson" },
+    { name: "dogdogdog627", day: 5, a: "i love dogs" },
+    { name: "mezbob9006", day: 5, a: "Nathan Merry" },
+    { name: "idk123ww", day: 5, a: "T_O_N_O" },
+    { name: "shauny._.p", day: 5, a: "𝒔𝒖𝒈𝒖𝒓𝒖.𝒈𝒆𝒕𝒐" },
+    { name: "garryl2014", day: 5, a: "garryl2014p" },
+    { name: "samb1289", day: 5, a: "Sam😎" },
+    { name: "king.arthur810", day: 5, a: "Arthur" },
+    { name: "oscar.c.11", day: 5 },
+    { name: "arsenalfan8899", day: 5, a: "TTK ZEROッ" },
+    { name: "scrapcomics0", day: 5, a: "Virtual the gambler" },
+    { name: "alfie.tomkins3", day: 5, a: "Alfiet-on-the-gt" },
+    { name: "len01529", day: 5, a: "⧗ϟ Len ⧗ϟ" },
+    { name: "samhar_spots", day: 5, a: "samhar📸" },
+    { name: "mw1.050", day: 5, a: "MW1.050" },
+    { name: "tfneymar11", day: 5, a: "TFNeymar" },
+    { name: "winlert", day: 5, a: "mananc_shit" },
+    { name: "elliotdemonster", day: 5 },
+    { name: "james_knott18.fxzh", day: 5, a: "j__knott" },
+    { name: "milanrxhest", day: 5, a: "Milano" },
+    { name: "maxwilson_13", day: 5 },
+    { name: "finbob920", day: 5, a: "finbob" },
+    { name: "orsi8827", day: 5, a: "Fred🏴󠁧󠁢󠁥󠁮󠁧󠁿🎣" },
+    { name: "jimenoooooooooooo", day: 5, a: "່" },
+    { name: "atomic2.18", day: 5, a: "roubea" },
+    { name: "evil_garnacho1", day: 5, a: "Evil garnacho😈👿" },
+    { name: "isab3l_star", day: 5, a: "~𝑖𝑠𝑎𝑏𝑒𝑙 ᰔ'𝑠 𝐵𝑖𝑙𝑙~" },
+    { name: "aidenbaluta", day: 5, a: "Aiden" },
+    { name: "cringyleo3", day: 5, a: "Cringyleo3" },
+    { name: "smradochzpakistanu", day: 5, a: "v1k0ni" },
+    { name: "ahmadmcr_mca", day: 5, a: "A3" },
+    { name: "noah.2248", day: 5, a: "Noah🪄✨🌟" },
+    { name: "notjamez7", day: 5, a: "James 🧼💯💪" },
+    { name: "19.nico8", day: 5, a: "19.nico" },
+    { name: "skullface004", day: 5, a: "SkullFace💀💀☠️☠️" },
+    { name: "brian._014", day: 5, a: "￴ ￴ ￴ ￴ ￴𝕿𝕽𝕴𝖃" },
+    { name: "nyabri69", day: 5, a: "nyabri" },
+    { name: "sleepyguy43", day: 5 },
+    { name: "public_secretaccount1167", day: 5, a: "️" },
+    { name: "leoss289", day: 5, a: "️Leo.ss🏉🏉" },
+    { name: "rhys_2230", day: 5, a: "Rhyspuffs" },
+    { name: "e.m20090", day: 5, a: "E.M14" },
+    { name: "catnap_lil_bro", day: 5, a: "catnap_little_bro" },
+    { name: "plswatchmyvid6969", day: 5, a: "💚Avery💚" },
+    { name: "user9868540114799", day: 5, a: "Morgan" },
+    { name: "callan287", day: 5, a: "Callan" },
+    { name: "flamedragon1356", day: 5, a: "flame dragon" },
+    { name: "jackyt226", day: 5, a: "jackthegoat" },
+    { name: "erik45748", day: 5, a: "Erik" },
+    { name: "the_biggie1535", day: 5 },
+    { name: "a3ta._.08", day: 5, a: "A💗" },
+    { name: "lenny.hutton", day: 5, a: "~Megan~" },
+    { name: "travis8756", day: 5, a: "travis" },
+    { name: "stefan.23154", day: 5, a: "🥷" },
+    { name: "mahoraga_theopp_stopa", day: 5, a: "Mahoraga" },
+    { name: "shark.whisperer_", day: 5, a: "🦈" },
+    { name: "jay3n_", day: 5, a: "Foozel" },
+    { name: "poppy_126790", day: 5, a: "Poppy_🎀" },
+    { name: "melean543", day: 5, a: "M E L O" },
+    { name: "jayce9450", day: 5, a: "Jayce" },
+    { name: "charlie_t038", day: 5, a: "charlie 🍊" },
+    { name: "liam.8362", day: 5, a: "Liam" },
+    { name: "harvs350", day: 5, a: "harvs" },
+    { name: "jimmytommy51", day: 5, a: "idk what to name it" },
+    { name: "potato_0246", day: 5, a: "potato" },
+    { name: "adam.chapman47", day: 5, a: "Adam chapman" },
+    { name: "toms.sobral", day: 5, a: "Tomás Sobral" },
+    { name: "vampyre.empyre", day: 5, a: "ℳ ⋆.ೃ࿔*:･♫" },
+    { name: "jesssq_xx", day: 5, a: "Jess 🪼" },
+    { name: "mikeystokes0", day: 5 },
+    { name: "arvis483", day: 5, a: "idk110" },
+    { name: "isaac17981", day: 5, a: "John tiktok" },
+    { name: "dawudindegreat", day: 5, a: "Cell ranks" },
+    { name: "dnxxwe1", day: 5, a: "dNx" },
+    { name: "donches1", day: 5 },
+    { name: "misterpianofrog", day: 5, a: "Pogi" },
+    { name: "llbsxc", day: 5, a: "𒌐" },
+    { name: "bananaplays18", day: 5, a: "banaxas" },
+    { name: "d3nt3_storto", day: 5, a: "D3nt3_Storto" },
+    { name: "wild__bro", day: 5, a: "wild" },
+    { name: "wm7091", day: 5, a: "W🫆" },
+    { name: "trixinho.vrfs", day: 5 },
+    { name: "dorota__0214", day: 5, a: "𝑫𝒐𝒓𝒂🪽🐆🌟" },
+    { name: "ismi.2010", day: 5, a: "Esmael 2010" },
+    { name: "bcafccharlie33", day: 5, a: "charlie 🍋🎸" },
+    { name: "ndevon.miller", day: 5, a: "nDevon Miller" },
+    { name: "tigers_channel14", day: 5, a: "~*tigers_Channel*~" },
+    { name: "rubypremium2", day: 5, a: "𝐫𝐮𝐛𝐲®" },
+    { name: "xristakis534", day: 5, a: "xristakis" },
+    { name: "peace23426", day: 5, a: "Peace" },
+    { name: "jamiej462", day: 5, a: "jamiej" },
+    { name: "monikawysocka841", day: 5, a: "titan videotaper" },
+    { name: "pekgddifswaf", day: 5, a: "⭐️🪽 •˚ sᴇʀᴏ ིྀ꙳" },
+    { name: "danielamykytchak", day: 5 },
+    { name: "hbnortz12", day: 5, a: "HBNortz" },
+    { name: "i_love_elixr_so_much", day: 5, a: "Caine♥︎єℓιχя" },
+    { name: "max.main81", day: 5, a: "Max.mcf" },
+    { name: "grayson.milligan7", day: 5, a: "Grayson Milligan" },
+    { name: "ryanmcelroy67", day: 5, a: "Peppino" },
+    { name: "baby_chicken_low_quality", day: 5, a: "baby chicken" },
+    { name: "king.kong9852", day: 5, a: "kean🇩🇰" },
+    { name: "simpleneed123", day: 5, a: "Satans undies" },
+    { name: "_marko_gg", day: 5, a: "Marko" },
+    { name: "marto.penev7", day: 5, a: "Marto penev" },
+    { name: "rory16051", day: 5, a: "Rory1605" },
+    { name: "kai.smith.fiyaah", day: 5, a: "kai smith" },
+    { name: "helldiver4440", day: 5, a: "Serpent’s Hand" },
+    { name: "thehighschooldxdn1editor", day: 5, a: "𝚁𝚊𝚍𝚒𝚘𝚂𝚙𝚊𝚌𝚎" },
+    { name: "spud6554", day: 5, a: "spud65!" },
+    { name: "matsmort", day: 5, a: "Matts" },
+    { name: "vivien.beresford", day: 5, a: "Vivien Beresford" },
+    { name: "nimmo494", day: 5, a: "NiMmO😄👍" },
+    { name: "slapedits2", day: 5, a: "🇺🇦𝔰𝔩𝔞𝔭🇺🇦" },
+    { name: "vaino.valja1", day: 5, a: "M" },
+    { name: "people_you_may_know111", day: 5, a: "people you may know" },
+    { name: "jscoolguy5", day: 5, a: "Ironbody" },
+    { name: "duskymuse_27", day: 5, a: "dusky" },
+    { name: ".ik121", day: 5, a: "kl.•°™®21" },
+    { name: "jordwotto16", day: 5, a: "user09495209688" },
+    { name: "feelix.raitanen", day: 5, a: "Feelix Raitanen" },
+    { name: "simina.jerca", day: 5, a: "@simina.jerca" },
+    { name: "v2ps99", day: 5 },
+    { name: "lucasisurfav", day: 5, a: "👉Lucas👈" },
+    { name: "ducky_137", day: 5, a: "Ducky🔥" },
+    { name: "gangster23006", day: 5 },
+    { name: "dcfcbm", day: 5 },
+    { name: "formulaonefan50", day: 5, a: "sad Max verstappen fan" },
+    { name: "blz7775", day: 5, a: "⛧ 𝕿𝖗𝖔𝖕𝖎𝖈 ⛧" },
+    { name: "pika14026", day: 5, a: "Piłka" },
+    { name: "unknownfigure33", day: 5 },
+    { name: "daniel.klouth", day: 5, a: "Daniel Klouth" },
+    { name: "sleepyhead6294", day: 5, a: "Sleepyhead" },
+    { name: "kryptonianyt", day: 5, a: "Kaleb 🦇" },
+    { name: "aobas75", day: 5, a: "Jq1" },
+    { name: "gggalf_135", day: 5, a: "ALF🐲🐉" },
+    { name: "blueguythekinglookecmax", day: 5, a: "NOLI" },
+    { name: "romyxeva", day: 5 },
+    { name: "tl.cricket", day: 5, a: "TL🏏 🏴󠁧󠁢󠁥󠁮󠁧󠁿🇵🇱🏌️‍♂️" },
+    { name: "janko6768", day: 5, a: "TheycallmeJanko✌️" },
+    { name: "wallum", day: 5, a: "WALLUM" },
+    { name: "cole.m82", day: 5, a: "Lula 2.0" },
+    { name: "gabrybrik", day: 5, a: "GabryBrik" },
+    { name: "nahimforsakeningit", day: 5, a: "I am a kitty" },
+    { name: "catwemmbum0", day: 5, a: "Cat wemmbu👍👍" },
+    { name: "affmabiscuit", day: 5, a: "Emma" },
+    { name: "eric.robinson403", day: 5, a: "Eric Robinson" },
+    { name: "burik2898", day: 5, a: "Burik" },
+    { name: "pissdude11", day: 5, a: "piss dude" },
+    { name: "giuseppeiossa8", day: 5, a: "Giuseppe" },
+    { name: "totly_otly", day: 5, a: "•ToTlY•" },
+    { name: "dado_alt", day: 5, a: "Dado_alt" },
+    { name: "amongus72622", day: 5, a: "￴ ￴ ￴ ￴ ￴ ￴ ￴￴￴ ￴￴￴ ￴ ￴￴ ￴ ￴" },
+    { name: "rosie_loves_family61014", day: 5, a: "😝Rosie😝" },
+    { name: "metkijn", day: 5, a: "Hammi" },
+    { name: "andrewstathopoulos", day: 5, a: "AndrewStathopoulos" },
+    { name: "noctus599", day: 5, a: "noctus" },
+    { name: "simon_edits6", day: 5, a: "simon_edits" },
+    { name: "stanley6556", day: 5, a: "stanley" },
+    { name: "kyanhollen", day: 5, a: "KH🔥💨" },
+    { name: "jan.wojciechowski05", day: 5, a: "Jan Wojciechowski" },
+    { name: "alfiee4808", day: 5, a: "Alfiee" },
+    { name: "phoenixfiresog", day: 5, a: "PhoenixFiresOG" },
+    { name: "auraboy323", day: 5 },
+    { name: "gnarpling5419", day: 5 },
+    { name: "lacasitos761", day: 5, a: "Cheworsķi Mŕêski (😭🚫)" },
+    { name: "eldenbonk8", day: 5, a: "GandalfTheGrey" },
+    { name: "tyler.millard4", day: 5, a: "🏴󠁧󠁢󠁥󠁮󠁧󠁿 TylerManU🇾🇪" },
+    { name: "flamingos7154", day: 5, a: "Flamingos7154🏳️‍⚧️" },
+    { name: "i_like_microwawes", day: 5, a: "to sem já" },
+    { name: "cecl39", day: 5, a: "cecl" },
+    { name: "slamedby_k2f", day: 5, a: "Kaiden☀️🍉" },
+    { name: "cutie_bubblegum", day: 5, a: "Identified User", color: 'pink' },
+    { name: "matei4273", day: 5, a: "Fakecartmen" },
+    { name: "hbom4039", day: 5, a: "h-bom" },
+    { name: "kaleemkhan2015", day: 5, a: "guywhohasnoprofilepic" },
+    { name: "frutigericons", day: 5, a: "🌐🐬Frutiger Icons🐬🌐" },
+    { name: "yustinamelu", day: 5, a: "Petrisor 👑🇷🇴" },
+    { name: "sonionchip21", day: 5, a: "fat ginger the 🐱" },
+    { name: "_mayieuno", day: 5, a: "🌺🪞 Kenobi🌺🪞" },
+    { name: "roan20021", day: 5, a: "Ropde65cc" },
+    { name: "oliver.rider82", day: 5, a: "Oliver_Rider" },
+    { name: "fishinwadam0", day: 5, a: "fishinwadam" },
+    { name: "calum5374", day: 5, a: "Calum" },
+    { name: "brianvdlaan", day: 5, a: "Brian Vd laan" },
+    { name: "matas8895", day: 5, a: "car finder 𓁎" },
+    { name: "thingsthatnobodyelsies01", day: 5, a: "𝓔𝓵𝓼" },
+    { name: "idkwhatonsme", day: 5, a: "callum" },
+    { name: "robbie_358", day: 5, a: "robert.sillivask" },
+    { name: "jqarozz", day: 5, a: "JAROZZ" },
+    { name: "m_ro074", day: 5, a: "MR_074☄️🌌" },
+    { name: "yari3324", day: 5, a: "mauriziobunuccirobloxofficial✅" },
+    { name: "whippy_vrfs", day: 5, a: "MR WHIPPY - VRFS" },
+    { name: "samuel.madetoja", day: 5, a: "Samuel" },
+    { name: "renier1ss", day: 5, a: "🕸" },
+    { name: "blankados", day: 5, a: "𝐁𝐥𝐚𝐧𝐤𝐚𝜗𝜚" },
+    { name: "hades.0811", day: 5, a: "Lilh" },
+    { name: "_js402", day: 5, a: "💎🫆🍃" },
+    { name: "hammyboiiiiiiii", day: 5, a: "soapvmx" },
+    { name: "clayton1443", day: 5, a: "Peridot_Glazer" },
+    { name: "pebbs502", day: 5, a: "pebbs" },
+    { name: "paddy5514", day: 5, a: "L" },
+    { name: "christmas_spunge_bob4", day: 5, a: "christmas_Spunge Bob" },
+    { name: "fortnitesweatt27", day: 5, a: "gw💯🥶🥳🤑" },
+    { name: "cameron0736", day: 5, a: "Çğ👍🍋🧼" },
+    { name: "georgeross85", day: 5, a: "George Ross" },
+    { name: "spencer.w5", day: 5, a: "spencer.w" },
+    { name: "georgiecarman13", day: 5, a: "georgie★" },
+    { name: "l0ve_mikasa1", day: 5, a: "eren's titan" },
+    { name: "me.and.dotty.4eve", day: 5, a: "🛴ola" },
+    { name: "epikguylol", day: 5, a: "A_E" },
+    { name: "lil195", day: 5, a: "lilly" },
   ],
 };
 
@@ -5891,7 +6673,7 @@ const WEATHER_TABLE = {   // by month: chance of each weather (random, but fits 
 };
 function weatherNow() {
   const o = location.hash.match(/weather=(\w+)/); if (o) return o[1];
-  const d = new Date(), m = d.getMonth(), tab = WEATHER_TABLE[[11, 0, 1].includes(m) ? 'w' : [10, 2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
+  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[11, 0, 1].includes(m) ? 'w' : [10, 2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
   const slot = Math.floor(d.getHours() / 3), r = seeded(d.getFullYear() * 10000 + (m + 1) * 100 * 10 + d.getDate() * 10 + slot + 7)();   // same weather for everyone, changes every 3 hours
   let acc = 0; for (const [w, p] of tab) { acc += p; if (r < acc) return w; } return 'clear';
 }
@@ -6154,7 +6936,7 @@ function goBenny() {
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
-  $('cardMsg').textContent = (TOWN.milestones.van ? 'Finally sleeps in a campervan 🚐 (no tires yet)' : TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
+  $('cardMsg').textContent = (TOWN.milestones.van ? (SNOWY ? 'Sleeps in his campervan 🚐 but it’s freezing ❄️' : 'Has a campervan with tires now 🚐') : TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
 let hintT = 0;
