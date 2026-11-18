@@ -345,3 +345,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - ❄️ **Erster Schnee:** `SNOWY` = 18.–19.11.2026 (Test `#snowcover`, aus mit `#nosnow`): Boden weiß, Teiche/Brunnen gefroren, Schnee auf Dächern, Wetter meist Schneefall. Benny-Karte: „Sleeps in his campervan 🚐 but it’s freezing ❄️“.
   - Van: neue Optionen `tires` (0–4), `lift`, `spin`, `alongV` (fährt entlang v).
   - Folge 9 (Abend Tag 4, 61 s): Reifen (−€90) + Marktplatz-Eröffnung. Pipeline in `docs-team/video/build-video-day4-evening/`.
+- **18.11.2026 12:10** – Instanz B: **Folge 10 (Morgen Tag 5, 50,7 s) „First snow“**: Nacht mit Schneefall → +647 ziehen ein (Häuser ploppen) → pinkes Haus @cutie_bubblegum, schwarzes Haus @lethimgoplease0 → Bank €18 → €82,70 → „But then… it got cold“ (-8°C, Frost) → Innenansicht Van: Benny zittert ohne Decke, Atemwolken → Abstimmung **🔥 Heater €60 / 🧣 Blankets €15 / 🪩 Disco ball €30**. Pipeline: `docs-team/video/build-video-day5/`.
