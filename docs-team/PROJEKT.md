@@ -347,3 +347,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Folge 9 (Abend Tag 4, 61 s): Reifen (−€90) + Marktplatz-Eröffnung. Pipeline in `docs-team/video/build-video-day4-evening/`.
 - **18.11.2026 12:10** – Instanz B: **Folge 10 (Morgen Tag 5, 50,7 s) „First snow“**: Nacht mit Schneefall → +647 ziehen ein (Häuser ploppen) → pinkes Haus @cutie_bubblegum, schwarzes Haus @lethimgoplease0 → Bank €18 → €82,70 → „But then… it got cold“ (-8°C, Frost) → Innenansicht Van: Benny zittert ohne Decke, Atemwolken → Abstimmung **🔥 Heater €60 / 🧣 Blankets €15 / 🪩 Disco ball €30**. Pipeline: `docs-team/video/build-video-day5/`.
 - **18.11.2026 11:20** – Kierans Regeln für Benny-Videos (gilt für beide Instanzen): **Länge 50 s – 1:10**. Sprechtempo **in der Mitte** zwischen Folge 10 v1 (zu langsam, „0.5 speed“) und v2 (gut, aber knapp): Pausen sind okay, nur nicht langgezogen. Länge kommt vor allem durch **mehr Inhalt**. Einzug: ganze Stadt rauszoomen, Häuser gut sichtbar ploppen lassen (Tageslicht). Keine Wunschhäuser einzeln lange zeigen, dafür ein zufälliges **🏆 House of the Day**, zu dem Benny ruhig ein bisschen was sagt. Marktplatz im Video-Modus mit `VGROUND` + `VMK_DRAW` zeichnen (sonst fehlt das Pflaster). Folge 10 v2 (31 s) war vom Stil her gut, nur zu kurz.
+- **18.11.2026 13:30** – Instanz B: **Analyse aller 10 Videos (TikTok Studio)** – Kieran: „merk dir das“:
+  | Video | Aufrufe | Ø Wiedergabe | Ganz geschaut | Neue Follower | „Für dich“ |
+  |---|---|---|---|---|---|
+  | Intro | 3,3K | 14,2 s/0:40 | 9,9 % | 133 | 31 % |
+  | **Brot** | **86K** | **20,0 s/0:40** | **27,5 %** | **5.400** | **94 %** |
+  | Bau Tag 1 | 4,7K | 11,3 s | 8,3 % | 179 | 27 % |
+  | Bau Tag 2 + Rent Day | 4,7K | 22,9 s | 9,7 % | 205 | 27 % |
+  | Rathaus | 3,1K | 18,3 s | 8,0 % | 40 | 41 % |
+  | Bau Tag 3 | 2,1K | 16,8 s | 7,9 % | 40 | 26 % |
+  | Campervan | 1,8K | 14,6 s | 5,8 % | 9 | 62 % |
+  | Bau Tag 4 | 1,5K | 15,5 s | 6,0 % | 32 | 32 % |
+  | Reifen+Markt | 2,1K | 19,2 s/1:01 | 5,2 % | 19 | 90 % |
+  - Fazit: Fast alle Follower kommen vom Brot-Video. Andere Videos sieht v. a. die bestehende Community (Profil 58–70 %); TikTok testet sie in „Für dich“, Fremde wischen in der 1. Sekunde weg. Abschlussrate sinkt, weil Videos zu Insider-Updates werden.
+  - **Regeln ab jetzt:** jedes Video für Fremde verständlich; Problem in 1–2 s in Bild + Wort; Bank-HUD nicht im ersten Bild; Abendvideos nach Brot-Muster (Grundbedürfnis → emotionale Einlösung → kleiner Twist, z. B. Taube); Taube öfter; Captions emotional („Benny finally ate 🥹“) statt Infos.
