@@ -45,7 +45,7 @@ const GLOBE = { on: false, built: false, busy: false };
     for (let k = 0; k < n2; k++) { const a = .5 + rs() * .9, rr = .24 + rs() * .07, h = new T.Mesh(bx, mats[k % mats.length]); h.position.set(Math.cos(a) * rr, Math.sin(a) * rr, .01); town.add(h); }
     const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, 'rgba(255,220,140,1)'); gr.addColorStop(.4, 'rgba(255,190,90,.45)'); gr.addColorStop(1, 'rgba(255,190,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new T.CanvasTexture(c); })();
     glowSpr = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glowSpr.scale.set(.6, .6, 1); glowSpr.position.copy(TD.clone().multiplyScalar(1.6 * 1.12)); world.add(glowSpr);
-    const red = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: '#ff3355', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); red.scale.set(.35, .35, 1); red.position.copy(VOL.clone().multiplyScalar(1.6 * 1.2)); world.add(red);
+    const red = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: '#ff3355', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); red.scale.set(.35, .35, 1); red.position.copy(VOL.clone().multiplyScalar(1.6 * 1.2)); world.add(red); GLOBE.red = red;
     ambL = new T.AmbientLight(0xffffff, .55); sc.add(ambL); sunL = new T.DirectionalLight(0xfff2dd, 1.25); sunL.position.set(4, 3, 5); sc.add(sunL);
     base = new T.Quaternion().setFromUnitVectors(TD, new T.Vector3(0, .25, 1).normalize());
     input(); GLOBE.built = true;
@@ -94,6 +94,18 @@ const GLOBE = { on: false, built: false, busy: false };
     el.style.display = 'none'; document.body.classList.remove('globe');
     overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .55; frame.force = true;   // land on the whole town, zooming in
   }
+  // for the videos: one exact frame of the planet
+  GLOBE.shot = async o => {
+    await loadThree(); if (!GLOBE.built) { el = document.getElementById('globe'); build(); } cancelAnimationFrame(raf);
+    if (r.domElement.width !== o.w || r.domElement.height !== o.h) { r.setPixelRatio(1); r.setSize(o.w, o.h, false); cam3.aspect = o.w / o.h; cam3.fov = 44; cam3.updateProjectionMatrix(); }
+    st.dist = o.dist; st.yaw = o.yaw; st.pitch = o.pitch; t = o.t; st.lt = null; last = 0;
+    world.quaternion.copy(base); world.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), st.pitch); world.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), st.yaw);
+    cam3.position.set(0, .7 * st.dist / 9.6, st.dist); cam3.lookAt(0, 0, 0); world.updateMatrixWorld(true);
+    let n = 0; try { n = nightAmount(); } catch (e) {} sunL.intensity = 1.25 - .45 * n; ambL.intensity = .55 - .15 * n;
+    glowSpr.scale.setScalar(.6 * (1 + .08 * Math.sin(t * 2.4))); r.render(sc, cam3); return r.domElement;
+  };
+  GLOBE.baseQ = () => base; GLOBE.redLocal = () => GLOBE.red.position;
+  GLOBE.project = which => { const o = which === 'red' ? GLOBE.red : glowSpr, v = o.getWorldPosition(new THREE.Vector3()).project(cam3); return [(v.x + 1) / 2, (1 - v.y) / 2, v.z]; };
   GLOBE.enter = enter; GLOBE.leave = leave; GLOBE.st = st; window.GLOBE = GLOBE;
   addEventListener('resize', () => { if (GLOBE.on) size(); });
 })();

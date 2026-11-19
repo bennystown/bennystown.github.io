@@ -529,6 +529,15 @@ function build3D() {
     renderer.render(scene, camera); drawLabels(camera, bnState);
     if (W3D.on) raf = requestAnimationFrame(frame3D);
   }
+  // for the videos: render one exact frame (no animation loop), and project a world point to the screen
+  W3D.shot = o => {
+    cancelAnimationFrame(raf); const dt = o.dt || 1 / 30; Object.assign(view.walk, { x: o.x, z: o.z, yaw: o.yaw, pitch: o.pitch || 0, bob: o.bob || 0 }); view.mode = 'walk';
+    tAcc = o.t; if (o.st != null) S.T = o.st;
+    for (const f of anim) f(tAcc, dt); apply(); bnState = MD.bennyTick(benny, tAcc, dt, persp.position); ENV.update(tAcc, dt, persp, !!o.force);
+    if (renderer.domElement.width !== o.w || renderer.domElement.height !== o.h) { renderer.setPixelRatio(1); renderer.setSize(o.w, o.h, false); persp.aspect = o.w / o.h; persp.updateProjectionMatrix(); }
+    renderer.render(scene, persp); return renderer.domElement;
+  };
+  W3D.project = (u, y, v) => { const p = new T3.Vector3(u, y, v).project(persp); return [(p.x + 1) / 2, (1 - p.y) / 2, p.z]; };
   // nearest free spot on a street, searching outwards in rings from (u, v)
   function spawnNear(u, v, maxR) {
     if (walkable(u, v)) return [u, v];
