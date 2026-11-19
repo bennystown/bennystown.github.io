@@ -375,6 +375,7 @@ function build3D() {
     near.sort((a, b) => a[0] - b[0]);
     for (const [d, h] of near.slice(0, 6)) { const p = toScreen(h.i, WH + RH + .1, h.j, camera); if (!p || p[1] < 30) continue; ctx.globalAlpha = clamp((3.2 - d) / .8, 0, 1); tag(p[0], p[1], '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); }
     ctx.globalAlpha = 1;
+    if (W3D.labelHook) W3D.labelHook(camera, toScreen);
   }
 
   /* ======================= 15. camera: walking through the streets (an iso camera is kept for videos) ======================= */
@@ -569,6 +570,7 @@ function build3D() {
   // the 2D map keeps its camera and canvas
   cam.x = keep.x; cam.y = keep.y; cam.z = keep.z; resize(); frame.force = true;
   for (const o of LOD.near.concat(LOD.mid, LOD.near2)) o.visible = true; for (const o of LOD.far) o.visible = false;
+  if (W3D.treasure3D) try { W3D.treasure3D({ T3, scene, anim, GB, groundH, view, walkable }); } catch (e) { console.error(e); }
   window.__3d = { view, set(o) { const wk = o.walk; delete o.walk; Object.assign(view, o); if (wk) Object.assign(view.walk, wk); }, walkable, ready: true };
   W3D.built = true;
 }

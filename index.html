@@ -117,6 +117,35 @@ body.globe #bennyBtn,body.globe #walkBtn,body.globe #card,body.globe #hint,body.
 body.walking .top,body.walking .bottom,body.walking #bennyBtn,body.walking #walkBtn,body.walking #card,body.walking #hint,body.walking #sugg,body.walking #rw{display:none!important}
 body.walking #joy,body.walking #walkExit,body.walking #walkHint,body.walking #walkEnv{display:block}
 #walkEnv{position:fixed;right:12px;top:14px;z-index:4;display:none;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.82);border-radius:12px;padding:9px 12px;white-space:nowrap;pointer-events:none}
+.erow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:-3px}
+.erow .envbar{margin-top:0}
+#trBtn{pointer-events:auto;font:800 12.5px Poppins,system-ui,sans-serif;color:#1b1728;background:linear-gradient(#ffe27a,#ffc93c);border:0;border-radius:12px;padding:6px 11px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.28);white-space:nowrap;max-width:58vw;overflow:hidden;text-overflow:ellipsis}
+#trBtn.done{background:rgba(10,12,26,.86);color:#ffd23f;border:1px solid rgba(255,210,63,.6)}
+#trHud{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:4;display:none;width:min(300px,72vw);text-align:center;font:800 12px Poppins,system-ui,sans-serif;color:#ffd23f;background:rgba(10,12,26,.84);border:1px solid rgba(255,210,63,.45);border-radius:14px;padding:7px 10px 8px;cursor:pointer}
+#trHud .trBar{height:9px;border-radius:5px;background:linear-gradient(90deg,#4da3ff,#9ad7ff 30%,#ffd23f 65%,#ff6b3d);margin:5px 0 4px;position:relative;overflow:hidden}
+#trHud .trBar i{position:absolute;right:0;top:0;bottom:0;left:auto;background:rgba(10,12,26,.82);display:block;width:100%;transition:width .3s}
+#trHud .trS{color:#fff;font-weight:700;font-size:13px}
+#trHud.done .trBar{background:#3ddc84}
+body.walking #trHud{display:block}
+body.walking #walkHint{top:128px}
+#trToast{position:fixed;left:50%;top:128px;transform:translateX(-50%);z-index:5;width:min(330px,86vw);text-align:center;font:600 14px/1.35 Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.92);border:2px solid #ffd23f;border-radius:16px;padding:12px 14px;opacity:0;pointer-events:none}
+#trToast.on{opacity:1}
+#trToast b{color:#ffd23f;font-size:16px}
+#trToast span{color:#c3c9e4;font-size:13px}
+#trCard{position:fixed;inset:0;z-index:7;display:none;align-items:center;justify-content:center;background:rgba(5,8,22,.55)}
+#trCard.on{display:flex}
+.trBox{width:min(330px,88vw);text-align:center;color:#fff;font-family:Poppins,system-ui,sans-serif;background:radial-gradient(circle at 50% 0,#3a2c6e,#141632 70%);border:3px solid #ffd23f;border-radius:22px;padding:16px 16px 18px;box-shadow:0 10px 40px rgba(0,0,0,.5);animation:trPop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes trPop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.trTop{font:800 11px Poppins,system-ui,sans-serif;letter-spacing:1.5px;color:#c3c9e4}
+.trEm{font-size:54px;line-height:1.15;margin-top:4px}
+.trTi{font:900 24px Poppins,system-ui,sans-serif;color:#ffd23f;text-shadow:0 3px 0 #000}
+.trCode{margin:10px auto 4px;display:inline-block;font:900 30px ui-monospace,Menlo,Consolas,monospace;letter-spacing:2px;color:#1b1728;background:linear-gradient(#ffe27a,#ffc93c);border-radius:12px;padding:6px 14px;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.trDate{font:700 13px Poppins,system-ui,sans-serif;color:#c3c9e4;margin-bottom:10px}
+.trTx{font:600 14px/1.4 Poppins,system-ui,sans-serif}
+.trTx b{color:#ffd23f}
+.trTx2{font:600 12px Poppins,system-ui,sans-serif;color:#9aa1c4;margin-top:6px}
+#trOk{margin-top:12px;font:800 15px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:14px;padding:10px 18px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+body.d3anim #trBtn{display:none}
 #d3skip{position:fixed;right:12px;bottom:22px;z-index:5;display:none;font:800 14px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.78);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:9px 14px;cursor:pointer}
 body.d3anim #d3skip{display:block}
 body.d3anim #globeHint{color:#fff;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.8)}
@@ -138,7 +167,7 @@ body.d3anim .top,body.d3anim .bottom,body.d3anim #bennyBtn,body.d3anim #walkBtn,
   </div>
   <div class="search"><input id="q" placeholder="Find your house: name or @username" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="find">Find</button></div>
   <div class="sugg" id="sugg"></div>
-  <div class="envbar" id="envBar"></div>
+  <div class="erow"><button id="trBtn">💰 Daily treasure hunt</button><div class="envbar" id="envBar"></div></div>
   <div class="hint" id="hint">Drag to look around · pinch or scroll to zoom · tap a house</div>
 </div>
 <div id="card"><button id="close" aria-label="Close">×</button><div id="cardTitle"></div><div id="cardMeta"></div><div id="cardOg">👑 OG TENANT</div><div id="cardStats"></div><div id="cardUp"></div><button id="view3d">🔍 View house in 3D</button><div id="cardMsg"></div></div>
@@ -148,6 +177,8 @@ body.d3anim .top,body.d3anim .bottom,body.d3anim #bennyBtn,body.d3anim #walkBtn,
 <div id="joy"><i></i></div><button id="walkExit">← Map</button><div id="walkEnv"></div><div id="walkHint">Joystick to walk · drag to look around</div>
 <div id="globe"><div id="globeTitle">BENNY'S WORLD 🌍</div><div id="globeHint">Tap the light to visit the town</div><button id="globeBack">🏘️ Visit the town</button></div>
 <button id="d3skip">Skip ⏭</button>
+<div id="trHud"><b>💰 TREASURE HUNT</b><div class="trBar"><i></i></div><div class="trS">…</div></div><div id="trToast"></div>
+<div id="trCard"><div class="trBox"><div class="trTop">BENNY'S TOWN · DAILY TREASURE</div><div class="trEm">🏆</div><div class="trTi">TREASURE FOUND!</div><div class="trCode" id="trCode"></div><div class="trDate" id="trDate"></div><div class="trTx">📸 Screenshot this! Be the <b>first</b> to comment the code under Benny's newest TikTok and your house gets an <b>upgrade</b> 🎁</div><div class="trTx2">A new treasure is hidden every day.</div><button id="trOk">Keep walking</button></div></div>
 <div id="walkLoad"><div style="font-size:46px">🚶</div>Getting the streets ready…</div>
 <div id="v3d"><canvas id="c3d"></canvas><div class="v3top"><span id="v3name"></span><span id="v3sub"></span></div><button id="v3close" aria-label="Close 3D view">×</button><div id="v3load">Building your house…</div><div class="v3bot"><div id="v3tier"></div><div class="v3hint">Drag to turn · pinch or scroll to zoom</div></div></div>
 <div class="bottom">
@@ -6768,14 +6799,14 @@ function nightAmount() {   // 0 = full day, 1 = night (45-min twilight)
 }
 function duskAmount() { const n = nightAmount(); return n > 0 && n < 1 ? Math.sin(n * Math.PI) : 0; }
 const WEATHER_TABLE = {   // by month: chance of each weather (random, but fits the season)
-  w: [['snow', .35], ['clear', .25], ['cloudy', .2], ['fog', .1], ['rain', .1]],                      // Dec–Feb
+  w: [['snow', .5], ['clear', .2], ['cloudy', .15], ['fog', .1], ['rain', .05]],                      // Dec–Feb
   t: [['rain', .3], ['cloudy', .25], ['clear', .2], ['fog', .15], ['snow', .1]],                      // Nov, Mar
   s: [['clear', .4], ['rain', .25], ['cloudy', .25], ['fog', .1]],                                    // Apr, May, Oct
   u: [['clear', .55], ['cloudy', .2], ['rain', .15], ['storm', .1]],                                  // Jun–Sep
 };
 function weatherNow() {
   const o = location.hash.match(/weather=(\w+)/); if (o) return o[1];
-  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[11, 0, 1].includes(m) ? 'w' : [10, 2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
+  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[10, 11, 0, 1].includes(m) ? 'w' : [2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
   const slot = Math.floor(d.getHours() / 3), r = seeded(d.getFullYear() * 10000 + (m + 1) * 100 * 10 + d.getDate() * 10 + slot + 7)();   // same weather for everyone, changes every 3 hours
   let acc = 0; for (const [w, p] of tab) { acc += p; if (r < acc) return w; } return 'clear';
 }
@@ -8410,6 +8441,7 @@ function build3D() {
     near.sort((a, b) => a[0] - b[0]);
     for (const [d, h] of near.slice(0, 6)) { const p = toScreen(h.i, WH + RH + .1, h.j, camera); if (!p || p[1] < 30) continue; ctx.globalAlpha = clamp((3.2 - d) / .8, 0, 1); tag(p[0], p[1], '@' + trunc(h.name, 16), h.og ? '#ffd23f' : '#3ddc84', .9); }
     ctx.globalAlpha = 1;
+    if (W3D.labelHook) W3D.labelHook(camera, toScreen);
   }
 
   /* ======================= 15. camera: walking through the streets (an iso camera is kept for videos) ======================= */
@@ -8604,6 +8636,7 @@ function build3D() {
   // the 2D map keeps its camera and canvas
   cam.x = keep.x; cam.y = keep.y; cam.z = keep.z; resize(); frame.force = true;
   for (const o of LOD.near.concat(LOD.mid, LOD.near2)) o.visible = true; for (const o of LOD.far) o.visible = false;
+  if (W3D.treasure3D) try { W3D.treasure3D({ T3, scene, anim, GB, groundH, view, walkable }); } catch (e) { console.error(e); }
   window.__3d = { view, set(o) { const wk = o.walk; delete o.walk; Object.assign(view, o); if (wk) Object.assign(view.walk, wk); }, walkable, ready: true };
   W3D.built = true;
 }
@@ -9671,6 +9704,93 @@ window.__d = { cam, target, isoW, HOUSES, W3, S, bennyNow, TOWN }; window.W3D = 
   if (/milestone/.test(location.hash)) setTimeout(() => D3.play(false), 900);
   else if (D3.st === 'open') D3.load().then(() => { WC.ok = false; frame.force = true; if (!seen() && !VIDEO_LIKE) setTimeout(() => D3.play(true), 1200); }).catch(e => console.error(e));
 }
+
+/* ---- Daily treasure hunt (3D): every day (Berlin time) a chest is hidden in the streets. Walk there, follow the 🔥 meter;
+   whoever finds it gets the day's code — the first to comment it under Benny's newest TikTok gets a house upgrade. ---- */
+const TR = (() => {
+  const fnv = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const day = (() => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); } catch (e) { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); } })();
+  const codeFor = d => { const W = ['GOLD', 'RUBY', 'STAR', 'MOON', 'COIN', 'LUCK', 'GEM', 'KEY', 'CROWN', 'PEARL'], A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', h = fnv('benny-code-' + d), g = fnv('x' + d + 'treasure'); let s = ''; for (let i = 0; i < 3; i++) s += A[(g >>> (i * 5)) % 32]; return W[h % W.length] + '-' + s; };
+  // where it is hidden: a random spot at the side of a street or in a back alley (the same for everyone today)
+  const spotFor = d => {
+    const r = seeded(fnv('benny-spot-' + d) % 2147483646 + 1); for (let i = 0; i < 7; i++) r();
+    const pools = { alley: [], street: [] };
+    for (const [T, ti] of [[W3.T1, 1], [W3.T2, 2]]) { for (const P of T.alleys) pools.alley.push({ P, T, ti }); for (const s of T.streets) if (s.kind !== 'avenue') pools.street.push({ P: s.pts, T, ti }); }
+    for (const k in pools) { let acc = 0; for (const e of pools[k]) { let L = 0; for (let i = 1; i < e.P.length; i++) L += Math.hypot(e.P[i][0] - e.P[i - 1][0], e.P[i][1] - e.P[i - 1][1]); e.L = L; acc += L; e.acc = acc; } pools[k].total = acc; }
+    for (let tries = 0; tries < 200; tries++) {
+      const kind = r() < .5 ? 'alley' : 'street', L = pools[kind], x = r() * L.total, e = L.find(q => q.acc >= x) || L[L.length - 1];
+      let w = x - (e.acc - e.L), i = 1; for (; i < e.P.length; i++) { const sl = Math.hypot(e.P[i][0] - e.P[i - 1][0], e.P[i][1] - e.P[i - 1][1]); if (w <= sl || i === e.P.length - 1) break; w -= sl; }
+      const a = e.P[i - 1], b = e.P[i], sl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, f = clamp(w / sl, 0, 1), tu = (b[0] - a[0]) / sl, tv = (b[1] - a[1]) / sl, side = r() < .5 ? -1 : 1, off = kind === 'alley' ? .27 : .5;
+      const u = lerp(a[0], b[0], f) - tv * off * side, v = lerp(a[1], b[1], f) + tu * off * side;
+      if (Math.hypot(u - 3.5, v - 3.65) < 24 || W3.lmSDF(u, v) < W3.M + .6) continue;
+      const T = e.T, rr = Math.hypot(u - T.C[0], v - T.C[1]) / T.innerR(Math.atan2(v - T.C[1], u - T.C[0]));
+      return { u, v, kind, ti: e.ti, rr, face: Math.atan2(tv * side, -tu * side) };   // the chest's front faces the middle of its path
+    }
+    return { u: 20, v: 8, kind: 'street', ti: 1, rr: .2, face: 0 };
+  };
+  const spot = spotFor(day), code = codeFor(day);
+  const hint = 'Somewhere in ' + (spot.ti === 1 ? 'the Old Town' : 'District 2') + ', ' + (spot.rr < .35 ? 'near the middle' : spot.rr < .72 ? 'halfway to the town wall' : 'close to the town wall') + ', ' + (spot.kind === 'alley' ? 'in a narrow back alley.' : 'at the side of a street.');
+  const found = () => { try { const o = JSON.parse(localStorage.getItem('bt_treasure') || '{}'); return o.day === day; } catch (e) { return false; } };
+  return { day, code, spot, hint, found, fnv, codeFor, spotFor, d: 999 };
+})();
+function trDateLabel() { try { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()); } catch (e) { return TR.day; } }
+function trPill() { const b = $('trBtn'); if (!b) return; b.textContent = TR.found() ? '✅ Treasure found · ' + TR.code : '💰 Daily treasure hunt'; b.classList.toggle('done', TR.found()); }
+function trShowCard() { $('trCode').textContent = TR.code; $('trDate').textContent = trDateLabel(); $('trCard').classList.add('on'); }
+function trToast(html, ms) { const t = $('trToast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(trToast.t); trToast.t = setTimeout(() => t.classList.remove('on'), ms || 6000); }
+async function trHunt() {
+  if (TR.found()) { trShowCard(); return; }
+  const C = TR.spot.ti === 1 ? [4.6, 7.2] : W3.T2.C, [wx, wy] = isoW(C[0], C[1]); hideCard(); selected = null; cam.x = target.x = wx; cam.y = target.y = wy;
+  await startWalk();
+  if (W3D.on) trToast('<b>💰 Today\'s treasure</b><br>' + TR.hint + '<br><span>Follow the 🔥 – the hotter, the closer!</span>', 7000);
+}
+// the 3D part: the chest, its light, the hot/cold meter (called once when the 3D streets are built)
+W3D.treasure3D = X => {
+  const { T3, scene, anim, GB, groundH, view } = X, S0 = TR.spot, gy = groundH(S0.u, S0.v);
+  const g = new T3.Group(); g.position.set(S0.u, gy, S0.v); g.rotation.y = S0.face; scene.add(g);
+  { const B = GB(), WD = '#8a5a34', WL = '#a8743f', GD = '#f2c14e';
+    B.box(-.17, 0, -.11, .17, .15, .11, WD, { hull: .012, top: '#6b4428' });
+    for (const x of [-.1, .1]) B.box(x - .016, -.002, -.116, x + .016, .152, .116, GD, { hull: .006 });
+    B.box(-.032, .065, .112, .032, .135, .128, GD, { hull: .005 }); B.box(-.008, .08, .128, .008, .11, .132, '#3b2a1a');
+    g.add(B.mesh()); }
+  const lid = new T3.Group(); lid.position.set(0, .15, -.11); g.add(lid);
+  { const B = GB(), R = .11, N = 9, P = (x, a, rr) => [x, Math.sin(a) * (rr || R) * .85, .11 - Math.cos(a) * (rr || R)];
+    for (let k = 0; k < N; k++) { const a0 = k / N * Math.PI, a1 = (k + 1) / N * Math.PI, m = (a0 + a1) / 2, out = [0, Math.sin(m), -Math.cos(m)];
+      B.quad(P(-.17, a0), P(.17, a0), P(.17, a1), P(-.17, a1), '#a8743f', out); B.hquad(P(-.182, a0, R + .012), P(.182, a0, R + .012), P(.182, a1, R + .012), P(-.182, a1, R + .012), out);
+      for (const x of [-.1, .1]) B.quad(P(x - .016, a0, R + .004), P(x + .016, a0, R + .004), P(x + .016, a1, R + .004), P(x - .016, a1, R + .004), '#f2c14e', out); }
+    for (const x of [-.17, .17]) for (let k = 0; k < N; k++) { const a0 = k / N * Math.PI, a1 = (k + 1) / N * Math.PI; B.tri([x, 0, .11], P(x, a0), P(x, a1), '#8a5a34', [Math.sign(x), 0, 0]); }
+    lid.add(B.mesh()); }
+  const add = (geo, color, op) => { const m = new T3.Mesh(geo, new T3.MeshBasicMaterial({ color, transparent: true, opacity: op, blending: T3.AdditiveBlending, depthWrite: false })); m.renderOrder = 5; return m; };
+  const glow = add(new T3.PlaneGeometry(.3, .18).rotateX(-Math.PI / 2), '#ffd76a', 0); glow.position.y = .152; g.add(glow);
+  const beam = add(new T3.CylinderGeometry(.05, .2, 9, 16, 1, true).translate(0, 4.5 + .42, 0), '#ffd76a', 0); g.add(beam);
+  // sparkles that twinkle round the chest
+  const starTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 30); gr.addColorStop(0, 'rgba(255,248,210,1)'); gr.addColorStop(.25, 'rgba(255,215,110,.85)'); gr.addColorStop(1, 'rgba(255,200,80,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); x.fillStyle = '#fffbe6'; x.beginPath(); for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832, r = k % 2 ? 4 : 30; x.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } x.fill(); return new T3.CanvasTexture(c); })();
+  const sparks = []; for (let k = 0; k < 7; k++) { const s = new T3.Sprite(new T3.SpriteMaterial({ map: starTex, transparent: true, depthWrite: false, blending: T3.AdditiveBlending })); s.renderOrder = 6; g.add(s); sparks.push(s); }
+  // coins that burst out when it opens
+  const coinG = new T3.CylinderGeometry(.035, .035, .008, 14).rotateX(Math.PI / 2), coinM = new T3.MeshBasicMaterial({ color: '#ffcf3f' }), coins = [];
+  for (let k = 0; k < 16; k++) { const c = new T3.Mesh(coinG, coinM); c.visible = false; g.add(c); coins.push({ m: c, a: k / 16 * 6.2832 + Math.random() * .3, sp: .9 + Math.random() * .7, up: 1.6 + Math.random() * 1.1 }); }
+  let openK = TR.found() ? 1 : 0, opening = -1, lastUi = 0, lastD = null, trend = 0, trendT = 0;
+  const hud = $('trHud'), bar = hud.querySelector('i'), txt = hud.querySelector('.trS');
+  anim.push((t, dt) => {
+    const wk = view.walk, d = Math.hypot(wk.x - S0.u, wk.z - S0.v); TR.d = d;
+    if (opening >= 0) { opening += dt; openK = Math.min(1, opening / .55); const q = opening - .25; for (const c of coins) { c.m.visible = q > 0 && q < 2.6; if (!c.m.visible) continue; c.m.position.set(Math.sin(c.a) * c.sp * q * .35, .16 + c.up * q - 2.4 * q * q, Math.cos(c.a) * c.sp * q * .35); c.m.rotation.y = q * 9 + c.a; } }
+    lid.rotation.x = -1.95 * (openK * openK * (3 - 2 * openK));
+    glow.material.opacity = .9 * openK * (.75 + .25 * Math.sin(t * 6));
+    beam.material.opacity = (TR.found() ? .1 : clamp((34 - d) / 18, 0, 1) * .42) * clamp((d - .8) / 3, .25, 1) * (.8 + .2 * Math.sin(t * 3));
+    sparks.forEach((s, k) => { const a = t * (.6 + k * .07) + k * .9, ph = (t * .8 + k * .37) % 1; s.position.set(Math.cos(a) * .3, .12 + ph * .55, Math.sin(a) * .3); s.scale.setScalar(.08 * Math.sin(ph * Math.PI) + .015); s.material.opacity = Math.sin(ph * Math.PI); });
+    if (d < 1.0 && !TR.found() && opening < 0) {   // found it!
+      opening = 0; try { localStorage.setItem('bt_treasure', JSON.stringify({ day: TR.day, code: TR.code })); } catch (e) {}
+      try { liveBeep('coin'); setTimeout(() => liveBeep('chime'), 350); } catch (e) {}
+      trPill(); setTimeout(trShowCard, 900);
+    }
+    if (t - lastUi > .25) { lastUi = t;   // the hot/cold meter
+      if (TR.found()) { hud.classList.add('done'); txt.textContent = '✅ Found! Code: ' + TR.code; bar.style.width = '100%'; }
+      else { if (lastD == null) lastD = d; if (t - trendT > 1.1) { trend = d < lastD - .6 ? 1 : d > lastD + .6 ? -1 : 0; lastD = d; trendT = t; }
+        const L = d > 120 ? '🧊 Freezing' : d > 70 ? '❄️ Cold' : d > 35 ? '🌤️ Warm' : d > 15 ? '🔥 Hot' : d > 5 ? '🔥🔥 Very hot!' : '😱 It\'s right here!';
+        txt.textContent = L + (d > 5 && trend ? (trend > 0 ? '  ·  ▲ warmer' : '  ·  ▼ colder') : ''); bar.style.width = (clamp(1 - d / 160, .04, 1) * 100).toFixed(1) + '%'; } }
+  });
+  W3D.labelHook = (camera, toScreen) => { const d = TR.d; if (d > 7) return; const p = toScreen(S0.u, gy + .55, S0.v, camera); if (!p) return; ctx.globalAlpha = clamp((7 - d) / 2, 0, 1); tag(p[0], p[1], TR.found() ? '✅ TREASURE' : '💰 TREASURE', '#ffd23f', 1); ctx.globalAlpha = 1; };
+};
+{ trPill(); $('trBtn').addEventListener('click', trHunt); $('trOk').addEventListener('click', () => $('trCard').classList.remove('on')); $('trHud').addEventListener('click', () => { if (TR.found()) trShowCard(); else trToast('<b>💰 Today\'s treasure</b><br>' + TR.hint, 5000); }); window.TR = { day: TR.day, found: TR.found, hint: TR.hint }; }
 const go = () => CONTROL ? startControl() : LIVE ? startLive() : start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
 })();

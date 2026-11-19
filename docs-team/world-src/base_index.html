@@ -6734,14 +6734,14 @@ function nightAmount() {   // 0 = full day, 1 = night (45-min twilight)
 }
 function duskAmount() { const n = nightAmount(); return n > 0 && n < 1 ? Math.sin(n * Math.PI) : 0; }
 const WEATHER_TABLE = {   // by month: chance of each weather (random, but fits the season)
-  w: [['snow', .35], ['clear', .25], ['cloudy', .2], ['fog', .1], ['rain', .1]],                      // Dec–Feb
+  w: [['snow', .5], ['clear', .2], ['cloudy', .15], ['fog', .1], ['rain', .05]],                      // Dec–Feb
   t: [['rain', .3], ['cloudy', .25], ['clear', .2], ['fog', .15], ['snow', .1]],                      // Nov, Mar
   s: [['clear', .4], ['rain', .25], ['cloudy', .25], ['fog', .1]],                                    // Apr, May, Oct
   u: [['clear', .55], ['cloudy', .2], ['rain', .15], ['storm', .1]],                                  // Jun–Sep
 };
 function weatherNow() {
   const o = location.hash.match(/weather=(\w+)/); if (o) return o[1];
-  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[11, 0, 1].includes(m) ? 'w' : [10, 2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
+  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[10, 11, 0, 1].includes(m) ? 'w' : [2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
   const slot = Math.floor(d.getHours() / 3), r = seeded(d.getFullYear() * 10000 + (m + 1) * 100 * 10 + d.getDate() * 10 + slot + 7)();   // same weather for everyone, changes every 3 hours
   let acc = 0; for (const [w, p] of tab) { acc += p; if (r < acc) return w; } return 'clear';
 }

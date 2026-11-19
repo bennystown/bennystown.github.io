@@ -98,6 +98,8 @@ rep('<button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>',
     '<div id="joy"><i></i></div><button id="walkExit">← Map</button><div id="walkEnv"></div><div id="walkHint">Joystick to walk · drag to look around</div>\n'
     '<div id="globe"><div id="globeTitle">BENNY\'S WORLD 🌍</div><div id="globeHint">Tap the light to visit the town</div><button id="globeBack">🏘️ Visit the town</button></div>\n'
     '<button id="d3skip">Skip ⏭</button>\n'
+    '<div id="trHud"><b>💰 TREASURE HUNT</b><div class="trBar"><i></i></div><div class="trS">…</div></div><div id="trToast"></div>\n'
+    '<div id="trCard"><div class="trBox"><div class="trTop">BENNY\'S TOWN · DAILY TREASURE</div><div class="trEm">🏆</div><div class="trTi">TREASURE FOUND!</div><div class="trCode" id="trCode"></div><div class="trDate" id="trDate"></div><div class="trTx">📸 Screenshot this! Be the <b>first</b> to comment the code under Benny\'s newest TikTok and your house gets an <b>upgrade</b> 🎁</div><div class="trTx2">A new treasure is hidden every day.</div><button id="trOk">Keep walking</button></div></div>\n'
     '<div id="walkLoad"><div style="font-size:46px">🚶</div>Getting the streets ready…</div>')
 css = ('#walkBtn{position:fixed;right:12px;bottom:218px;z-index:3;width:58px;height:58px;border-radius:29px;font:700 10px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.9);border:2px solid #ffd23f;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}\n'
        '#walkBtn i{font-style:normal;font-size:22px;line-height:1}\n#card.on~#walkBtn{display:none}\n'
@@ -116,6 +118,19 @@ css = ('#walkBtn{position:fixed;right:12px;bottom:218px;z-index:3;width:58px;hei
        'body.walking .top,body.walking .bottom,body.walking #bennyBtn,body.walking #walkBtn,body.walking #card,body.walking #hint,body.walking #sugg,body.walking #rw{display:none!important}\n'
        'body.walking #joy,body.walking #walkExit,body.walking #walkHint,body.walking #walkEnv{display:block}\n'
        '#walkEnv{position:fixed;right:12px;top:14px;z-index:4;display:none;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.82);border-radius:12px;padding:9px 12px;white-space:nowrap;pointer-events:none}\n'
+       '.erow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:-3px}\n.erow .envbar{margin-top:0}\n'
+       '#trBtn{pointer-events:auto;font:800 12.5px Poppins,system-ui,sans-serif;color:#1b1728;background:linear-gradient(#ffe27a,#ffc93c);border:0;border-radius:12px;padding:6px 11px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.28);white-space:nowrap;max-width:58vw;overflow:hidden;text-overflow:ellipsis}\n#trBtn.done{background:rgba(10,12,26,.86);color:#ffd23f;border:1px solid rgba(255,210,63,.6)}\n'
+       '#trHud{position:fixed;left:50%;top:62px;transform:translateX(-50%);z-index:4;display:none;width:min(300px,72vw);text-align:center;font:800 12px Poppins,system-ui,sans-serif;color:#ffd23f;background:rgba(10,12,26,.84);border:1px solid rgba(255,210,63,.45);border-radius:14px;padding:7px 10px 8px;cursor:pointer}\n'
+       '#trHud .trBar{height:9px;border-radius:5px;background:linear-gradient(90deg,#4da3ff,#9ad7ff 30%,#ffd23f 65%,#ff6b3d);margin:5px 0 4px;position:relative;overflow:hidden}\n#trHud .trBar i{position:absolute;right:0;top:0;bottom:0;left:auto;background:rgba(10,12,26,.82);display:block;width:100%;transition:width .3s}\n'
+       '#trHud .trS{color:#fff;font-weight:700;font-size:13px}\n#trHud.done .trBar{background:#3ddc84}\nbody.walking #trHud{display:block}\nbody.walking #walkHint{top:128px}\n'
+       '#trToast{position:fixed;left:50%;top:128px;transform:translateX(-50%);z-index:5;width:min(330px,86vw);text-align:center;font:600 14px/1.35 Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.92);border:2px solid #ffd23f;border-radius:16px;padding:12px 14px;opacity:0;pointer-events:none}\n#trToast.on{opacity:1}\n#trToast b{color:#ffd23f;font-size:16px}\n#trToast span{color:#c3c9e4;font-size:13px}\n'
+       '#trCard{position:fixed;inset:0;z-index:7;display:none;align-items:center;justify-content:center;background:rgba(5,8,22,.55)}\n#trCard.on{display:flex}\n'
+       '.trBox{width:min(330px,88vw);text-align:center;color:#fff;font-family:Poppins,system-ui,sans-serif;background:radial-gradient(circle at 50% 0,#3a2c6e,#141632 70%);border:3px solid #ffd23f;border-radius:22px;padding:16px 16px 18px;box-shadow:0 10px 40px rgba(0,0,0,.5);animation:trPop .5s cubic-bezier(.2,1.6,.4,1)}\n@keyframes trPop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}\n'
+       '.trTop{font:800 11px Poppins,system-ui,sans-serif;letter-spacing:1.5px;color:#c3c9e4}\n.trEm{font-size:54px;line-height:1.15;margin-top:4px}\n.trTi{font:900 24px Poppins,system-ui,sans-serif;color:#ffd23f;text-shadow:0 3px 0 #000}\n'
+       '.trCode{margin:10px auto 4px;display:inline-block;font:900 30px ui-monospace,Menlo,Consolas,monospace;letter-spacing:2px;color:#1b1728;background:linear-gradient(#ffe27a,#ffc93c);border-radius:12px;padding:6px 14px;box-shadow:0 3px 0 rgba(0,0,0,.35)}\n'
+       '.trDate{font:700 13px Poppins,system-ui,sans-serif;color:#c3c9e4;margin-bottom:10px}\n.trTx{font:600 14px/1.4 Poppins,system-ui,sans-serif}\n.trTx b{color:#ffd23f}\n.trTx2{font:600 12px Poppins,system-ui,sans-serif;color:#9aa1c4;margin-top:6px}\n'
+       '#trOk{margin-top:12px;font:800 15px Poppins,system-ui,sans-serif;color:#1b1728;background:#ffd23f;border:0;border-radius:14px;padding:10px 18px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.25)}\n'
+       'body.d3anim #trBtn{display:none}\n'
        '#d3skip{position:fixed;right:12px;bottom:22px;z-index:5;display:none;font:800 14px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.78);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:9px 14px;cursor:pointer}\n'
        'body.d3anim #d3skip{display:block}\nbody.d3anim #globeHint{color:#fff;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.8)}\nbody.d3anim .top,body.d3anim .bottom,body.d3anim #bennyBtn,body.d3anim #walkBtn,body.d3anim #card,body.d3anim #hint,body.d3anim #sugg,body.d3anim #rw{display:none!important}\n'
        '.envbar{align-self:flex-end;pointer-events:none;font:700 12.5px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.86);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:5px 10px;white-space:nowrap;margin-top:-3px}\n')
@@ -125,13 +140,13 @@ rep('return k >= 20261118 && k <= 20261119; })();', 'return k >= 20261118 && k <
 rep('<body>', '<body>\n<script src="world-data.js"></script>')
 # District 3: the build's clock runs in the map's frame loop; controller (camera path, skip, autoplay at 10,000, #milestone)
 rep('  if (window.__walking || window.__globe) { last = 0; requestAnimationFrame(frame); return; }\n', '  if (window.__walking || window.__globe) { last = 0; requestAnimationFrame(frame); return; }\n  if (W3.D3.anim) { W3.D3.tick(last ? Math.min(.1, (now - last) / 1000) : 0); frame.force = true; }\n')
-rep('const go = () => CONTROL', open(W + 'd3ctl.js').read() + 'const go = () => CONTROL')
+rep('const go = () => CONTROL', open(W + 'd3ctl.js').read() + open(W + 'trctl.js').read() + 'const go = () => CONTROL')
 rep('    const dt = lastT ? Math.min(.25, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;\n', '    const dt = lastT ? Math.min(.25, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;\n    if (W3.D3.anim) { W3.D3.tick(dt); LV.holdUntil = S.T + 2; }\n')
 rep("[10000, '🎢 Rollercoaster']", "[10000, '🏰 District 3 + 🎢 Coaster']")
 rep('  const key = Object.keys(FEATURES).find(k => FEATURES[k].n === m[0]);\n', "  if (m[0] === W3.D3.AT) { LV.ms = { n: m[0], name: m[1], t0: S.T, until: S.T + 34 }; liveAt(.5, () => { liveFx('fireworks', 2); liveAlert('🎉 ' + m[0].toLocaleString('en-US') + ' NEIGHBORS!', 'The fog lifts – District 3 gets built! 🔨', '#ffd23f'); livePlay('ms10'); }); liveAt(1.2, () => W3.D3.play(true)); liveAt(27.5, () => { liveFx('fireworks', 2); liveFx('confetti'); liveAlert('🏰 District 3 is open!', 'Thank you, ' + m[0].toLocaleString('en-US') + ' neighbors 🫶', '#ffd23f'); }); return; }\n  const key = Object.keys(FEATURES).find(k => FEATURES[k].n === m[0]);\n")
 rep("  const k = HOUSES.length, L = LOTA[k];\n", "  const k = HOUSES.length, L3 = k < 5000 ? W3.T1.lots[k] : k < 10000 ? W3.T2.lots[k - 5000] : W3.D3.T ? W3.D3.T.lots[k - 10000] : null, L = L3 ? { i: L3[0], j: L3[1] } : (LOTA[k] || { i: 0, j: 0 });\n  if (k >= 9900 && !W3.D3.T) W3.D3.load().catch(() => {});\n")
 rep("  HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);\n", "  if (L3) { h.L3 = L3; h.town = k < 5000 ? 1 : k < 10000 ? 2 : 3; h.flip = ((k * 2654435761) >>> 0) % 3 === 0; }\n  HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);\n")
-rep('<div class="hint" id="hint">', '<div class="envbar" id="envBar"></div>\n  <div class="hint" id="hint">')
+rep('<div class="hint" id="hint">', '<div class="erow"><button id="trBtn">💰 Daily treasure hunt</button><div class="envbar" id="envBar"></div></div>\n  <div class="hint" id="hint">')
 
 out = W + ('site/' if mode == 'test' else 'live/')
 os.makedirs(out, exist_ok=True)
@@ -140,6 +155,7 @@ if mode == 'test':
     src = re.sub(r'<script data-goatcounter[^>]*></script>\s*', '', src)
     rep("<title>Benny's Town – Find your house</title>", "<title>Benny's Town – Test</title>")
     rep('const SNOWY = (() => {', 'const SNOWY = false && (() => {')
+    rep("window.TR = { day: TR.day, found: TR.found, hint: TR.hint };", "window.TR = TR;")   # test build only: the spot is reachable for screenshots
 open(out + 'index.html', 'w').write(src)
 shutil.copy(W + 'pub/world-data.js', out + 'world-data.js')
 shutil.copy(W + 'pub/world-d3.js', out + 'world-d3.js')
