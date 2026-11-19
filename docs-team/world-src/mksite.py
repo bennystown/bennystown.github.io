@@ -43,31 +43,36 @@ function renderWorldCache(z) {
   WC.c.width = Math.ceil(cw * DPR); WC.c.height = Math.ceil(ch * DPR);
   const s = { ctx, VW, VH, FX, FY };
   ctx = WC.c.getContext('2d'); VW = cw; VH = ch; FX = s.FX + (cw - s.VW) / 2; FY = s.FY + (ch - s.VH) / 2;
+  W3.D3.excl = !!W3.D3.anim;
   try { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; drawWorld(z, false); }
-  finally { WC.fxc = FX; WC.fyc = FY; ctx = s.ctx; VW = s.VW; VH = s.VH; FX = s.FX; FY = s.FY; }
+  finally { W3.D3.excl = false; WC.fxc = FX; WC.fyc = FY; ctx = s.ctx; VW = s.VW; VH = s.VH; FX = s.FX; FY = s.FY; }
   Object.assign(WC, { ok: true, z, cx: cam.x, cy: cam.y, cw, ch, t: performance.now(), dpr: DPR });
 }
 function draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   const z = cam.z;
-  if (z < .22 && !VIDEO_LIKE) {
-    const sig = [DPR, VW, VH, selected ? selected.idx : -1, HOUSES.length].join('|'), now = performance.now(), loose = now - (WC.t || 0) < 400;
+  if (z < .22 && !VIDEO_LIKE && !window.D3_FULL) {
+    const sig = [DPR, VW, VH, selected ? selected.idx : -1, HOUSES.length, W3.D3.st, !!W3.D3.T].join('|'), now = performance.now(), loose = now - (WC.t || 0) < 400;
     const k = WC.ok ? z / WC.z : 1, ox = WC.ok ? (cam.x - WC.cx) * z : 0, oy = WC.ok ? (cam.y - WC.cy) * z : 0;
     if (!WC.ok || WC.sig !== sig || Math.abs(Math.log(k)) > (loose ? .3 : .015) || Math.abs(ox) > VW * .28 || Math.abs(oy) > VH * .28) { renderWorldCache(z); WC.sig = sig; }
     const kk = z / WC.z; ctx.fillStyle = '#5d9e57'; ctx.fillRect(0, 0, VW, VH);
     ctx.drawImage(WC.c, FX - WC.fxc * kk + (WC.cx - cam.x) * z, FY - WC.fyc * kk + (WC.cy - cam.y) * z, WC.cw * kk, WC.ch * kk);
+    if (W3.D3.anim) W3.d3Live();
     drawMovers(z);
   } else drawWorld(z, true);
 ''' + tail)
+new_draw = new_draw.replace('  envOverlay(1 / 60);\n', '  envOverlay(1 / 60);\n  W3.d3Labels();\n', 1)
+assert new_draw.rstrip().endswith('}')
+new_draw = new_draw.rstrip()[:-1] + '  W3.d3Overlay();\n}\n'
 src = src[:d0] + world2d + '\n' + world3d + '\n' + new_draw + '\nfunction drawOld() {}\n' + src[d1:]
 
 rep("const ctx = cv.getContext('2d');", "let ctx = cv.getContext('2d');")
 # ---------- map camera: zoom out far enough for the whole Old Town, stay over the two districts ----------
 rep("function fitZoom() { const R = Math.max(3.2, R_CITY + 1.2); return clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .08, 1.6); }",
-    "function townsBox() { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const T of [W3.T1, W3.T2]) for (let k = 0; k < 32; k++) { const a = k / 32 * 6.2832, R = T.R + 3, [x, y] = isoW(T.C[0] + Math.cos(a) * R, T.C[1] + Math.sin(a) * R); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } return [x0, y0, x1, y1]; }\nfunction fitZoom() { const [x0, y0, x1, y1] = townsBox(); return clamp(Math.min((VW - 44) / (x1 - x0), (VH * .55) / (y1 - y0)), .01, 1.6); }")
+    "function townsBox() { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; for (const T of [W3.T1, W3.T2, { C: W3.D3.C, R: W3.D3.R }]) for (let k = 0; k < 32; k++) { const a = k / 32 * 6.2832, R = T.R + 3, [x, y] = isoW(T.C[0] + Math.cos(a) * R, T.C[1] + Math.sin(a) * R); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } return [x0, y0, x1, y1]; }\nfunction fitZoom() { const [x0, y0, x1, y1] = townsBox(); return clamp(Math.min((VW - 44) / (x1 - x0), (VH * .55) / (y1 - y0)), .01, 1.6); }")
 rep("function overview() { target.x = PX; target.y = PY + 10; target.z = fitZoom(); }", "function overview() { const [x0, y0, x1, y1] = townsBox(); target.x = (x0 + x1) / 2; target.y = (y0 + y1) / 2 + (FY - VH * .5) / fitZoom() * 0; target.z = fitZoom(); }")
 rep("function clampCam() { const [cx, cy] = isoW(CEN, CEN), R = (A1 - A0) * TW * .36; cam.x = clamp(cam.x, cx - R, cx + R); cam.y = clamp(cam.y, cy - R * .5, cy + R * .5); }",
-    "function clampCam() { const T1 = W3.T1, T2 = W3.T2, u0 = T1.C[0] - T1.R - 12, u1 = T2.C[0] + T2.R + 12, v0 = Math.min(T1.C[1] - T1.R, T2.C[1] - T2.R) - 12, v1 = Math.max(T1.C[1] + T1.R, T2.C[1] + T2.R) + 12, P = [isoW(u0, v0), isoW(u1, v0), isoW(u0, v1), isoW(u1, v1)]; cam.x = clamp(cam.x, Math.min(...P.map(p => p[0])), Math.max(...P.map(p => p[0]))); cam.y = clamp(cam.y, Math.min(...P.map(p => p[1])), Math.max(...P.map(p => p[1]))); }")
+    "function clampCam() { const T1 = W3.T1, T2 = W3.T2, D3 = W3.D3, u0 = Math.min(T1.C[0] - T1.R, D3.C[0] - D3.R) - 12, u1 = T2.C[0] + T2.R + 12, v0 = Math.min(T1.C[1] - T1.R, T2.C[1] - T2.R, D3.C[1] - D3.R) - 12, v1 = Math.max(T1.C[1] + T1.R, T2.C[1] + T2.R) + 12, P = [isoW(u0, v0), isoW(u1, v0), isoW(u0, v1), isoW(u1, v1)]; cam.x = clamp(cam.x, Math.min(...P.map(p => p[0])), Math.max(...P.map(p => p[0]))); cam.y = clamp(cam.y, Math.min(...P.map(p => p[1])), Math.max(...P.map(p => p[1]))); }")
 rep("cam.z = clamp(nz, .08, 3);", "{ const fz = fitZoom(); if (nz < fz * .8 && !VIDEO_LIKE) { GLOBE.enter(); nz = fz * .8; } } cam.z = clamp(nz, .02, 3);")
 rep("    if (TOWN.milestones.lights) lampGlow(n);\n  }", "    if (TOWN.milestones.lights) lampGlow(n);\n    W3.carLights(n);\n  }")
 rep("function updateEnvChip() {", "function envLabel() { const h = envHour(), n = nightAmount(), d = duskAmount(), w = weatherNow(), L = w === 'clear' ? (n > .5 ? ['✨', 'Clear'] : ['☀️', 'Sunny']) : (WX_LABEL[w] || WX_LABEL.clear), hh = Math.floor(h) % 24, mm = Math.floor((h - Math.floor(h)) * 60), ic = n > .6 ? '🌙' : d > .25 ? (h < 12 ? '🌅' : '🌇') : String.fromCodePoint(0x1F550 + ((hh + 11) % 12)); return ic + ' ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + '  ·  ' + L[0] + ' ' + L[1]; }\nfunction updateEnvBar() { const el = document.getElementById('envBar'); if (el) el.textContent = envLabel(); }\nfunction updateEnvChip() {")
@@ -92,6 +97,7 @@ rep('<button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>',
     '<button id="bennyBtn" aria-label="Go to Benny"><i>🧢</i>Benny</button>\n<button id="walkBtn" aria-label="Walk through the streets"><i>🚶</i>Walk</button>\n'
     '<div id="joy"><i></i></div><button id="walkExit">← Map</button><div id="walkEnv"></div><div id="walkHint">Joystick to walk · drag to look around</div>\n'
     '<div id="globe"><div id="globeTitle">BENNY\'S WORLD 🌍</div><div id="globeHint">Tap the light to visit the town</div><button id="globeBack">🏘️ Visit the town</button></div>\n'
+    '<button id="d3skip">Skip ⏭</button>\n'
     '<div id="walkLoad"><div style="font-size:46px">🚶</div>Getting the streets ready…</div>')
 css = ('#walkBtn{position:fixed;right:12px;bottom:218px;z-index:3;width:58px;height:58px;border-radius:29px;font:700 10px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.9);border:2px solid #ffd23f;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}\n'
        '#walkBtn i{font-style:normal;font-size:22px;line-height:1}\n#card.on~#walkBtn{display:none}\n'
@@ -110,11 +116,21 @@ css = ('#walkBtn{position:fixed;right:12px;bottom:218px;z-index:3;width:58px;hei
        'body.walking .top,body.walking .bottom,body.walking #bennyBtn,body.walking #walkBtn,body.walking #card,body.walking #hint,body.walking #sugg,body.walking #rw{display:none!important}\n'
        'body.walking #joy,body.walking #walkExit,body.walking #walkHint,body.walking #walkEnv{display:block}\n'
        '#walkEnv{position:fixed;right:12px;top:14px;z-index:4;display:none;font:700 13px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.82);border-radius:12px;padding:9px 12px;white-space:nowrap;pointer-events:none}\n'
+       '#d3skip{position:fixed;right:12px;bottom:22px;z-index:5;display:none;font:800 14px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.78);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:9px 14px;cursor:pointer}\n'
+       'body.d3anim #d3skip{display:block}\nbody.d3anim #globeHint{color:#fff;text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.8)}\nbody.d3anim .top,body.d3anim .bottom,body.d3anim #bennyBtn,body.d3anim #walkBtn,body.d3anim #card,body.d3anim #hint,body.d3anim #sugg,body.d3anim #rw{display:none!important}\n'
        '.envbar{align-self:flex-end;pointer-events:none;font:700 12.5px Poppins,system-ui,sans-serif;color:#fff;background:rgba(10,12,26,.86);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:5px 10px;white-space:nowrap;margin-top:-3px}\n')
 rep('</style>', css + '</style>')
 rep('return k >= 20261118 && k <= 20261119; })();', 'return k >= 20261118 && k <= 20261118; })();')
 # the layout of the new world is calculated once and shipped with the page
 rep('<body>', '<body>\n<script src="world-data.js"></script>')
+# District 3: the build's clock runs in the map's frame loop; controller (camera path, skip, autoplay at 10,000, #milestone)
+rep('  if (window.__walking || window.__globe) { last = 0; requestAnimationFrame(frame); return; }\n', '  if (window.__walking || window.__globe) { last = 0; requestAnimationFrame(frame); return; }\n  if (W3.D3.anim) { W3.D3.tick(last ? Math.min(.1, (now - last) / 1000) : 0); frame.force = true; }\n')
+rep('const go = () => CONTROL', open(W + 'd3ctl.js').read() + 'const go = () => CONTROL')
+rep('    const dt = lastT ? Math.min(.25, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;\n', '    const dt = lastT ? Math.min(.25, (now - lastT) / 1000) : 0; lastT = now; S.T += dt;\n    if (W3.D3.anim) { W3.D3.tick(dt); LV.holdUntil = S.T + 2; }\n')
+rep("[10000, '🎢 Rollercoaster']", "[10000, '🏰 District 3 + 🎢 Coaster']")
+rep('  const key = Object.keys(FEATURES).find(k => FEATURES[k].n === m[0]);\n', "  if (m[0] === W3.D3.AT) { LV.ms = { n: m[0], name: m[1], t0: S.T, until: S.T + 34 }; liveAt(.5, () => { liveFx('fireworks', 2); liveAlert('🎉 ' + m[0].toLocaleString('en-US') + ' NEIGHBORS!', 'The fog lifts – District 3 gets built! 🔨', '#ffd23f'); livePlay('ms10'); }); liveAt(1.2, () => W3.D3.play(true)); liveAt(27.5, () => { liveFx('fireworks', 2); liveFx('confetti'); liveAlert('🏰 District 3 is open!', 'Thank you, ' + m[0].toLocaleString('en-US') + ' neighbors 🫶', '#ffd23f'); }); return; }\n  const key = Object.keys(FEATURES).find(k => FEATURES[k].n === m[0]);\n")
+rep("  const k = HOUSES.length, L = LOTA[k];\n", "  const k = HOUSES.length, L3 = k < 5000 ? W3.T1.lots[k] : k < 10000 ? W3.T2.lots[k - 5000] : W3.D3.T ? W3.D3.T.lots[k - 10000] : null, L = L3 ? { i: L3[0], j: L3[1] } : (LOTA[k] || { i: 0, j: 0 });\n  if (k >= 9900 && !W3.D3.T) W3.D3.load().catch(() => {});\n")
+rep("  HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);\n", "  if (L3) { h.L3 = L3; h.town = k < 5000 ? 1 : k < 10000 ? 2 : 3; h.flip = ((k * 2654435761) >>> 0) % 3 === 0; }\n  HOUSES.push(h); BY_NAME.set(norm(name), h); BY_LOT.set(h.i + ':' + h.j, h);\n")
 rep('<div class="hint" id="hint">', '<div class="envbar" id="envBar"></div>\n  <div class="hint" id="hint">')
 
 out = W + ('site/' if mode == 'test' else 'live/')
@@ -126,4 +142,5 @@ if mode == 'test':
     rep('const SNOWY = (() => {', 'const SNOWY = false && (() => {')
 open(out + 'index.html', 'w').write(src)
 shutil.copy(W + 'pub/world-data.js', out + 'world-data.js')
+shutil.copy(W + 'pub/world-d3.js', out + 'world-d3.js')
 print('built', out, len(src))

@@ -215,8 +215,8 @@ const RIVER = []; for (let s = -170; s <= 170; s += 1.5) { const off = Math.sin(
 // the same river, but on and on to the horizon (only drawn on the map; the boats and the 3D streets use the part above)
 const RIVER_FAR = []; for (let s = -900; s <= 900; s += 3) { const off = Math.sin(s * .045) * 7 + Math.sin(s * .11) * 2.5 + Math.sin(s * .013) * Math.max(0, Math.abs(s) - 170) * .12; RIVER_FAR.push([MID[0] + off, MID[1] + s]); }
 // houses: #1–5,000 in the Old Town (centre outwards), from #5,001 in District 2 (its own centre outwards)
-HOUSES.forEach((h, i) => { const L = i < 5000 ? T1.lots[i] : T2.lots[i - 5000]; if (L) { h.i = L[0]; h.j = L[1]; h.L3 = L; h.flip = ((i * 2654435761) >>> 0) % 3 === 0; h.town = i < 5000 ? 1 : 2; } else h.town = 0; });
-const NEXT2 = T2.lots.slice(HOUSES.length - 5000, HOUSES.length - 5000 + 40);
+HOUSES.forEach((h, i) => { const L = i < 5000 ? T1.lots[i] : i < 10000 ? T2.lots[i - 5000] : null; if (L) { h.i = L[0]; h.j = L[1]; h.L3 = L; h.flip = ((i * 2654435761) >>> 0) % 3 === 0; h.town = i < 5000 ? 1 : 2; } else h.town = 0; });
+const NEXT2 = T2.lots.slice(Math.min(5000, HOUSES.length - 5000), Math.min(5000, HOUSES.length - 5000 + 40));
 
 /* ---------- styles: Old Town = grey stone, red roofs, dark roads; District 2 = red brick, blue slate roofs, cobbles, blossom trees ---------- */
 const STYLE = new Map([[T1, { face: '#a89a80', faceIn: '#beb29a', line: 'rgba(70,55,40,.28)', walk: '#d3c8b0', cren: '#c6baa1', crenTop: '#ddd3bc', stone: '#b8ac93', roof: '#7d2f2a', flag: '#ff2e63', banner: '#ff2e63', ground: '#4f985c',
@@ -239,6 +239,15 @@ function wallize(T) {
 }
 wallize(T1); wallize(T2);
 
+/* ---------- District 3 (#10,001+): until the town reaches 10,000 neighbours a fog bank lies over the land north of the Old Town.
+   At 10,000 the fog lifts and the district gets built (wall stone by stone, streets, the Benny Coaster in the middle).
+   Its layout is precomputed in world-d3.js and only loaded when it is needed. ---------- */
+const D3AT = 10000, D3C = [-18.83, -256.06], D3R = 114.5, D3SEED = 7.3, D3G = [3.4, -147.0], G1N = T1.gates.find(g => Math.abs(g.a + 1.5708) < .4);
+const d3wob = a => 1 + .07 * Math.sin(a * 3 + D3SEED) + .045 * Math.sin(a * 5 + D3SEED * 2);
+const inD3 = (u, v, m) => { const du = u - D3C[0], dv = v - D3C[1]; return Math.hypot(du, dv) < D3R * d3wob(Math.atan2(dv, du)) + 1.2 + (m || 0); };
+const nearD3Road = (u, v, m) => Math.abs(u - (G1N.G[0] + D3G[0]) / 2) < m && v > D3G[1] - 2 && v < G1N.G[1] + 2;
+const D3 = { st: HOUSES.length >= D3AT ? 'open' : 'fog', T: null, k: 99, anim: null, AT: D3AT, C: D3C, R: D3R, G: D3G, G1N };
+
 /* ---------- trees outside: forests, never on the bridge, the river or the moat ---------- */
 const BR_W = 1.9, BG1 = [G1[0] + 1.3, G1[1]], BG2 = [G2[0] - 1.3, G2[1]];
 const FOREST = [];
@@ -247,11 +256,14 @@ const FOREST = [];
   if (Math.abs(v - G1[1]) < BR_W + 3.5 && u > G1[0] - 2 && u < G2[0] + 2) continue;
   const nz = Math.sin(u * .09) + Math.cos(v * .08) + Math.sin((u - v) * .05), lone = r() < .07; if (nz < .35 && !lone) continue;
   if (RIVER.some(p => (p[0] - u) ** 2 + (p[1] - v) ** 2 < 64)) continue; FOREST.push([u, v, r() < .5 ? 1 : 0, 1.05]); } }
+const dropD3 = A => { let n = 0; for (const t of A) if (!inD3(t[0], t[1], 5) && !nearD3Road(t[0], t[1], 4.5)) A[n++] = t; A.length = n; };
+dropD3(FOREST);
 // further out (only seen zoomed far out on the map): more forests and meadows all the way to the horizon
 const FOREST_FAR = [];
 { const r = seeded(37); for (let n = 0; n < 70000; n++) { const u = MID[0] + (r() - .5) * 1300, v = MID[1] + (r() - .5) * 1300; if (Math.abs(u - MID[0]) < 180 && Math.abs(v - MID[1]) < 180) continue;
   const nz = Math.sin(u * .03) + Math.cos(v * .027) + Math.sin((u - v) * .017) + Math.sin(u * .09) * .5; if (nz < .2 && r() > .06) continue;
   const k = Math.round((v - MID[1] + 900) / 3), p = RIVER_FAR[k]; if (p && Math.abs(p[0] - u) < 9) continue; FOREST_FAR.push([u, v, r() < .5 ? 1 : 0, 1.05]); } }
+dropD3(FOREST_FAR);
 
 /* ---------- cars: a few cars on long random drives through the street network (no turning on the spot),
    their position is a pure function of time, so the map and the 3D streets always show the same cars ---------- */
@@ -341,16 +353,10 @@ function drawTown2Square(noBridges) {
     ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 1.05; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.strokeStyle = '#b07a46'; ctx.lineWidth = .9; ctx.stroke();
     if (z > .35) { ctx.strokeStyle = 'rgba(60,35,15,.45)'; ctx.lineWidth = .05; ctx.beginPath(); for (let t = .05; t < 1; t += .09) { const m = [lerp(A[0], B[0], t), lerp(A[1], B[1], t)]; ctx.moveTo(m[0] - s * .45, m[1] + c * .45); ctx.lineTo(m[0] + s * .45, m[1] - c * .45); } ctx.stroke(); } } });
 }
-function ground() {
-  const z = cam.z, box = visBox();
-  ctx.fillStyle = '#5d9e57'; ctx.fillRect(0, 0, VW, VH);
-  ctx.save(); ctx.globalAlpha = .16; const r = seeded(7); for (let k = 0; k < 900; k++) { const far = k >= 260, [x, y] = uvS(MID[0] + (far ? 650 : 190) * (2 * r() - 1), MID[1] + (far ? 650 : 190) * (2 * r() - 1)); ellipse(ctx, x, y, (30 + r() * 90) * z * 6, (15 + r() * 45) * z * 6, r() < .5 ? '#4a8a48' : '#6db064'); } ctx.restore();
-  // river with sandy banks, ripples and two little boats
-  poly(ctx, strip(RIVER_FAR, 8.2), '#cdbd90'); poly(ctx, strip(RIVER_FAR, 6.8), '#2f7dbf'); poly(ctx, strip(RIVER_FAR, 4.6), '#3a8fd0');
-  if (z > .2) { ctx.save(); ctx.globalAlpha = .4; ctx.strokeStyle = '#bfe3ff'; ctx.lineWidth = 1.5 * z; ctx.beginPath(); for (let k = 2; k < RIVER.length - 3; k += 3) { const p = RIVER[k], o = Math.sin(k * 1.7) * 3, a = uvS(p[0] + o, p[1]); ctx.moveTo(a[0], a[1]); ctx.lineTo(a[0] + 16 * z, a[1] + 2 * z); } ctx.stroke(); ctx.restore(); }
-  for (const T of [T1, T2]) {
+function townGround(T, box, noBand) {
+  const z = cam.z;
     const st = STYLE.get(T);
-    townPath(T, 3.6); ctx.fillStyle = '#4b8848'; ctx.fill();
+    if (!noBand) { townPath(T, 3.6); ctx.fillStyle = '#4b8848'; ctx.fill(); }
     townPath(T, 0); ctx.fillStyle = st.ground; ctx.fill();
     if (T === T2) drawTown2Square();
     // gardens: back alleys, hedges, vegetable beds
@@ -374,47 +380,60 @@ function ground() {
         else { ctx.setLineDash([.07, .16]); ctx.strokeStyle = 'rgba(255,240,220,.22)'; ctx.lineWidth = .64; pathPolys(S.concat(A), false, box); ctx.stroke(); ctx.setLineDash([.05, .2]); ctx.strokeStyle = 'rgba(70,45,25,.18)'; ctx.lineWidth = .42; ctx.stroke(); ctx.setLineDash([]); }
       }
     });
-  }
+}
+function ground() {
+  const z = cam.z, box = visBox();
+  ctx.fillStyle = '#5d9e57'; ctx.fillRect(0, 0, VW, VH);
+  ctx.save(); ctx.globalAlpha = .16; const r = seeded(7); for (let k = 0; k < 900; k++) { const far = k >= 260, [x, y] = uvS(MID[0] + (far ? 650 : 190) * (2 * r() - 1), MID[1] + (far ? 650 : 190) * (2 * r() - 1)); ellipse(ctx, x, y, (30 + r() * 90) * z * 6, (15 + r() * 45) * z * 6, r() < .5 ? '#4a8a48' : '#6db064'); } ctx.restore();
+  // river with sandy banks, ripples and two little boats
+  poly(ctx, strip(RIVER_FAR, 8.2), '#cdbd90'); poly(ctx, strip(RIVER_FAR, 6.8), '#2f7dbf'); poly(ctx, strip(RIVER_FAR, 4.6), '#3a8fd0');
+  if (z > .2) { ctx.save(); ctx.globalAlpha = .4; ctx.strokeStyle = '#bfe3ff'; ctx.lineWidth = 1.5 * z; ctx.beginPath(); for (let k = 2; k < RIVER.length - 3; k += 3) { const p = RIVER[k], o = Math.sin(k * 1.7) * 3, a = uvS(p[0] + o, p[1]); ctx.moveTo(a[0], a[1]); ctx.lineTo(a[0] + 16 * z, a[1] + 2 * z); } ctx.stroke(); ctx.restore(); }
+  for (const T of [T1, T2]) townGround(T, box);
+  d3Ground(box);
   // the square, town hall, park, block parks, building sites and the marketplace — exactly as on the live site
   drawPlazaGround(); drawParkGround(); drawBlockParks(); drawHallGround(); drawSiteGround(); drawMarketGround(1);
 }
 /* --- wall pieces --- */
-function drawWallSeg(T, sg) {
-  const z = cam.z, st = STYLE.get(T), [u0, v0] = sg.p0, [u1, v1] = sg.p1, nu = Math.cos(sg.am), nv = Math.sin(sg.am), t = .45;
+function drawWallSeg(T, sg, hk) {
+  const z = cam.z, st = STYLE.get(T), [u0, v0] = sg.p0, [u1, v1] = sg.p1, nu = Math.cos(sg.am), nv = Math.sin(sg.am), t = .45, full = hk == null || hk >= 1, HW = WALL_H * (hk == null ? 1 : Math.min(1, hk));
   const out = (nu + nv) > 0, fu = out ? t : -t, f0 = uvS(u0 + nu * fu, v0 + nv * fu), f1 = uvS(u1 + nu * fu, v1 + nv * fu), b0 = uvS(u0 - nu * fu, v0 - nv * fu), b1 = uvS(u1 - nu * fu, v1 - nv * fu);
-  const H = WALL_H * z, up = (p, h) => [p[0], p[1] - (h == null ? H : h * z)];
+  const H = HW * z, up = (p, h) => [p[0], p[1] - (h == null ? H : h * z)];
+  if (HW < .5) return;
   poly(ctx, [f0, f1, up(f1), up(f0)], out ? st.face : st.faceIn, OUT, 1.1 * z);
   if (z > .35) { ctx.save(); ctx.strokeStyle = st.line; ctx.lineWidth = .9 * z; ctx.beginPath();
-    for (let q = 1; q < 5; q++) { const h = WALL_H * q / 5, a = up(f0, h), b = up(f1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); for (let j = (q % 2) * .5; j < 3; j++) { const tt = (j + .5) / 3, x = lerp(f0[0], f1[0], tt), y = lerp(f0[1], f1[1], tt); ctx.moveTo(x, y - h * z); ctx.lineTo(x, y - (h - WALL_H / 5) * z); } }
+    for (let q = 1; q < 5; q++) { const h = WALL_H * q / 5; if (h > HW - 1) break; const a = up(f0, h), b = up(f1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); for (let j = (q % 2) * .5; j < 3; j++) { const tt = (j + .5) / 3, x = lerp(f0[0], f1[0], tt), y = lerp(f0[1], f1[1], tt); ctx.moveTo(x, y - h * z); ctx.lineTo(x, y - (h - WALL_H / 5) * z); } }
     ctx.stroke(); ctx.restore();
-    if (sg.s % 7 === 3) { const x = lerp(f0[0], f1[0], .4), y = lerp(f0[1], f1[1], .4); ellipse(ctx, x, y - 6 * z, 7 * z, 4 * z, 'rgba(70,110,60,.45)'); }
-    if (sg.s % 11 === 5) { const x = lerp(f0[0], f1[0], .6), y = lerp(f0[1], f1[1], .6); line(ctx, x, y - 40 * z, x - 2 * z, y - 18 * z, 'rgba(60,120,60,.7)', 2.4 * z); circle(ctx, x - 2 * z, y - 30 * z, 2.2 * z, 'rgba(80,150,70,.8)'); }   // ivy
+    if (full && sg.s % 7 === 3) { const x = lerp(f0[0], f1[0], .4), y = lerp(f0[1], f1[1], .4); ellipse(ctx, x, y - 6 * z, 7 * z, 4 * z, 'rgba(70,110,60,.45)'); }
+    if (full && sg.s % 11 === 5) { const x = lerp(f0[0], f1[0], .6), y = lerp(f0[1], f1[1], .6); line(ctx, x, y - 40 * z, x - 2 * z, y - 18 * z, 'rgba(60,120,60,.7)', 2.4 * z); circle(ctx, x - 2 * z, y - 30 * z, 2.2 * z, 'rgba(80,150,70,.8)'); }   // ivy
   }
   poly(ctx, [up(f0), up(f1), up(b1), up(b0)], st.walk, OUT, .9 * z);
-  if (z > .22) { const E0 = out ? f0 : b0, E1 = out ? f1 : b1; for (let q = 0; q < 3; q++) { const t0 = q / 3 + .06, t1 = t0 + .17, P0 = [lerp(E0[0], E1[0], t0), lerp(E0[1], E1[1], t0)], P1 = [lerp(E0[0], E1[0], t1), lerp(E0[1], E1[1], t1)];
+  if (z > .22 && full) { const E0 = out ? f0 : b0, E1 = out ? f1 : b1; for (let q = 0; q < 3; q++) { const t0 = q / 3 + .06, t1 = t0 + .17, P0 = [lerp(E0[0], E1[0], t0), lerp(E0[1], E1[1], t0)], P1 = [lerp(E0[0], E1[0], t1), lerp(E0[1], E1[1], t1)];
     poly(ctx, [up(P0), up(P1), up(P1, WALL_H + 9), up(P0, WALL_H + 9)], st.cren, OUT, .8 * z); const dx = (b1[0] - f1[0]) * .25, dy = (b1[1] - f1[1]) * .25; poly(ctx, [up(P0, WALL_H + 9), up(P1, WALL_H + 9), [up(P1, WALL_H + 9)[0] + dx, up(P1, WALL_H + 9)[1] + dy], [up(P0, WALL_H + 9)[0] + dx, up(P0, WALL_H + 9)[1] + dy]], st.crenTop); } }
 }
-function drawTower(u, v, k, st) {
-  const z = cam.z, s = .78 * k, Hh = (WALL_H + 30) * k * (st.hs || 1), N = 8, pts = []; for (let q = 0; q < N; q++) { const a = q / N * 6.283 + .39; pts.push([u + Math.cos(a) * s, v + Math.sin(a) * s]); }
+function drawTower(u, v, k, st, g) {
+  const z = cam.z, s = .78 * k, G = g == null ? 1 : g, gr = clamp((G - .8) / .2, 0, 1), Hh = (WALL_H + 30) * k * (st.hs || 1) * Math.min(1, G / .8), N = 8, pts = [];
+  if (Hh < .5) return; for (let q = 0; q < N; q++) { const a = q / N * 6.283 + .39; pts.push([u + Math.cos(a) * s, v + Math.sin(a) * s]); }
   const P = pts.map(p => uvS(p[0], p[1])), up = (p, h) => [p[0], p[1] - h * z];
   for (let q = 0; q < N; q++) { const a = pts[q], b = pts[(q + 1) % N], mu = (a[0] + b[0]) / 2 - u, mv = (a[1] + b[1]) / 2 - v; if (mu + mv < -.05) continue; const A = P[q], B = P[(q + 1) % N], light = .82 + .18 * Math.cos(Math.atan2(mv, mu) - .3); poly(ctx, [A, B, up(B, Hh), up(A, Hh)], shade(st.stone, light), OUT, 1 * z);
     if (z > .35) { ctx.save(); ctx.strokeStyle = st.line; ctx.lineWidth = .8 * z; ctx.beginPath(); for (let h = 12; h < Hh; h += 12) { const a2 = up(A, h), b2 = up(B, h); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(b2[0], b2[1]); } ctx.stroke(); ctx.restore(); } }
-  if (z > .3) { const [x, y] = uvS(u + s * .7, v + s * .7); ctx.fillStyle = '#2a2230'; ctx.fillRect(x - 2 * z, y - Hh * .62 * z, 4 * z, 12 * z); ctx.fillStyle = 'rgba(255,200,110,.9)'; ctx.fillRect(x - 1.2 * z, y - Hh * .62 * z + 1.5 * z, 2.4 * z, 9 * z); }
-  if (st.clock && z > .2) { const [x, y] = uvS(u + s * .78, v + s * .78), cy = y - Hh * .84 * z; circle(ctx, x, cy, 11 * z, '#fbf7ee', OUT, 1.4 * z); line(ctx, x, cy, x, cy - 7 * z, OUT, 1.4 * z); line(ctx, x, cy, x + 5 * z, cy + 1 * z, OUT, 1.4 * z); }
+  if (G >= 1 && z > .3) { const [x, y] = uvS(u + s * .7, v + s * .7); ctx.fillStyle = '#2a2230'; ctx.fillRect(x - 2 * z, y - Hh * .62 * z, 4 * z, 12 * z); ctx.fillStyle = 'rgba(255,200,110,.9)'; ctx.fillRect(x - 1.2 * z, y - Hh * .62 * z + 1.5 * z, 2.4 * z, 9 * z); }
+  if (G >= 1 && st.clock && z > .2) { const [x, y] = uvS(u + s * .78, v + s * .78), cy = y - Hh * .84 * z; circle(ctx, x, cy, 11 * z, '#fbf7ee', OUT, 1.4 * z); line(ctx, x, cy, x, cy - 7 * z, OUT, 1.4 * z); line(ctx, x, cy, x + 5 * z, cy + 1 * z, OUT, 1.4 * z); }
   const top2 = pts.map(p => uvS(u + (p[0] - u) * 1.12, v + (p[1] - v) * 1.12)).map(p => up(p, Hh + 4));
   poly(ctx, top2, shade(st.stone, 1.08), OUT, 1 * z);
-  const apex = up(uvS(u, v), Hh + 4 + 48 * k);
+  if (gr <= 0) return;
+  const apex = up(uvS(u, v), Hh + 4 + 48 * k * gr);
   for (let q = 0; q < N; q++) { const a = pts[q], b = pts[(q + 1) % N], mu = (a[0] + b[0]) / 2 - u, mv = (a[1] + b[1]) / 2 - v; if (mu + mv < -.3) continue; const light = .8 + .2 * Math.cos(Math.atan2(mv, mu) - .3); poly(ctx, [top2[q], top2[(q + 1) % N], apex], shade(st.roof, light), OUT, .9 * z); }
-  if (z > .2) { line(ctx, apex[0], apex[1], apex[0], apex[1] - 22 * z, '#4a4a4a', 1.4 * z); const wv = Math.sin(S.T * 4 + u) * 2 * z; poly(ctx, [[apex[0], apex[1] - 22 * z], [apex[0] + 16 * z, apex[1] - 19 * z + wv], [apex[0], apex[1] - 13 * z]], st.flag, OUT, .7 * z); }
-  if (z > .4) { const [x, y] = uvS(u + s, v + s); const fl = .7 + .3 * Math.sin(S.T * 13 + u * 3); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(x, y - 30 * z, 1, x, y - 30 * z, 26 * z); g.addColorStop(0, `rgba(255,190,90,${.55 * fl})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.fillRect(x - 26 * z, y - 56 * z, 52 * z, 52 * z); ctx.restore(); circle(ctx, x, y - 30 * z, 3 * z * fl, '#ffcf6b'); }
+  if (G >= 1 && z > .2) { line(ctx, apex[0], apex[1], apex[0], apex[1] - 22 * z, '#4a4a4a', 1.4 * z); const wv = Math.sin(S.T * 4 + u) * 2 * z; poly(ctx, [[apex[0], apex[1] - 22 * z], [apex[0] + 16 * z, apex[1] - 19 * z + wv], [apex[0], apex[1] - 13 * z]], st.flag, OUT, .7 * z); }
+  if (G >= 1 && z > .4) { const [x, y] = uvS(u + s, v + s); const fl = .7 + .3 * Math.sin(S.T * 13 + u * 3); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(x, y - 30 * z, 1, x, y - 30 * z, 26 * z); g.addColorStop(0, `rgba(255,190,90,${.55 * fl})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.fillRect(x - 26 * z, y - 56 * z, 52 * z, 52 * z); ctx.restore(); circle(ctx, x, y - 30 * z, 3 * z * fl, '#ffcf6b'); }
 }
 /* --- gatehouse: built on the wall's own line (same angle, same thickness), arch drawn in the face's own perspective --- */
-function drawGatehouse(T, g) {
-  const z = cam.z, st = STYLE.get(T), dp = .52, H = WALL_H + 22, [cu, cv] = g.c, [tu, tv] = g.t, [nu, nv] = g.n, wd = g.wd;
+function drawGatehouse(T, g, gk) {
+  const z = cam.z, st = STYLE.get(T), dp = .52, GK = gk == null ? 1 : gk, H = (WALL_H + 22) * Math.min(1, GK), [cu, cv] = g.c, [tu, tv] = g.t, [nu, nv] = g.n, wd = g.wd;
   const W = (a, b) => uvS(cu + tu * a + nu * b, cv + tv * a + nv * b), up = (p, h) => [p[0], p[1] - h * z];
   const fs = (nu + nv) > 0 ? 1 : -1, F0 = W(-wd, dp * fs), F1 = W(wd, dp * fs), side = (tu + tv) > 0 ? 1 : -1, S0 = W(wd * side, dp), S1 = W(wd * side, -dp);
   poly(ctx, [S0, S1, up(S1, H), up(S0, H)], shade(st.face, .9), OUT, 1 * z);
   poly(ctx, [F0, F1, up(F1, H), up(F0, H)], fs > 0 ? shade(st.face, 1.06) : st.faceIn, OUT, 1.1 * z);
+  if (GK < 1) { poly(ctx, [up(W(-wd, -dp), H), up(W(wd, -dp), H), up(W(wd, dp), H), up(W(-wd, dp), H)], st.walk, OUT, 1 * z); return; }
   const L = (s, h) => [lerp(F0[0], F1[0], s), lerp(F0[1], F1[1], s) - h * z];
   if (z > .3) { ctx.save(); ctx.strokeStyle = st.line; ctx.lineWidth = .9 * z; ctx.beginPath(); for (let h = 11; h < H; h += 11) { const a = L(0, h), b = L(1, h); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); } ctx.stroke(); ctx.restore(); }
   const arch = (w, h0, hr) => { ctx.beginPath(); let p = L(.5 - w, 0); ctx.moveTo(p[0], p[1]); p = L(.5 - w, h0); ctx.lineTo(p[0], p[1]); for (let k = 0; k <= 16; k++) { const th = Math.PI - k / 16 * Math.PI; p = L(.5 + w * Math.cos(th), h0 + hr * Math.sin(th)); ctx.lineTo(p[0], p[1]); } p = L(.5 + w, 0); ctx.lineTo(p[0], p[1]); ctx.closePath(); };
@@ -500,6 +519,7 @@ function worldObjs(objs, movers) {
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
     objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); } }); }
   if (movers !== false) carObjs(objs);
+  d3Objs(objs, inB);
   for (const L of NEXT2) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
   const BL = ['#f6a9c8', '#ffc3d9', '#ff9a4d', '#f4d35e'];
   if (z > .045) {
@@ -537,8 +557,183 @@ function worldObjs(objs, movers) {
   objs.push({ d: 9.45, f: () => drawVan(4.55, 4.85, { k: 1 }) });
   marketObjs(objs, 1);
 }
+/* ================= District 3 — fog bank, build animation, drawing ================= */
+const D3STYLE = { face: '#d9b98a', faceIn: '#e7cea6', line: 'rgba(110,75,35,.28)', walk: '#f1e1c0', cren: '#e7cea6', crenTop: '#f8ecd3', stone: '#d8b585', roof: '#25998b', flag: '#ff2e63', banner: '#8e5bd6', ground: '#66a95b',
+  curb: '#4f4566', road: '#7d7398', dash: 'rgba(255,255,255,.5)', hedge: ['#2f6b37', '#3f8a4e', '#5aa868'] };
+const AUT = ['#ff8a3d', '#e2483a', '#f4b942', '#ffb703'];
+// the build, in seconds (the camera moves with it, see the page part)
+const D3TL = { fog0: .3, fog1: 3.8, plan0: 2.4, gate0: 4.6, gate1: 6.0, wall0: 5.8, wallA: 9.0, wall1: 15.0, grow0: 14.8, grow1: 19.0, road0: 17.4, road1: 19.6, coaster0: 21.2, coaster1: 25.6, open: 26.0, end: 32.0 };
+const D3A0 = .1, RISE = .55;
+D3.TL = D3TL;
+function d3Head(k) {   // angle from the gate the wall has reached on each side: slow near the gate, then racing round the ring
+  const T = D3TL; if (k <= T.wall0) return 0;
+  if (k < T.wallA) return D3A0 * (k - T.wall0) / (T.wallA - T.wall0);
+  const q = Math.min(1, (k - T.wallA) / (T.wall1 - T.wallA)), D = T.wall1 - T.wallA, rest = Math.PI - D3A0, m0 = D3A0 / (T.wallA - T.wall0) * D / rest, m1 = .5;
+  return D3A0 + rest * ((q * q * q - 2 * q * q + q) * m0 + (-2 * q * q * q + 3 * q * q) + (q * q * q - q * q) * m1);
+}
+function attachD3(d) {
+  if (D3.T) return D3.T;
+  const T = fromPre(d); wallize(T); STYLE.set(T, D3STYLE); D3.T = T;
+  T.gate = T.gates.find(g => g.open); const gA = T.gate.a;
+  const off = a => { a = (a - gA) % 6.2832; if (a > Math.PI) a -= 6.2832; if (a < -Math.PI) a += 6.2832; return a; };
+  const tAt = da => { da = Math.abs(da); let lo = D3TL.wall0, hi = D3TL.wall1 + .01; for (let i = 0; i < 32; i++) { const m = (lo + hi) / 2; if (d3Head(m) < da) lo = m; else hi = m; } return hi; };
+  for (const sg of T.segs) { sg.da = off(sg.am); sg.tA = tAt(sg.da); }
+  for (const tw of T.towers) tw.tA = tAt(off(Math.atan2(tw.p[1] - T.C[1], tw.p[0] - T.C[0]))) + .15;
+  for (const g of T.gates) g.tA = g.open ? D3TL.gate0 : tAt(off(g.a)) - .3;
+  const RG = T.R + 4, tg = (u, v) => D3TL.grow0 + (D3TL.grow1 - D3TL.grow0) * Math.min(1, Math.hypot(u - T.C[0], v - T.C[1]) / RG);
+  T.treeT = T.trees.map(t => tg(t[0], t[1])); T.lampT = T.lamps.map(p => tg(p[0], p[1]));
+  T.roadLamps = []; { const L = dist(G1N.G, D3G); for (let q = 3; q < L - 2; q += 5.5) { const f = q / L, u = lerp(D3G[0], G1N.G[0], f), v = lerp(D3G[1], G1N.G[1], f); T.roadLamps.push([u - 1.3, v, f], [u + 1.3, v, f]); } }
+  HOUSES.forEach((h, i) => { if (i < 10000) return; const L = T.lots[i - 10000]; if (!L) return; h.i = L[0]; h.j = L[1]; h.L3 = L; h.flip = ((i * 2654435761) >>> 0) % 3 === 0; h.town = 3; });
+  return T;
+}
+D3.load = () => {
+  if (D3.T) return Promise.resolve(D3.T);
+  if (!D3.pr) D3.pr = new Promise((res, rej) => {
+    if (window.W3PRE_D3) return res(attachD3(window.W3PRE_D3));
+    const sc = document.createElement('script'); sc.src = 'world-d3.js'; sc.onload = () => window.W3PRE_D3 ? res(attachD3(window.W3PRE_D3)) : rej(new Error('no district 3 data')); sc.onerror = () => { D3.pr = null; rej(new Error('district 3 data did not load')); }; document.head.appendChild(sc);
+  });
+  return D3.pr;
+};
+const d3k = () => D3.anim ? D3.k : 99;
+const d3on = () => !!D3.T && (D3.st === 'open' || !!D3.anim);
+function circPath(C, r) { ctx.beginPath(); for (let k = 0; k <= 96; k++) { const a = k / 96 * 6.2832, p = uvS(C[0] + Math.cos(a) * r, C[1] + Math.sin(a) * r); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.closePath(); }
+function d3Ground(box) {
+  if (D3.excl) return;
+  const z = cam.z, k = d3k(), T = D3.T, on = d3on(), A = G1N.G, B = D3G;
+  G1N.open = on && k >= D3TL.road1;                          // the Old Town's north gate opens once the avenue is paved
+  const rp = !on ? 0 : clamp((k - D3TL.road0) / (D3TL.road1 - D3TL.road0), 0, 1);
+  uvSpace(() => {
+    if (rp < 1) { ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1] - (on ? 0 : 10)); ctx.strokeStyle = '#b39b6e'; ctx.lineWidth = .8; ctx.stroke(); ctx.strokeStyle = '#d8c69c'; ctx.lineWidth = .52; ctx.stroke(); }   // a dirt track into the fog
+    if (rp > 0) { const E = [lerp(B[0], A[0], rp), lerp(B[1], A[1], rp)], S0 = [B[0], B[1] - 1.5];
+      ctx.beginPath(); ctx.moveTo(S0[0], S0[1]); ctx.lineTo(E[0], E[1]); ctx.strokeStyle = D3STYLE.curb; ctx.lineWidth = 1.2; ctx.stroke(); ctx.strokeStyle = D3STYLE.road; ctx.lineWidth = 1.05; ctx.stroke();
+      if (z > .3) { ctx.setLineDash([.38, .38]); ctx.strokeStyle = D3STYLE.dash; ctx.lineWidth = .065; ctx.stroke(); ctx.setLineDash([]); } }
+  });
+  if (!on) return;
+  const st = D3STYLE, band = D3.anim ? sstep(D3TL.wall1 - .8, D3TL.wall1, k) : 1, RG = (T.R + 4) * (D3.anim ? sstep(D3TL.grow0, D3TL.grow1, k) : 1);
+  if (band > 0) { ctx.save(); ctx.globalAlpha = band; townPath(T, 3.6); ctx.fillStyle = '#4b8848'; ctx.fill(); townPath(T, 0); ctx.fillStyle = '#5d9e57'; ctx.fill(); ctx.restore(); }
+  // the building plan: a dashed line where the wall will stand
+  const planA = D3.anim ? sstep(D3TL.plan0, D3TL.plan0 + .8, k) * (1 - sstep(D3TL.wall1, D3TL.wall1 + 1.2, k)) : 0;
+  if (planA > 0) { ctx.save(); ctx.globalAlpha = planA * .9; townPath(T, -.2); ctx.setLineDash([Math.max(5, 60 * z), Math.max(4, 40 * z)]); ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.8, 12 * z); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+  // far away, the finished part of the wall is drawn as a bold line so you can watch it close
+  const ringA = D3.anim ? (1 - sstep(D3TL.grow1, D3TL.coaster0, k)) * (k > D3TL.wall0 ? 1 : 0) : 0;
+  if (ringA > 0 && z < .12) { const hd = Math.min(Math.PI, d3Head(k - RISE)), gA = T.gate.a; if (hd > 0) { ctx.save(); ctx.globalAlpha = ringA * clamp((.12 - z) / .05, 0, 1); ctx.beginPath(); for (let q = 0; q <= 160; q++) { const a = gA - hd + 2 * hd * q / 160, r = T.outerR(a), p = uvS(T.C[0] + Math.cos(a) * r, T.C[1] + Math.sin(a) * r); q ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.strokeStyle = '#6e5534'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = '#ecd3a2'; ctx.lineWidth = 2.6; ctx.stroke(); ctx.restore(); } }
+  if (RG <= 0) return;
+  ctx.save(); if (RG < T.R + 3.9) { circPath(T.C, RG); ctx.clip(); }
+  townGround(T, box, true); d3Plaza();
+  ctx.restore();
+}
+function d3Plaza() {
+  const T = D3.T, z = cam.z, C = T.C, R = T.o.plazaR || 5.8, circ = (r, fill, stroke, lw) => { circPath(C, r); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } };
+  circ(R + .35, '#8f8170'); circ(R, '#eadcc0', '#b9a888', 1.4 * z); circ(R - .8, '#5aa868', '#4a8d55', 1.2 * z);
+  if (z > .3) { ctx.save(); ctx.globalAlpha = .35; circ(R - .4, null, '#ffffff', 3 * z); ctx.restore(); }
+}
+/* --- the fog bank: soft puffy clouds that drift slowly (until the town reaches 10,000) --- */
+const FOGP = (() => { const r = seeded(77), P = []; for (let n = 0; n < 130; n++) { const a = r() * 6.2832, rr = Math.pow(r(), .6) * (D3R + 8), u = D3C[0] + Math.cos(a) * rr, v = D3C[1] + Math.sin(a) * rr; P.push([u, v, 24 + r() * 22, (r() * 4) | 0, r() * 6.28, a, rr]); } return P; })();
+const PUFF = [];
+function puffSprite(k) {
+  if (PUFF[k]) return PUFF[k];
+  const W = 320, H = 200, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), r = seeded(300 + k * 17), B = [], n = 5 + (k % 3);
+  for (let i = 0; i < n; i++) { const f = i / (n - 1), rad = 30 + Math.sin(f * Math.PI) * 40 + r() * 12; B.push([42 + f * (W - 84) + (r() - .5) * 16, H - 34 - rad * (.5 + r() * .25), rad]); }
+  B.push([W / 2, H - 62, 66]);
+  g.lineWidth = 8; g.strokeStyle = 'rgba(78,80,124,.32)'; for (const [x, y, rr] of B) { g.beginPath(); g.arc(x, y, rr, 0, 6.2832); g.stroke(); }
+  const gr = g.createLinearGradient(0, 8, 0, H - 24); gr.addColorStop(0, '#fdfdff'); gr.addColorStop(.5, '#e2e4f1'); gr.addColorStop(1, '#b3b7d2');
+  g.fillStyle = gr; for (const [x, y, rr] of B) { g.beginPath(); g.arc(x, y, rr, 0, 6.2832); g.fill(); }
+  for (const [x, y, rr] of B.slice(0, n)) { const hx = x - rr * .25, hy = y - rr * .32, hg = g.createRadialGradient(hx, hy, 0, hx, hy, rr * .62); hg.addColorStop(0, 'rgba(255,255,255,.6)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = hg; g.fillRect(hx - rr, hy - rr, rr * 2, rr * 2); }
+  g.globalCompositeOperation = 'destination-out'; const fade = g.createLinearGradient(0, H - 40, 0, H); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = fade; g.fillRect(0, H - 40, W, 40);
+  return (PUFF[k] = c);
+}
+function fogObjs(objs, inB, A) {
+  const z = cam.z, lift = 1 - A, T = S.T;
+  // a soft fog layer underneath, so the ground never shows between the puffs
+  objs.push({ d: D3C[0] + D3C[1] - D3R - 20, f: () => { ctx.save(); for (const [m, a] of [[16, .35], [9, .6], [2, .9]]) { ctx.globalAlpha = a * A; circPath(D3C, D3R + m); ctx.fillStyle = '#d9dcec'; ctx.fill(); } ctx.restore(); } });
+  for (const [u0, v0, sz, kind, ph, ang, rr] of FOGP) {
+    const out = lift * lift * (30 + rr * .35), u = u0 + Math.cos(ang) * out + Math.sin(T * .06 + ph) * 3, v = v0 + Math.sin(ang) * out + Math.cos(T * .045 + ph) * 2;
+    if (!inB(u, v)) continue;
+    objs.push({ d: u + v + 2, f: () => { const [x, y] = uvS(u, v), w = sz * 92 * z * (1 + lift * .3), h = w * .625; ctx.globalAlpha = A * (1 - lift * lift * .5); ctx.drawImage(puffSprite(kind), x - w / 2, y - h * .78 - lift * 70 * z * sz / 30, w, h); ctx.globalAlpha = 1; } });
+  }
+}
+/* --- a piece of wall being laid: finished rows + the stone that is just falling into place --- */
+function drawWallSegB(T, sg, hk) {
+  if (hk >= 1) return drawWallSeg(T, sg);
+  const z = cam.z, st = STYLE.get(T), rows = 5, r = Math.min(rows - 1, Math.floor(hk * rows)), f = hk * rows - r;
+  if (r > 0) drawWallSeg(T, sg, r / rows);
+  if (z < .07) return;
+  const nu = Math.cos(sg.am), nv = Math.sin(sg.am), fu = (nu + nv) > 0 ? .45 : -.45, m = [(sg.p0[0] + sg.p1[0]) / 2, (sg.p0[1] + sg.p1[1]) / 2], du = (sg.p1[0] - sg.p0[0]) / 2, dv = (sg.p1[1] - sg.p0[1]) / 2;
+  const P = (a, b) => uvS(m[0] + du * a + nu * fu * b, m[1] + dv * a + nv * fu * b), U = (p, h) => [p[0], p[1] - h * z];
+  const hh = WALL_H / rows, h0 = hh * r, y0 = h0 + (1 - f) * (1 - f) * 90, y1 = y0 + hh, F0 = P(-1, 1), F1 = P(1, 1), B0 = P(-1, -1), B1 = P(1, -1);
+  poly(ctx, [U(F0, y0), U(F1, y0), U(F1, y1), U(F0, y1)], shade(st.face, 1.04), OUT, 1 * z);
+  poly(ctx, [U(F0, y1), U(F1, y1), U(B1, y1), U(B0, y1)], st.walk, OUT, .8 * z);
+  if (r > 0 && f < .3) { const q = f / .3, [x, y] = uvS(m[0] + nu * fu, m[1] + nv * fu); ctx.globalAlpha = .7 * (1 - q); for (let i = 0; i < 4; i++) ellipse(ctx, x + (i - 1.5) * 10 * z * (1 + q), y - h0 * z - 3 * z * q, (8 + q * 10) * z, (4 + q * 4) * z, '#efe4cc'); ctx.globalAlpha = 1; }
+}
+/* --- the Benny Coaster in the middle of District 3 (the track is laid piece by piece while p goes 0 → 1) --- */
+function drawCoaster3(C, p) {
+  const z = cam.z, sc = 1.9, cu = C[0], cv = C[1], HS = 1.5;
+  const P = t => { const a = t * Math.PI * 2, lp = Math.exp(-Math.pow((t - .62) / .05, 2)); return [cu + Math.cos(a) * 2.4 * sc + lp * Math.sin((t - .62) * 60) * .6 * sc, cv + Math.sin(a) * 2.2 * sc, (30 + 85 * Math.pow(Math.max(0, Math.sin(a * 2 + .6)), 1.5) + 110 * lp * (1 + Math.cos((t - .62) * 60)) / 2) * HS]; };
+  const n = 220, lim = Math.floor(n * p);
+  for (let k = 0; k <= lim; k += 4) { const [u, v, h] = P(k / n), [x, y] = uvS(u, v); line(ctx, x, y, x, y - h * z, '#7a6a55', 2.4 * z); }
+  for (const off of [-.08, .08]) { ctx.beginPath(); for (let k = 0; k <= lim; k++) { const [u, v, h] = P(k / n), [x, y] = uvS(u + off, v - off); k ? ctx.lineTo(x, y - h * z) : ctx.moveTo(x, y - h * z); } ctx.strokeStyle = '#ff2e63'; ctx.lineWidth = 3.6 * z; ctx.stroke(); }
+  if (p > 0 && p < 1) { const [u, v, h] = P(lim / n), [x, y] = uvS(u, v); circle(ctx, x, y - h * z, 7 * z * (1 + .3 * Math.sin(S.T * 20)), 'rgba(255,230,140,.9)'); }   // welding spark at the end of the track
+  if (p >= 1) for (let c = 0; c < 5; c++) { const t = ((S.T * .09) + c * .011) % 1, [u, v, h] = P(t), [x, y] = uvS(u, v); rrect(ctx, x - 10 * z, y - h * z - 13 * z, 20 * z, 11 * z, 3 * z); ctx.fillStyle = CONF[c % CONF.length]; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2 * z; ctx.stroke(); circle(ctx, x, y - h * z - 16 * z, 3.2 * z, '#e8b896'); }
+  const [ex, ey] = uvS(cu + 4.1, cv + 4.1); if (p >= 1 && z > .3) tag(ex, ey - 70 * z, '🎢 BENNY COASTER', '#ff2e63', 1);
+}
+function d3Objs(objs, inB) {
+  if (D3.excl) return;
+  const z = cam.z, anim = !!D3.anim, k = d3k(), fogA = !d3on() ? 1 : anim ? 1 - sstep(D3TL.fog0, D3TL.fog1, k) : 0;
+  if (fogA > 0) fogObjs(objs, inB, fogA);
+  if (!d3on()) return;
+  const T = D3.T, st = D3STYLE;
+  for (const sg of T.segs) { const m = [(sg.p0[0] + sg.p1[0]) / 2, (sg.p0[1] + sg.p1[1]) / 2]; if (!inB(m[0], m[1])) continue; const hk = anim ? clamp((k - sg.tA) / RISE, 0, 1) : 1; if (hk <= 0) continue; objs.push({ d: m[0] + m[1] + ((Math.cos(sg.am) + Math.sin(sg.am)) > 0 ? .6 : -.6), f: () => drawWallSegB(T, sg, hk) }); }
+  for (const tw of T.towers) { const [u, v] = tw.p; if (!inB(u, v)) continue; const g = anim ? clamp((k - tw.tA) / .7, 0, 1) : 1; if (g <= 0) continue; objs.push({ d: u + v + .9, f: () => drawTower(u, v, tw.k, st, g < 1 ? eOut(g) : 1) }); }
+  for (const g of T.gates) { const [u, v] = g.c; if (!inB(u, v)) continue; const gk = anim ? clamp((k - g.tA) / (g.open ? D3TL.gate1 - D3TL.gate0 : .8), 0, 1) : 1; if (gk <= 0) continue; objs.push({ d: u + v + .7, f: () => drawGatehouse(T, g, gk < 1 ? eOut(gk) : 1) }); }
+  if (z > .045) T.trees.forEach(([u, v, kind, s], i) => { if (!inB(u, v)) return; const p = anim ? eBack(clamp((k - T.treeT[i]) / .45, 0, 1)) : 1; if (p <= .01) return; const [x, y] = uvS(u, v); objs.push({ d: u + v, f: () => i % 5 < 3 ? drawTreeFast(x, y, z * s * .95 * p, 2, AUT[(i >> 2) % 4]) : drawTreeFast(x, y, z * s * p, kind) }); });
+  else objs.push({ d: -1e8 + 1, f: () => { const rr = Math.max(1.05, 20 * z), lift = 16 * z, P = [new Path2D(), new Path2D()]; T.trees.forEach((t, i) => { if (anim && k < T.treeT[i]) return; if (!inB(t[0], t[1])) return; const [x, y] = uvS(t[0], t[1]), p = P[i % 5 < 3 ? 1 : 0]; p.moveTo(x + rr, y - lift); p.arc(x, y - lift, rr, 0, 6.2832); }); ctx.fillStyle = '#2f6b37'; ctx.fill(P[0]); ctx.fillStyle = '#e07a35'; ctx.fill(P[1]); } });
+  if (z > .15) { T.lamps.forEach(([u, v], i) => { if (anim && k < T.lampT[i]) return; if (inB(u, v)) objs.push({ d: u + v + .02, f: () => drawStreetLamp(u, v, 1) }); });
+    const rp = anim ? clamp((k - D3TL.road0) / (D3TL.road1 - D3TL.road0), 0, 1) : 1; for (const [u, v, f] of T.roadLamps) if (f <= rp && inB(u, v)) objs.push({ d: u + v + .02, f: () => drawStreetLamp(u, v, 1) }); }
+  const cp = anim ? clamp((k - D3TL.coaster0) / (D3TL.coaster1 - D3TL.coaster0), 0, 1) : 1, [cu, cv] = T.C;
+  if (cp > 0 && inB(cu, cv)) objs.push({ d: cu + cv + 2.5, f: () => drawCoaster3(T.C, cp) });
+  // builders: hammering at the two ends of the growing wall, then round the coaster
+  if (anim && z > .1) {
+    const B = [];
+    if (k > D3TL.gate0 && k < D3TL.wall1 + .4) { const hd = d3Head(k), gA = T.gate.a; if (k < D3TL.wall0 + .3) B.push([T.gate.c[0] - T.gate.n[0] * 2.4 - T.gate.t[0] * 1.6, T.gate.c[1] - T.gate.n[1] * 2.4 - T.gate.t[1] * 1.6], [T.gate.c[0] - T.gate.n[0] * 2.4 + T.gate.t[0] * 1.6, T.gate.c[1] - T.gate.n[1] * 2.4 + T.gate.t[1] * 1.6]);
+      for (const sd of [-1, 1]) { const a = gA + sd * hd, r = T.outerR(a) - 2.3; B.push([T.C[0] + Math.cos(a) * r, T.C[1] + Math.sin(a) * r], [T.C[0] + Math.cos(a - sd * .012) * (r - 1), T.C[1] + Math.sin(a - sd * .012) * (r - 1)]); } }
+    if (k > D3TL.coaster0 - .5 && k < D3TL.coaster1 + .3) for (let q = 0; q < 5; q++) { const a = q / 5 * 6.2832 + .4, r = (T.o.plazaR || 5.8) - .5; B.push([cu + Math.cos(a) * r, cv + Math.sin(a) * r]); }
+    for (const [u, v] of B) if (inB(u, v)) objs.push({ d: u + v + .05, f: () => { const [x, y] = uvS(u, v); drawBuilder(x, y, z * 1.7); } });
+  }
+  // far away: a glowing cloud of dust where the wall is being built, so you can follow it round
+  if (anim && k > D3TL.wall0 && k < D3TL.wall1 + .3 && z < .14) { const hd = d3Head(k), gA = T.gate.a; for (const sd of [-1, 1]) { const a = gA + sd * hd, r = T.outerR(a), u = T.C[0] + Math.cos(a) * r, v = T.C[1] + Math.sin(a) * r; objs.push({ d: 1e8, f: () => { const [x, y] = uvS(u, v), R = 16 + 3 * Math.sin(S.T * 12 + sd); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(x, y - 4, 1, x, y - 4, R); g.addColorStop(0, 'rgba(255,236,170,.95)'); g.addColorStop(1, 'rgba(255,200,90,0)'); ctx.fillStyle = g; ctx.fillRect(x - R, y - 4 - R, 2 * R, 2 * R); ctx.restore(); ctx.save(); ctx.translate(x + 9, y - 16 - Math.abs(Math.sin(S.T * 9 + sd)) * 6); ctx.rotate(-.5 + Math.abs(Math.sin(S.T * 9 + sd)) * .8); emoji(ctx, '🔨', 0, 0, 15); ctx.restore(); } }); } }
+  // signposts on the first lots: the next neighbours move in here
+  const n = HOUSES.length, from = n >= D3AT ? n - D3AT : 0, sp = anim ? clamp((k - D3TL.open - 1.2) / .8, 0, 1) : 1;
+  if (sp > 0 && (n >= D3AT || anim || D3.preview)) T.lots.slice(from, from + 40).forEach((L, i) => { if (!inB(L[0], L[1])) return; const p = anim ? eBack(clamp(sp * 2.2 - i * .03, 0, 1)) : 1; if (p <= .01) return; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z * p) }); });
+}
+function d3Live() { const z = cam.z, box = visBox(), inB = (u, v) => u > box[0] && u < box[2] && v > box[1] && v < box[3]; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; d3Ground(box); const objs = []; d3Objs(objs, inB); objs.sort((a, b) => a.d - b.d); for (const o of objs) o.f(); }
+/* --- labels: the fog's sign, and the big moments of the build --- */
+function d3Labels() {
+  if (d3on() && !D3.anim) return;
+  if (D3.anim && D3.k > D3TL.fog0 + .5) return;
+  const z = cam.z; if (z > .35) return;
+  const a = Math.atan2(-1, -1), r = D3R * .55, [x, y] = uvS(D3C[0] + Math.cos(a) * r, D3C[1] + Math.sin(a) * r);
+  if (x < -100 || x > VW + 100 || y < -40 || y > VH + 40) return;
+  tag(x, y - 8, '☁️ The fog lifts at ' + D3AT.toLocaleString('en-US') + ' neighbors', '#c7b8ff', 1, clamp(HOUSES.length / D3AT, 0, 1));
+}
+function d3Overlay() {
+  if (!D3.anim) return;
+  const k = D3.k, L = D3TL, cx = VW / 2, ty = Math.max(96, VH * .13);
+  const cap = (t0, t1, big, small, col) => { if (D3.noCaps || k < t0 || k > t1) return; const a = Math.min(1, (k - t0) / .35, (t1 - k) / .35), pop = eBack(clamp((k - t0) / .45, 0, 1)); ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, ty); ctx.scale(pop, pop);
+    const bs = fitSize(big, Math.min(40, VW * .095), VW - 36); otxt(big, 0, 0, bs, col || '#ffd23f', Math.max(5, bs * .2), '#1b1728');
+    if (small) { const ss = fitSize(small, Math.min(20, VW * .05), VW - 50); otxt(small, 0, bs * .95, ss, '#ffffff', Math.max(4, ss * .3), '#1b1728'); }
+    ctx.restore(); };
+  cap(.2, 4.6, '🎉 ' + D3AT.toLocaleString('en-US') + ' NEIGHBORS!', 'The fog is lifting…');
+  cap(5.0, 14.6, '🧱 Building District 3', 'stone by stone', '#ffd23f');
+  cap(15.0, 20.4, '🏘️ Streets for 5,000 houses', null, '#7ee3a0');
+  cap(21.0, 25.6, '🎢 …and a ROLLERCOASTER!', null, '#ff8fb0');
+  cap(26.0, L.end, '🏰 DISTRICT 3 IS OPEN!', 'Houses #10,001 – #15,000 move in here', '#ffd23f');
+  // fireworks over the new district
+  if (k > L.open - .2) { const R = seeded(5); for (let b = 0; b < 12; b++) { const tb = L.open + b * .42 + R() * .2, bx = VW * (.18 + .64 * R()), by = VH * (.2 + .26 * R()), col = CONF[b % CONF.length], tt = k - tb; if (tt < -.45 || tt > 1.7) { for (let q = 0; q < 38; q++) R(); continue; }
+    if (tt < 0) { const q = (tt + .45) / .45; circle(ctx, bx, by + (1 - q) * VH * .3, 3, '#fff3c4'); for (let q2 = 0; q2 < 38; q2++) R(); continue; }
+    ctx.save(); ctx.globalAlpha = clamp(1 - tt / 1.7, 0, 1); for (let q = 0; q < 38; q++) { const an = q / 38 * 6.2832 + R() * .2, sp = (110 + R() * 80) * Math.min(1, VW / 420), d = sp * (1 - Math.exp(-tt * 2.6)) / 2.6 * 2.2; ctx.fillStyle = q % 3 ? col : '#ffffff'; ctx.beginPath(); ctx.arc(bx + Math.cos(an) * d, by + Math.sin(an) * d + 40 * tt * tt, 2.8 * Math.min(1.6, VW / 420), 0, 6.2832); ctx.fill(); } ctx.restore(); } }
+}
 function labels() { const z = cam.z; if (z > .45) { const [bx, by] = uvS(3.5, 3.65); tag(bx, by - 104 * z - 6, 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1); } }
-return { ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, NEXT2, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
+return { D3, d3Labels, d3Overlay, d3Live, makeTown, ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, NEXT2, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
 })();
 function w3draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';

@@ -370,3 +370,25 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 - **Tägliches Update bleibt gleich:** neue Tenants/Tag/Bank nur im Block `const TOWN = { … }` in `index.html` ändern. Nichts anderes von Hand ändern.
 - **Welt-Code ändern:** Quellen in `docs-team/world-src/` (`world3.js` 2D-Welt, `w3d_*.js` 3D + Kugel, `mksite.py` Build). Gebaut wird aus `base_index.html` (alte Seite ohne Welt) + aktuellem TOWN-Block aus `index.html`: `python3 mksite.py live` → `/tmp/world/live/` (Pfade im Skript ggf. anpassen).
 - Schnee-Optik (`SNOWY`) ist in der neuen Welt aus; das Wetter (auch Schnee) kommt aus der Wettertabelle.
+
+### 11a. Bezirk 3 + Nebel – Meilenstein 10.000 (seit 19.11.2026)
+- **Jetzt sichtbar:** Nördlich der Altstadt (hinter ihrem bisher geschlossenen Nordtor, ein Feldweg führt hinein) liegt eine **Nebelbank** mit dem Schild „☁️ The fog lifts at 10,000 neighbors“ und einem Fortschrittsbalken. Auf der Weltkugel liegt dort ein grauer Nebelfleck neben der Stadt. Der Nebel ist auch in der Gesamtansicht („Whole town“) im Bild.
+- **Ab 10.000 Bewohnern** (`HOUSES.length >= 10000`) ist Bezirk 3 offen: Häuser #10.001–#15.000. Jeder Besucher sieht **einmal automatisch die Bau-Animation** (ca. 39 s, mit Skip-Knopf; danach `localStorage bt_d3_seen`).
+- **Ablauf der Animation:**
+  1. Weltkugel: „🎉 10,000 NEIGHBORS!“, der Nebelfleck lichtet sich, ein goldenes Licht pulsiert, dann Sturzflug auf die Karte.
+  2. Karte: Die Nebelbank zieht ab und der Bauplan erscheint (gestrichelte Linie).
+  3. Das Torhaus wächst, danach wird die Mauer **Stein für Stein** von beiden Seiten hochgezogen (Bauarbeiter, fallende Steine, Staub). Türme bekommen ihre Dächer.
+  4. Straßen, Herbstbäume und Laternen wachsen vom Zentrum aus.
+  5. Die Allee zum Nordtor der Altstadt wird gepflastert, und das Nordtor geht auf.
+  6. In der Mitte wird der **Benny Coaster** gebaut.
+  7. Feuerwerk mit „🏰 DISTRICT 3 IS OPEN!“ und Schilder auf den ersten 40 Grundstücken. Am Ende zeigt die Kamera alle drei Bezirke.
+- **Vorschau jederzeit:** `https://bennystown.github.io/#milestone`. Spielt nur ab und ändert nichts. Gut für Videos und zum Testen.
+- **LIVE:**
+  - Der Meilenstein 10.000 heißt jetzt „🏰 District 3 + 🎢 Coaster“ (vorher „🎢 Rollercoaster“, der in der neuen Welt nicht gezeichnet wurde). Bei 10.000 spielt die Szene die Bau-Animation, ohne Weltkugel und ohne eigene Einblendungen; die LIVE-Alerts übernehmen das.
+  - `liveAddHouse` setzt Live-Häuser jetzt auf Grundstücke der neuen Welt. Vorher bekamen sie alte Raster-Positionen und waren auf der neuen Karte unsichtbar.
+- **Daten:** `world-d3.js` (vorberechnet, ca. 780 KB) wird **nur bei Bedarf** geladen: für die Animation oder ab 10.000. Neu erzeugen mit `gen_d3.py` (Playwright gegen die Testseite; Parameter: Mitte ≈ [-18.8, -256.1], R ≈ 114.5, Tor genau 34 Felder gegenüber dem Nordtor der Altstadt). Die Bau-Steuerung (Kamera, Skip, Autoplay) liegt in `d3ctl.js` und wird von `mksite.py` eingebaut.
+- **Stil Bezirk 3:** Sandstein-Mauer, türkise Turmdächer, lila Straßen, Herbstbäume, runder Platz mit Achterbahn.
+- **Offen:**
+  - Der 3D-Walk kennt Bezirk 3 noch nicht. Das muss vor 10.000 nachgezogen werden.
+  - Ab 15.000 braucht es Bezirk 4.
+  - Der LIVE-Meilenstein 15.000 (Brunnen + Statue, alte FEATURES) wird in der neuen Welt ebenfalls noch nicht gezeichnet.

@@ -1,7 +1,7 @@
 /* ================= GLOBE: zoom out past the whole town and the map turns into Benny's little planet ================= */
 const GLOBE = { on: false, built: false, busy: false };
 (function () {
-  let r, sc, cam3, world, base, glowSpr, el, raf = 0, last = 0, t = 0, ambL, sunL;
+  let r, sc, cam3, world, base, glowSpr, el, raf = 0, last = 0, t = 0, ambL, sunL, fogU, d3grp, d3ring, d3mark, town;
   const st = { yaw: 0, pitch: 0, dist: 9.6, goal: 9.6, mode: 'idle', k: 0 };
   const TOWN_DIR = [.25, .45, .86];
   function build() {
@@ -27,24 +27,35 @@ const GLOBE = { on: false, built: false, busy: false };
     geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
     world = new T.Group(); world.add(new T.Mesh(geo, new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: .9 }))); sc.add(world);
     // fog of war: the rest of the planet is still undiscovered
-    const fg = new T.IcosahedronGeometry(1.6 * 1.14, 26), fp = fg.attributes.position, fc = [], fa = [];
-    for (let i = 0; i < fp.count; i++) { const v = new T.Vector3().fromBufferAttribute(fp, i).normalize(), d = v.dot(TD), n = fbm(v.x * 3 + 2, v.y * 3, v.z * 3), clear = T.MathUtils.smoothstep(d, .78, .93) + (n - .5) * .25; fa.push(1 - T.MathUtils.clamp(clear * 1.4, 0, 1)); const s = .25 + n * .35; fc.push(s * .55, s * .55, s * .75); }
-    fg.setAttribute('fc', new T.Float32BufferAttribute(fc, 3)); fg.setAttribute('a', new T.Float32BufferAttribute(fa, 1));
-    world.add(new T.Mesh(fg, new T.ShaderMaterial({ transparent: true, depthWrite: false,
-      vertexShader: 'attribute float a; attribute vec3 fc; varying float va; varying vec3 vc; void main(){ va=a; vc=fc; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+    // District 3's spot: just north of the town, under its own fog bank until the town reaches 10,000
+    const D3DIR = (() => { const tp0 = TD.clone().multiplyScalar(1.6 * 1.045), o = new T.Object3D(); o.position.copy(tp0); o.lookAt(tp0.clone().multiplyScalar(2)); o.updateMatrixWorld(true); return o.localToWorld(new T.Vector3(Math.cos(2.55) * .46, Math.sin(2.55) * .46, 0)).normalize(); })();
+    GLOBE.D3DIR = D3DIR;
+    const fg = new T.IcosahedronGeometry(1.6 * 1.14, 36), fp = fg.attributes.position, fc = [], fd = [], fn = [];
+    for (let i = 0; i < fp.count; i++) { const v = new T.Vector3().fromBufferAttribute(fp, i).normalize(), n = fbm(v.x * 3 + 2, v.y * 3, v.z * 3); fd.push(v.dot(TD), n, v.dot(D3DIR)); fn.push(v.dot(D3DIR) > .97 ? fbm(v.x * 16 + 3, v.y * 16, v.z * 16) : .5); const s = .25 + n * .35; fc.push(s * .55, s * .55, s * .75); }
+    fg.setAttribute('fc', new T.Float32BufferAttribute(fc, 3)); fg.setAttribute('fd', new T.Float32BufferAttribute(fd, 3)); fg.setAttribute('fn', new T.Float32BufferAttribute(fn, 1));
+    const d3open = () => { try { return W3.D3.st === 'open'; } catch (e) { return false; } };
+    fogU = { uLo: { value: d3open() ? .74 : .78 }, uHi: { value: d3open() ? .9 : .93 }, uD3: { value: d3open() ? 0 : 1 } };
+    world.add(new T.Mesh(fg, new T.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: fogU,
+      vertexShader: 'attribute vec3 fd; attribute vec3 fc; attribute float fn; uniform float uLo, uHi, uD3; varying float va; varying vec3 vc; void main(){ float lobe = uD3 * smoothstep(.9835 + (fn - .5) * .03, .997, fd.z) * (.78 + fn * .3); float c = smoothstep(uLo, uHi, fd.x) + (fd.y - .5) * .25 - lobe * 1.5; va = 1. - clamp(c * 1.4, 0., 1.); vc = mix(fc, vec3(.66, .68, .8) * (.72 + fn * .55), clamp(lobe * 1.3, 0., 1.)); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
       fragmentShader: 'varying float va; varying vec3 vc; void main(){ gl_FragColor=vec4(vc, va*.94); }' })));
     sc.add(new T.Mesh(new T.SphereGeometry(1.6 * 1.26, 48, 48), new T.ShaderMaterial({ transparent: true, side: T.BackSide, depthWrite: false,
       vertexShader: 'varying vec3 n; void main(){ n=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
       fragmentShader: 'varying vec3 n; void main(){ float i=pow(max(0.,.62-dot(n,vec3(0.,0.,1.))),2.); gl_FragColor=vec4(.35,.6,1.,1.)*i*.8; }' })));
     // the town: walled circle, one little block per ~50 tenants, District 2 next to it
-    const tp = TD.clone().multiplyScalar(1.6 * 1.045), town = new T.Group(); town.position.copy(tp); town.lookAt(tp.clone().multiplyScalar(2)); world.add(town);
+    const tp = TD.clone().multiplyScalar(1.6 * 1.045); town = new T.Group(); town.position.copy(tp); town.lookAt(tp.clone().multiplyScalar(2)); world.add(town);
     town.add(new T.Mesh(new T.TorusGeometry(.2, .018, 6, 48), new T.MeshStandardMaterial({ color: '#d6ccb6', flatShading: true })));
     const rs = seeded(5), cols = ['#e2483a', '#4da3ff', '#ffd23f', '#c77dff', '#ff8a3d', '#3ddc84'], n1 = Math.min(140, Math.ceil(Math.min(HOUSES.length, 5000) / 40)), n2 = Math.min(90, Math.ceil(Math.max(0, HOUSES.length - 5000) / 12));
     const bx = new T.BoxGeometry(.022, .022, .03), mats = cols.map(c => new T.MeshStandardMaterial({ color: c }));
     for (let k = 0; k < n1; k++) { const a = rs() * 6.28, rr = Math.sqrt(rs()) * .18, h = new T.Mesh(bx, mats[k % mats.length]); h.position.set(Math.cos(a) * rr, Math.sin(a) * rr, .01); town.add(h); }
     for (let k = 0; k < n2; k++) { const a = .5 + rs() * .9, rr = .24 + rs() * .07, h = new T.Mesh(bx, mats[k % mats.length]); h.position.set(Math.cos(a) * rr, Math.sin(a) * rr, .01); town.add(h); }
+    { const p3 = D3DIR.clone().multiplyScalar(1.6 * 1.045); d3grp = new T.Group(); d3grp.position.copy(p3); d3grp.lookAt(p3.clone().multiplyScalar(2)); world.add(d3grp);
+      d3ring = new T.Mesh(new T.TorusGeometry(.12, .014, 6, 40), new T.MeshStandardMaterial({ color: '#e2c48f', flatShading: true })); d3grp.add(d3ring);
+      const rs3 = seeded(9), cols3 = ['#ff8a3d', '#e2483a', '#ffd23f', '#4da3ff', '#c77dff'], bx3 = new T.BoxGeometry(.018, .018, .026);
+      for (let k = 0; k < 26; k++) { const a = rs3() * 6.28, rr = .02 + Math.sqrt(rs3()) * .085, h = new T.Mesh(bx3, new T.MeshStandardMaterial({ color: cols3[k % cols3.length] })); h.position.set(Math.cos(a) * rr, Math.sin(a) * rr, .01); d3grp.add(h); }
+      d3grp.visible = d3open(); }
     const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 4, 64, 64, 64); gr.addColorStop(0, 'rgba(255,220,140,1)'); gr.addColorStop(.4, 'rgba(255,190,90,.45)'); gr.addColorStop(1, 'rgba(255,190,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return new T.CanvasTexture(c); })();
     glowSpr = new T.Sprite(new T.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending })); glowSpr.scale.set(.6, .6, 1); glowSpr.position.copy(TD.clone().multiplyScalar(1.6 * 1.12)); world.add(glowSpr);
+    d3mark = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: '#ffe08a', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); d3mark.scale.set(.001, .001, 1); d3mark.position.copy(D3DIR.clone().multiplyScalar(1.6 * 1.1)); world.add(d3mark);
     const red = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: '#ff3355', transparent: true, depthWrite: false, blending: T.AdditiveBlending })); red.scale.set(.35, .35, 1); red.position.copy(VOL.clone().multiplyScalar(1.6 * 1.2)); world.add(red); GLOBE.red = red;
     ambL = new T.AmbientLight(0xffffff, .55); sc.add(ambL); sunL = new T.DirectionalLight(0xfff2dd, 1.25); sunL.position.set(4, 3, 5); sc.add(sunL);
     base = new T.Quaternion().setFromUnitVectors(TD, new T.Vector3(0, .25, 1).normalize());
@@ -72,7 +83,11 @@ const GLOBE = { on: false, built: false, busy: false };
     const dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now; t += dt;
     if (st.mode === 'in') { st.k = Math.min(1, st.k + dt / .9); st.dist = 4.4 + (st.goal - 4.4) * (1 - Math.pow(1 - st.k, 3)); if (!st.first) el.style.opacity = Math.min(1, st.k * 2.2); if (st.k >= 1) st.mode = 'on'; }
     else if (st.mode === 'on') { st.dist += (st.goal - st.dist) * (1 - Math.exp(-dt * 6)); if (!GLOBE.drag) st.yaw += dt * .05; }
-    else if (st.mode === 'dive') { st.k = Math.min(1, st.k + dt / .75); const e = st.k * st.k; st.dist = st.dist + (2.05 - st.dist) * e * .35; st.yaw *= 1 - e * .3; st.pitch *= 1 - e * .3; el.style.opacity = 1 - Math.max(0, (st.k - .55) / .45); if (st.k >= 1) { leave(); return; } }
+    else if (st.mode === 'ms') { st.k += dt; const k = st.k; st.dist += (7.2 - st.dist) * (1 - Math.exp(-dt * 1.6)); st.yaw *= 1 - dt * 2; st.pitch += (.16 - st.pitch) * (1 - Math.exp(-dt * 2));
+      fogU.uD3.value = 1 - .7 * T3s(1.2, 3.6, k); fogU.uLo.value = .78 - .04 * T3s(1.2, 3.6, k); fogU.uHi.value = .93 - .03 * T3s(1.2, 3.6, k);
+      d3mark.scale.setScalar(.5 * T3s(1.6, 2.6, k) * (1 + .15 * Math.sin(t * 5)));
+      el.style.opacity = 1; if (k > 4.4) { st.mode = 'dive'; st.k = 0; st.ms = true; } }
+    else if (st.mode === 'dive') { if (st.ms) { fogU.uD3.value = Math.max(0, fogU.uD3.value - dt * .6); } st.k = Math.min(1, st.k + dt / .75); const e = st.k * st.k; st.dist = st.dist + (2.05 - st.dist) * e * .35; st.yaw *= 1 - e * .3; st.pitch *= 1 - e * .3; el.style.opacity = 1 - Math.max(0, (st.k - .55) / .45); if (st.k >= 1) { leave(); return; } }
     if (r.domElement.clientWidth !== innerWidth || r.domElement.clientHeight !== innerHeight) size();
     world.quaternion.copy(base); world.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), st.pitch); world.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), st.yaw);
     cam3.position.set(0, .7 * st.dist / 9.6, st.dist); cam3.lookAt(0, 0, 0);
@@ -92,13 +107,27 @@ const GLOBE = { on: false, built: false, busy: false };
   function leave() {
     cancelAnimationFrame(raf); st.mode = 'idle'; GLOBE.on = false; window.__globe = false;
     el.style.display = 'none'; document.body.classList.remove('globe');
+    if (st.ms) { st.ms = false; GLOBE.title(); const f = GLOBE.afterMs; GLOBE.afterMs = null; if (f) { f(); return; } }
     overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .55; frame.force = true;   // land on the whole town, zooming in
   }
+  const T3s = (a, b, x) => { const q = Math.min(1, Math.max(0, (x - a) / (b - a))); return q * q * (3 - 2 * q); };
+  // District 3 is built: on the planet the fog stays lifted and the little walled ring with houses appears
+  GLOBE.skipMs = () => { if (GLOBE.on && (st.mode === 'ms' || st.mode === 'on' || st.mode === 'in')) { st.mode = 'dive'; st.k = .6; st.ms = true; } };
+  GLOBE.d3Done = () => { if (!GLOBE.built) return; fogU.uD3.value = 0; fogU.uLo.value = .74; fogU.uHi.value = .9; d3grp.visible = true; d3mark.scale.setScalar(.001); };
+  GLOBE.title = (a, b) => { const T = document.getElementById('globeTitle'), H = document.getElementById('globeHint'), B = document.getElementById('globeBack'); if (!T.dataset.t) { T.dataset.t = T.textContent; H.dataset.t = H.textContent; } T.textContent = a || T.dataset.t; H.textContent = b || H.dataset.t; B.style.display = a ? 'none' : ''; };
+  // the 10,000 moment: start on the planet, lift the fog over District 3, dive down — then the page builds the district (after)
+  GLOBE.milestone = async after => {
+    GLOBE.afterMs = after; await enter(true); if (!GLOBE.on) { GLOBE.afterMs = null; after && after(); return; }
+    GLOBE.title('🎉 10,000 NEIGHBORS!', 'The fog is lifting…');
+    fogU.uD3.value = 1; fogU.uLo.value = .78; fogU.uHi.value = .93; d3grp.visible = false;
+    setTimeout(() => { if (GLOBE.on) { st.mode = 'ms'; st.k = 0; } }, 900);
+  };
   // for the videos: one exact frame of the planet
   GLOBE.shot = async o => {
     await loadThree(); if (!GLOBE.built) { el = document.getElementById('globe'); build(); } cancelAnimationFrame(raf);
     if (r.domElement.width !== o.w || r.domElement.height !== o.h) { r.setPixelRatio(1); r.setSize(o.w, o.h, false); cam3.aspect = o.w / o.h; cam3.fov = 44; cam3.updateProjectionMatrix(); }
     st.dist = o.dist; st.yaw = o.yaw; st.pitch = o.pitch; t = o.t; st.lt = null; last = 0;
+    if (o.ms != null) { const k = o.ms; fogU.uD3.value = o.d3fog != null ? o.d3fog : 1 - .7 * T3s(1.2, 3.6, k); fogU.uLo.value = .78 - .04 * T3s(1.2, 3.6, k); fogU.uHi.value = .93 - .03 * T3s(1.2, 3.6, k); d3mark.scale.setScalar(.5 * T3s(1.6, 2.6, k) * (1 + .15 * Math.sin(o.t * 5))); d3grp.visible = false; }
     world.quaternion.copy(base); world.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), st.pitch); world.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), st.yaw);
     cam3.position.set(0, .7 * st.dist / 9.6, st.dist); cam3.lookAt(0, 0, 0); world.updateMatrixWorld(true);
     let n = 0; try { n = nightAmount(); } catch (e) {} sunL.intensity = 1.25 - .45 * n; ambL.intensity = .55 - .15 * n;
