@@ -23,7 +23,7 @@ const TR = (() => {
     return { u: 20, v: 8, kind: 'street', ti: 1, rr: .2, face: 0 };
   };
   const spot = spotFor(day), code = codeFor(day);
-  const hint = 'Somewhere in ' + (spot.ti === 1 ? 'the Old Town' : 'District 2') + '… that\'s all Benny knows. 🤫';
+  const hint = '';
   const found = () => { try { const o = JSON.parse(localStorage.getItem('bt_treasure') || '{}'); return o.day === day; } catch (e) { return false; } };
   return { day, code, spot, hint, found, fnv, codeFor, spotFor, d: 999 };
 })();
@@ -33,9 +33,9 @@ function trShowCard() { $('trCode').textContent = TR.code; $('trDate').textConte
 function trToast(html, ms) { const t = $('trToast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(trToast.t); trToast.t = setTimeout(() => t.classList.remove('on'), ms || 6000); }
 async function trHunt() {
   if (TR.found()) { trShowCard(); return; }
-  const C = TR.spot.ti === 1 ? [4.6, 7.2] : W3.T2.C, [wx, wy] = isoW(C[0], C[1]); hideCard(); selected = null; cam.x = target.x = wx; cam.y = target.y = wy;
+  const C = [4.6, 7.2], [wx, wy] = isoW(C[0], C[1]); hideCard(); selected = null; cam.x = target.x = wx; cam.y = target.y = wy;
   await startWalk();
-  if (W3D.on) trToast('<b>💰 Today\'s treasure</b><br>' + TR.hint + '<br><span>Follow the 🔥 – the hotter, the closer!</span>', 7000);
+  if (W3D.on) trToast('<b>💰 Today\'s treasure</b><br>A tiny chest is hidden somewhere in Benny\'s Town.<br><span>No hints. Good luck! 🍀</span>', 6000);
 }
 // the 3D part: the chest, its light, the hot/cold meter (called once when the 3D streets are built)
 W3D.treasure3D = X => {
@@ -84,4 +84,4 @@ W3D.treasure3D = X => {
   });
   W3D.labelHook = (camera, toScreen) => { const d = TR.d; if (d > 1.6) return; const p = toScreen(S0.u, gy + .55, S0.v, camera); if (!p) return; ctx.globalAlpha = clamp((1.6 - d) / .6, 0, 1); tag(p[0], p[1], TR.found() ? '✅ TREASURE' : '💰 TREASURE', '#ffd23f', 1); ctx.globalAlpha = 1; };
 };
-{ trPill(); $('trBtn').addEventListener('click', trHunt); $('trOk').addEventListener('click', () => $('trCard').classList.remove('on')); $('trHud').addEventListener('click', () => { if (TR.found()) trShowCard(); else trToast('<b>💰 Today\'s treasure</b><br>' + TR.hint, 5000); }); window.TR = { day: TR.day, found: TR.found, hint: TR.hint }; }
+{ trPill(); $('trBtn').addEventListener('click', trHunt); $('trOk').addEventListener('click', () => $('trCard').classList.remove('on')); $('trHud').addEventListener('click', () => { if (TR.found()) trShowCard(); else trToast('<b>💰 Today\'s treasure</b><br>No hints. Keep looking! 🍀', 4000); }); window.TR = { day: TR.day, found: TR.found, hint: TR.hint }; }
