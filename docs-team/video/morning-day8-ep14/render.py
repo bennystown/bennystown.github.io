@@ -7,7 +7,7 @@ async def main():
         pg = await br.new_page(viewport={'width':1080,'height':1920}, device_scale_factor=1)
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto('file:///tmp/ep14/page/index.html#hour=12.5&weather=clear'); await pg.wait_for_timeout(3000)
-        info = await pg.evaluate('(c) => EP.init(c)', json.load(open('/tmp/ep14/caps.json'))); print(info, errs, flush=True)
+        info = await pg.evaluate('(c) => EP.init(c[0], c[1])', [json.load(open('/tmp/ep14/caps.json')), json.load(open('/tmp/ep14/mouth.json'))]); print(info, errs, flush=True)
         ff = subprocess.Popen(['ffmpeg','-y','-loglevel','error','-f','image2pipe','-framerate',str(FPS),'-c:v','mjpeg','-i','-','-c:v','libx264','-preset','veryfast','-crf','18','-pix_fmt','yuv420p',out], stdin=subprocess.PIPE)
         f0, f1 = round(a * FPS), round(b * FPS)
         for f in range(f0, f1):
