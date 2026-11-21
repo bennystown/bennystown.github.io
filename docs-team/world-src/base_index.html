@@ -7334,6 +7334,19 @@ function livePlay(id) {
   LV.talk = c[2]; LV.talkT = S.T; LV.talkA = a; LV.talkUntil = S.T + .6 + c[2].split(' ').length * .32;
   a.onloadedmetadata = () => { if (isFinite(a.duration)) LV.talkUntil = LV.talkT + a.duration + .3; }; if (isFinite(a.duration) && a.duration) LV.talkUntil = S.T + a.duration + .3;
 }
+function liveMicStart() {
+  if (LV.micTry) return; LV.micTry = true;
+  const P = new URLSearchParams(location.search); LV.micGain = +P.get('micgain') || 1;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { LV.micErr = 'no mediaDevices'; return; }
+  navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } }).then(st => {
+    const ac = liveAudioCtx(); if (!ac) return; const src = ac.createMediaStreamSource(st); const an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an); LV.mic = an; LV.micUntil = 0;
+  }).catch(e => { LV.micErr = String(e); setTimeout(() => { LV.micTry = false; liveMicStart(); }, 15000); });
+}
+window.__mic = () => ({ on: !!LV.mic, err: LV.micErr || null, lvl: liveMicLevel(), until: LV.micUntil || 0, T: S.T });
+function liveMicLevel() {
+  if (!LV.mic) return 0; const d = new Uint8Array(LV.mic.fftSize); LV.mic.getByteTimeDomainData(d); let s = 0; for (const v of d) s += (v - 128) * (v - 128);
+  return clamp(Math.sqrt(s / d.length) * LV.micGain / 16, 0, 1);
+}
 function liveLevel() {
   if (!LV.talkA || S.T > LV.talkUntil) return 0;
   if (!LV.analyser || LV.talkA.paused) return .5 + .5 * Math.sin(S.T * 22);
@@ -7452,10 +7465,12 @@ function liveBanner() {
 }
 function liveBennyCam() {
   const talking = LV.talkA && S.T < LV.talkUntil, dancing = S.T - LV.dance < 6;
-  if (!talking && !dancing) return;
-  const lvl = liveLevel(); LV.level += (lvl - LV.level) * .5;
+  const ml = liveMicLevel(); if (ml > .1) LV.micUntil = S.T + 1.2; const micOn = !talking && S.T < (LV.micUntil || 0);
+  if (!talking && !dancing && !micOn) return;
+  const lvl = micOn ? (ml > .06 ? clamp(ml * 1.6, 0, 1) : 0) : liveLevel(); LV.level += (lvl - LV.level) * .5;
   const x = 880, y = 1260, bob = dancing ? Math.sin((S.T - LV.dance) * 10) * 18 : 0;
-  circle(ctx, x, y, 150, 'rgba(10,12,26,.92)', '#ff6b8b', 6);
+  if (micOn) { const g = 150 + 10 + LV.level * 26; circle(ctx, x, y, g, 'rgba(255,210,63,' + (.18 + LV.level * .35).toFixed(3) + ')'); }
+  circle(ctx, x, y, 150, 'rgba(10,12,26,.92)', micOn ? '#ffd23f' : '#ff6b8b', 6);
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, 144, 0, Math.PI * 2); ctx.clip();
   drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
   ctx.restore();
@@ -7621,6 +7636,7 @@ function liveConnect() {
   const P = new URLSearchParams(location.search); LV.key = P.get('key'); LV.gh = P.get('gh');
   if (LV.gh && !LV.ghTimer) LV.ghTimer = setInterval(livePush, 45000); LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
   LV.wsUrl = P.get('ws'); if (LV.wsUrl && !LV.key) LV.key = 'local';
+  if (P.has('mic')) liveMicStart();
   if (!LV.key) return;
   let ws; try { ws = new WebSocket(LV.wsUrl || ('wss://api.tik.tools?uniqueId=' + encodeURIComponent(LV.user) + '&apiKey=' + encodeURIComponent(LV.key))); } catch (e) { return setTimeout(liveConnect, 10000); }
   LV.ws = ws;

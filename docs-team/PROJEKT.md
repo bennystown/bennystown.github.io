@@ -277,6 +277,7 @@ Pro Video ein Ordner, z. B. `/tmp/ep7`. Vorlagen liegen in `docs-team/video/`.
   oder mit eigenem Listener: `&ws=ws://localhost:21213` statt `&key=`.
   - `gh` = Fine-grained GitHub-Token (nur Repo bennystown.github.io, Contents: Read and write). Er schreibt alle 45 s `live.json`.
   - `key` = Tik.Tools-API-Key (wss://api.tik.tools). Das Gratis-Limit ist fraglich, deshalb baut Kieran mit einer anderen Claude-Instanz einen **eigenen lokalen Listener**. Übergabe: `Uebergabe_Live_Listener.md`. Event-Format: `{event:'follow'|'gift'|'chat', data:{user:{uniqueId,nickname}, giftName, diamondCount, repeatCount, repeatEnd, giftType, comment}}`.
+- **Mikrofon → Benny-Mund (`&mic`, seit 21.11.):** Mit `&mic` in der URL hört die Live-Szene Kierans Mikrofon ab (nur Pegel, wird nicht abgespielt). Wenn er spricht, erscheint unten rechts die Benny-Kamera mit gelbem Leuchtring, und Bennys Mund bewegt sich mit der Lautstärke (1,2 s Nachlauf). Empfindlichkeit über `&micgain=0.7` (weniger) bzw. `1.5` (mehr). **Voraussetzung:** OBS muss mit `--enable-media-stream` gestartet werden (Mac: `open -a OBS --args --enable-media-stream`), sonst darf die Browser-Quelle das Mikro nicht nutzen. Debug: `window.__mic()`.
 - **Steuerpult:** `https://bennystown.github.io/?control&v=N` als OBS-Custom-Dock. Es hat nur Test-Follows, Effekte (Konfetti, Herzen, Feuerwerk, Münzregen, Benny tanzt, Schnee, Regen, Nacht, Tour) und 18 Benny-Sprüche (`live/*.mp3`, darunter `ms5/ms10/ms15`). Kommunikation über BroadcastChannel + localStorage. Bei Cache-Problemen `&v=` hochzählen.
 - **Was die Live-Szene macht:**
   - **Follow** → Warteschlange („🔨 Next: …“). Pro Follower kommt eine **3D-Bauszene aus Straßensicht** (three.js, `streetStart`): Haus baut sich auf, @Name am Briefkasten, +10¢.
@@ -392,3 +393,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Der 3D-Walk kennt Bezirk 3 noch nicht. Das muss vor 10.000 nachgezogen werden.
   - Ab 15.000 braucht es Bezirk 4.
   - Der LIVE-Meilenstein 15.000 (Brunnen + Statue, alte FEATURES) wird in der neuen Welt ebenfalls noch nicht gezeichnet.
+- **21.11.2026 12:45** – Instanz A: LIVE-Mikrofon-Anzeige (`&mic`, `liveMicStart`/`liveMicLevel` in `index.html` **und** `world-src/base_index.html`). Hinweis: Tag 7/8 (20./21.11.) sind noch nicht eingetragen (Stand Tag 6, 5.681, live.json base 5681).
