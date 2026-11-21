@@ -517,7 +517,7 @@ function worldObjs(objs, movers) {
   const sel = typeof selected !== 'undefined' ? selected : null;
   for (const h of HOUSES) { if (!h.town) continue; if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (h.trophy && !fade) drawTrophy(h, z); } }); }
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
   for (const L of NEXT2) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }

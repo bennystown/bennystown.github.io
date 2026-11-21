@@ -567,6 +567,20 @@ function drawFlowersTo(g, P, z, h) {   // draws the flower beds of house h with 
   });
 }
 // loyalty tier 1 (3 days): flower beds along the two front sides of the house — cached as small sprites (16 layouts × zoom steps), drawing them live was the main reason the site was slow
+function drawTrophy(h, z) {   // treasure-hunt winner: own chest in the front yard + a 🏆 flag (only for treasure finders, not a loyalty tier)
+  if (z < .14) return; const P = (u, v) => uvS(u, v), s = z;
+  const [fx, fy] = P(h.i - .48, h.j + .46), ph = (S.T || 0) * 3 + h.idx;
+  line(ctx, fx, fy, fx, fy - 70 * s, '#8a8f9e', Math.max(1, 2.6 * s)); circle(ctx, fx, fy - 71 * s, 2.6 * s, '#ffd23f');
+  const w1 = Math.sin(ph) * 3 * s, w2 = Math.sin(ph + 1.2) * 3 * s;
+  poly(ctx, [[fx, fy - 68 * s], [fx + 34 * s, fy - 62 * s + w1], [fx + 32 * s, fy - 48 * s + w2], [fx, fy - 46 * s]], '#ffd23f', 'rgba(120,80,0,.7)', Math.max(.6, 1.2 * s));
+  if (s > .35) { ctx.save(); ctx.font = Math.round(15 * s) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🏆', fx + 16 * s, fy - 56 * s + (w1 + w2) / 2); ctx.restore(); }
+  const [cx, cy] = P(h.i + .44, h.j + .44), b = 11 * s, hgt = 9 * s;
+  poly(ctx, [[cx - b, cy], [cx, cy + b * .5], [cx, cy + b * .5 - hgt], [cx - b, cy - hgt]], '#8a5a34', 'rgba(40,25,10,.8)', Math.max(.6, s));
+  poly(ctx, [[cx, cy + b * .5], [cx + b, cy], [cx + b, cy - hgt], [cx, cy + b * .5 - hgt]], '#6b4428', 'rgba(40,25,10,.8)', Math.max(.6, s));
+  poly(ctx, [[cx - b, cy - hgt], [cx, cy + b * .5 - hgt], [cx + b, cy - hgt], [cx, cy - b * .5 - hgt]], '#a8743f', 'rgba(40,25,10,.8)', Math.max(.6, s));
+  line(ctx, cx - b * .5, cy + b * .25 - hgt, cx - b * .5, cy + b * .25, '#f2c14e', Math.max(1, 1.6 * s)); line(ctx, cx + b * .5, cy + b * .25 - hgt, cx + b * .5, cy + b * .25, '#f2c14e', Math.max(1, 1.6 * s));
+  const gl = .5 + .5 * Math.sin(ph * 1.3); ctx.save(); ctx.globalAlpha = .35 + .4 * gl; circle(ctx, cx, cy - hgt - 4 * s, 3 * s, '#fff3b0'); ctx.restore();
+}
 const FLOWER_SPR = {};
 function flowerSprite(var_, sc) {
   const key = var_ + '|' + sc; if (FLOWER_SPR[key]) return FLOWER_SPR[key];
@@ -4782,7 +4796,7 @@ const TOWN = {
     { name: "alprazolam4life", day: 3 },
     { name: "fordka099", day: 3, a: "107 B peugeot" },
     { name: "miaa0398", day: 3, a: "miaa" },
-    { name: "027292dn827", day: 3 },
+    { name: "027292dn827", day: 3, trophy: 1 },   // 🏆 treasure hunt winner 21.11.
     { name: "sashas_ash", day: 3 },
     { name: "christianhards", day: 3, a: "christian.hardy" },
     { name: "itzt610", day: 3, a: "KLt" },
@@ -6744,7 +6758,7 @@ if (DEMO) {
 const STANDS = [['🍞', 'bread stand', '#e2483a'], ['🍋', 'lemonade stand', '#f2c230'], ['🍎', 'fruit stand', '#3ddc84'], ['🍪', 'cookie stand', '#8a4b2e'], ['🌭', 'hot dog stand', '#ff8a3d'], ['🧃', 'juice stand', '#4da3ff']];
 const standFor = (name, k) => { return null; // stands removed for now
   if (k < 3) return null; const h = hashStr('stand:' + norm(name)); return h % 9 === 0 ? STANDS[(h >> 4) % STANDS.length] : null; };
-const HOUSES = TOWN.tenants.map((t, k) => { const L = LOTA[k]; return { nick: t.nick || '', al: t.a || '', name: t.name, day: t.day || 1, idx: k, lot: k, i: L.i, j: L.j, v: t.color != null && COLOR_NAMES[t.color] != null ? COLOR_NAMES[t.color] : variantForLot(t.name, k), og: k < TOWN.ogLimit, stand: standFor(t.name, k) }; });
+const HOUSES = TOWN.tenants.map((t, k) => { const L = LOTA[k]; return { nick: t.nick || '', al: t.a || '', name: t.name, day: t.day || 1, idx: k, lot: k, i: L.i, j: L.j, v: t.color != null && COLOR_NAMES[t.color] != null ? COLOR_NAMES[t.color] : variantForLot(t.name, k), og: k < TOWN.ogLimit, stand: standFor(t.name, k), trophy: !!t.trophy }; });
 const BY_LOT = new Map(HOUSES.map(h => [h.i + ':' + h.j, h]));
 const BY_NAME = new Map(HOUSES.map(h => [norm(h.name), h]));
 const N = HOUSES.length;
@@ -7393,7 +7407,7 @@ function worldObjs(objs, movers) {
   const sel = typeof selected !== 'undefined' ? selected : null;
   for (const h of HOUSES) { if (!h.town) continue; if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (h.trophy && !fade) drawTrophy(h, z); } }); }
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
   for (const L of NEXT2) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
@@ -8968,7 +8982,7 @@ function showCard(h) {
   $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
   $('cardTitle').textContent = '@' + h.name;
-  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '');
+  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '') + (TOWN.tenants[h.idx].trophy ? ' · 🏆 Treasure Hunter' : '');
   $('cardOg').style.display = h.og ? 'inline-flex' : 'none';
   $('cardMsg').textContent = (h.stand ? 'Runs a ' + h.stand[0] + ' ' + h.stand[1] + ' in front of the house. Benny might shop here! ' : '') + (h.og ? 'OG tenants get upgraded first when Benny gets rich 👑' : 'Welcome to Benny\'s Town 🏠');
   $('card').classList.add('on'); $('card').classList.remove('miss');
