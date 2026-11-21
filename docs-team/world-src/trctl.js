@@ -12,7 +12,7 @@ const TR = (() => {
     for (const [T, ti] of [[W3.T1, 1], [W3.T2, 2]]) { for (const P of T.alleys) pools.alley.push({ P, T, ti }); for (const s of T.streets) if (s.kind !== 'avenue') pools.street.push({ P: s.pts, T, ti }); }
     for (const k in pools) { let acc = 0; for (const e of pools[k]) { let L = 0; for (let i = 1; i < e.P.length; i++) L += Math.hypot(e.P[i][0] - e.P[i - 1][0], e.P[i][1] - e.P[i - 1][1]); e.L = L; acc += L; e.acc = acc; } pools[k].total = acc; }
     for (let tries = 0; tries < 200; tries++) {
-      const kind = r() < .5 ? 'alley' : 'street', L = pools[kind], x = r() * L.total, e = L.find(q => q.acc >= x) || L[L.length - 1];
+      const kind = r() < .85 ? 'alley' : 'street', L = pools[kind], x = r() * L.total, e = L.find(q => q.acc >= x) || L[L.length - 1];
       let w = x - (e.acc - e.L), i = 1; for (; i < e.P.length; i++) { const sl = Math.hypot(e.P[i][0] - e.P[i - 1][0], e.P[i][1] - e.P[i - 1][1]); if (w <= sl || i === e.P.length - 1) break; w -= sl; }
       const a = e.P[i - 1], b = e.P[i], sl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, f = clamp(w / sl, 0, 1), tu = (b[0] - a[0]) / sl, tv = (b[1] - a[1]) / sl, side = r() < .5 ? -1 : 1, off = kind === 'alley' ? .27 : .5;
       const u = lerp(a[0], b[0], f) - tv * off * side, v = lerp(a[1], b[1], f) + tu * off * side;
@@ -23,7 +23,7 @@ const TR = (() => {
     return { u: 20, v: 8, kind: 'street', ti: 1, rr: .2, face: 0 };
   };
   const spot = spotFor(day), code = codeFor(day);
-  const hint = 'Somewhere in ' + (spot.ti === 1 ? 'the Old Town' : 'District 2') + ', ' + (spot.rr < .35 ? 'near the middle' : spot.rr < .72 ? 'halfway to the town wall' : 'close to the town wall') + ', ' + (spot.kind === 'alley' ? 'in a narrow back alley.' : 'at the side of a street.');
+  const hint = 'Somewhere in ' + (spot.ti === 1 ? 'the Old Town' : 'District 2') + '… that\'s all Benny knows. 🤫';
   const found = () => { try { const o = JSON.parse(localStorage.getItem('bt_treasure') || '{}'); return o.day === day; } catch (e) { return false; } };
   return { day, code, spot, hint, found, fnv, codeFor, spotFor, d: 999 };
 })();
@@ -69,9 +69,9 @@ W3D.treasure3D = X => {
     if (opening >= 0) { opening += dt; openK = Math.min(1, opening / .55); const q = opening - .25; for (const c of coins) { c.m.visible = q > 0 && q < 2.6; if (!c.m.visible) continue; c.m.position.set(Math.sin(c.a) * c.sp * q * .35, .16 + c.up * q - 2.4 * q * q, Math.cos(c.a) * c.sp * q * .35); c.m.rotation.y = q * 9 + c.a; } }
     lid.rotation.x = -1.95 * (openK * openK * (3 - 2 * openK));
     glow.material.opacity = .9 * openK * (.75 + .25 * Math.sin(t * 6));
-    beam.material.opacity = (TR.found() ? .1 : clamp((34 - d) / 18, 0, 1) * .42) * clamp((d - .8) / 3, .25, 1) * (.8 + .2 * Math.sin(t * 3));
-    sparks.forEach((s, k) => { const a = t * (.6 + k * .07) + k * .9, ph = (t * .8 + k * .37) % 1; s.position.set(Math.cos(a) * .3, .12 + ph * .55, Math.sin(a) * .3); s.scale.setScalar(.08 * Math.sin(ph * Math.PI) + .015); s.material.opacity = Math.sin(ph * Math.PI); });
-    if (d < 1.0 && !TR.found() && opening < 0) {   // found it!
+    beam.material.opacity = (TR.found() ? .1 : clamp((3 - d) / 2, 0, 1) * .3) * (.8 + .2 * Math.sin(t * 3));
+    sparks.forEach((s, k) => { const a = t * (.6 + k * .07) + k * .9, ph = (t * .8 + k * .37) % 1; s.position.set(Math.cos(a) * .3, .12 + ph * .55, Math.sin(a) * .3); s.scale.setScalar(.08 * Math.sin(ph * Math.PI) + .015); s.material.opacity = Math.sin(ph * Math.PI) * (TR.found() ? 1 : clamp((4 - d) / 2, 0, 1)); });
+    if (d < .55 && !TR.found() && opening < 0) {   // found it!
       opening = 0; try { localStorage.setItem('bt_treasure', JSON.stringify({ day: TR.day, code: TR.code })); } catch (e) {}
       try { liveBeep('coin'); setTimeout(() => liveBeep('chime'), 350); } catch (e) {}
       trPill(); setTimeout(trShowCard, 900);
@@ -79,9 +79,9 @@ W3D.treasure3D = X => {
     if (t - lastUi > .25) { lastUi = t;   // the hot/cold meter
       if (TR.found()) { hud.classList.add('done'); txt.textContent = '✅ Found! Code: ' + TR.code; bar.style.width = '100%'; }
       else { if (lastD == null) lastD = d; if (t - trendT > 1.1) { trend = d < lastD - .6 ? 1 : d > lastD + .6 ? -1 : 0; lastD = d; trendT = t; }
-        const L = d > 120 ? '🧊 Freezing' : d > 70 ? '❄️ Cold' : d > 35 ? '🌤️ Warm' : d > 15 ? '🔥 Hot' : d > 5 ? '🔥🔥 Very hot!' : '😱 It\'s right here!';
-        txt.textContent = L + (d > 5 && trend ? (trend > 0 ? '  ·  ▲ warmer' : '  ·  ▼ colder') : ''); bar.style.width = (clamp(1 - d / 160, .04, 1) * 100).toFixed(1) + '%'; } }
+        const L = d > 40 ? '❄️ Cold' : d > 12 ? '🌤️ Warm' : '🔥 Hot… look closely';
+        txt.textContent = L; bar.style.width = (d > 40 ? 15 : d > 12 ? 50 : 85) + '%'; } }
   });
-  W3D.labelHook = (camera, toScreen) => { const d = TR.d; if (d > 7) return; const p = toScreen(S0.u, gy + .55, S0.v, camera); if (!p) return; ctx.globalAlpha = clamp((7 - d) / 2, 0, 1); tag(p[0], p[1], TR.found() ? '✅ TREASURE' : '💰 TREASURE', '#ffd23f', 1); ctx.globalAlpha = 1; };
+  W3D.labelHook = (camera, toScreen) => { const d = TR.d; if (d > 1.6) return; const p = toScreen(S0.u, gy + .55, S0.v, camera); if (!p) return; ctx.globalAlpha = clamp((1.6 - d) / .6, 0, 1); tag(p[0], p[1], TR.found() ? '✅ TREASURE' : '💰 TREASURE', '#ffd23f', 1); ctx.globalAlpha = 1; };
 };
 { trPill(); $('trBtn').addEventListener('click', trHunt); $('trOk').addEventListener('click', () => $('trCard').classList.remove('on')); $('trHud').addEventListener('click', () => { if (TR.found()) trShowCard(); else trToast('<b>💰 Today\'s treasure</b><br>' + TR.hint, 5000); }); window.TR = { day: TR.day, found: TR.found, hint: TR.hint }; }

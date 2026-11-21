@@ -394,3 +394,4 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   - Ab 15.000 braucht es Bezirk 4.
   - Der LIVE-Meilenstein 15.000 (Brunnen + Statue, alte FEATURES) wird in der neuen Welt ebenfalls noch nicht gezeichnet.
 - **21.11.2026 12:45** – Instanz A: LIVE-Mikrofon-Anzeige (`&mic`, `liveMicStart`/`liveMicLevel` in `index.html` **und** `world-src/base_index.html`). Hinweis: Tag 7/8 (20./21.11.) sind noch nicht eingetragen (Stand Tag 6, 5.681, live.json base 5681).
+- **21.11.2026 13:50** – Instanz A: **Schatzsuche schwerer** (`trctl.js` + `index.html`): 85 % Hinterhöfe statt 50 %, Hinweis nur noch der Bezirk, Lichtsäule erst ab 3 m, Funkeln ab 4 m, Schild ab 1,6 m, Öffnen erst bei 0,55 m, Anzeige nur noch grob (❄️ Cold >40 / 🌤️ Warm >12 / 🔥 Hot), keine wärmer/kälter-Pfeile mehr. Gewinner 21.11.: @027292dn827 (erster Kommentar) → Haus-Upgrade.
