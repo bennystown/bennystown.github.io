@@ -40,7 +40,7 @@ async function trHunt() {
 // the 3D part: the chest, its light, the hot/cold meter (called once when the 3D streets are built)
 W3D.treasure3D = X => {
   const { T3, scene, anim, GB, groundH, view } = X, S0 = TR.spot, gy = groundH(S0.u, S0.v);
-  const g = new T3.Group(); g.position.set(S0.u, gy, S0.v); g.rotation.y = S0.face; scene.add(g);
+  const g = new T3.Group(); g.position.set(S0.u, gy, S0.v); g.rotation.y = S0.face; g.scale.setScalar(.55); scene.add(g);
   { const B = GB(), WD = '#8a5a34', WL = '#a8743f', GD = '#f2c14e';
     B.box(-.17, 0, -.11, .17, .15, .11, WD, { hull: .012, top: '#6b4428' });
     for (const x of [-.1, .1]) B.box(x - .016, -.002, -.116, x + .016, .152, .116, GD, { hull: .006 });

@@ -571,9 +571,11 @@ function drawTrophy(h, z) {   // treasure-hunt winner: own chest in the front ya
   if (z < .14) return; const P = (u, v) => uvS(u, v), s = z;
   const [fx, fy] = P(h.i - .48, h.j + .46), ph = (S.T || 0) * 3 + h.idx;
   line(ctx, fx, fy, fx, fy - 70 * s, '#8a8f9e', Math.max(1, 2.6 * s)); circle(ctx, fx, fy - 71 * s, 2.6 * s, '#ffd23f');
-  const w1 = Math.sin(ph) * 3 * s, w2 = Math.sin(ph + 1.2) * 3 * s;
-  poly(ctx, [[fx, fy - 68 * s], [fx + 34 * s, fy - 62 * s + w1], [fx + 32 * s, fy - 48 * s + w2], [fx, fy - 46 * s]], '#ffd23f', 'rgba(120,80,0,.7)', Math.max(.6, 1.2 * s));
-  if (s > .35) { ctx.save(); ctx.font = Math.round(15 * s) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🏆', fx + 16 * s, fy - 56 * s + (w1 + w2) / 2); ctx.restore(); }
+  const w1 = Math.sin(ph) * 2 * s, w2 = Math.sin(ph + 1.2) * 2 * s;
+  poly(ctx, [[fx, fy - 69 * s], [fx + 26 * s, fy - 64 * s + w1], [fx + 25 * s, fy - 52 * s + w2], [fx, fy - 50 * s]], '#f2c14e', '#a87a12', Math.max(.6, 1.1 * s));
+  { const cx0 = fx + 12 * s, cy0 = fy - 60 * s + (w1 + w2) / 2, q = s * .9;   // small painted cup on the flag
+    poly(ctx, [[cx0 - 4 * q, cy0 - 4 * q], [cx0 + 4 * q, cy0 - 4 * q], [cx0 + 2.5 * q, cy0 + 1 * q], [cx0 - 2.5 * q, cy0 + 1 * q]], '#8a5a0a');
+    ctx.fillStyle = '#8a5a0a'; ctx.fillRect(cx0 - .8 * q, cy0 + 1 * q, 1.6 * q, 2.2 * q); ctx.fillRect(cx0 - 2.6 * q, cy0 + 3 * q, 5.2 * q, 1.3 * q); }
   const [cx, cy] = P(h.i + .44, h.j + .44), b = 11 * s, hgt = 9 * s;
   poly(ctx, [[cx - b, cy], [cx, cy + b * .5], [cx, cy + b * .5 - hgt], [cx - b, cy - hgt]], '#8a5a34', 'rgba(40,25,10,.8)', Math.max(.6, s));
   poly(ctx, [[cx, cy + b * .5], [cx + b, cy], [cx + b, cy - hgt], [cx, cy + b * .5 - hgt]], '#6b4428', 'rgba(40,25,10,.8)', Math.max(.6, s));
@@ -9841,7 +9843,7 @@ async function trHunt() {
 // the 3D part: the chest, its light, the hot/cold meter (called once when the 3D streets are built)
 W3D.treasure3D = X => {
   const { T3, scene, anim, GB, groundH, view } = X, S0 = TR.spot, gy = groundH(S0.u, S0.v);
-  const g = new T3.Group(); g.position.set(S0.u, gy, S0.v); g.rotation.y = S0.face; scene.add(g);
+  const g = new T3.Group(); g.position.set(S0.u, gy, S0.v); g.rotation.y = S0.face; g.scale.setScalar(.55); scene.add(g);
   { const B = GB(), WD = '#8a5a34', WL = '#a8743f', GD = '#f2c14e';
     B.box(-.17, 0, -.11, .17, .15, .11, WD, { hull: .012, top: '#6b4428' });
     for (const x of [-.1, .1]) B.box(x - .016, -.002, -.116, x + .016, .152, .116, GD, { hull: .006 });
