@@ -17,7 +17,7 @@ function dayScene(t, o) {   // sunny snowy day at the van (hook + decision + emo
 }
 /* ---------- S1 hook: Sunday = RENT DAY ---------- */
 function sceneHook(t) {
-  dayScene(t, { houses: true, noVan: true });
+  dayScene(t, { noVan: true });   // Kieran: no row of houses in the background
   // every house pays: coins pop from the roofs and rain down
   const pay = vprog(t, T.every0, T.every0 + 1.5);
   for (let k = 0; k < 7; k++) { const t0 = T.every0 + k * .22; if (t < t0) continue; const q = (t - t0) % 1.4, x = 96 + k * 150, y = GROUND - 200 - (k % 3) * 22 - q * 160;
