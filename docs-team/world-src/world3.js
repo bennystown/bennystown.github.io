@@ -555,6 +555,8 @@ function worldObjs(objs, movers) {
   for (const p of BPARKS) for (const [u, v, kind] of p.trees) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, z * .9, kind) }); }
   for (const [u, v, kind] of PARK_TREES) { const [tx, ty] = uvS(u, v); objs.push({ d: u + v, f: () => drawTree(ctx, tx, ty, z * .9, kind) }); }
   objs.push({ d: 9.45, f: () => drawVan(4.55, 4.85, { k: 1 }) });
+  if (cabinOn()) objs.push({ d: 6.02, f: () => drawCabin(3, 3, { k: window.__cabinK == null ? 1 : window.__cabinK, label: true }) });
+  if (TOWN.milestones.kitten) objs.push({ d: 6.9, f: () => drawMapKitten(3.75, 3.05) });
   marketObjs(objs, 1);
 }
 /* ================= District 3 — fog bank, build animation, drawing ================= */

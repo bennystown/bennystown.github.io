@@ -186,7 +186,7 @@ function build3D() {
 
   /* ======================= 7. Benny's square, town hall, park, building sites ======================= */
   const S1 = GB();
-  MD.fountain(S1, 3, 3); circ(3, 3, .6);
+  if (TOWN.milestones.cabin) { MD.cabin(S1, 3, 3); circ(3, 3, .72); } else { MD.fountain(S1, 3, 3); circ(3, 3, .6); }
   for (const [u, v] of [[3, .9], [.9, 3], [1.6, 1.6], [4.6, 1.6], [1.6, 4.6]]) MD.lampPlaza(S1, u, v);
   const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
   for (const [u, v] of [[1.9, 4.2], [4.2, 1.9]]) { MD.bench(S1, u, v, faceTo(u, v, 3, 3)); circ(u, v, .2); }

@@ -34,6 +34,20 @@ function W3DModels() {
     B.cone(0, 0, px(5), px(15), hy(28), hy(33), 14, '#9a9383', { under: '#7d7769' }); B.disc(0, hy(32.6), 0, px(13), 14, '#4fa3d9');
     B.sphere(0, hy(35), 0, px(4), '#9a9383');
     B.pop(); };
+  /* --- Benny's wooden cabin (replaces the fountain once bought) --- */
+  M.cabin = (B, x, z) => { B.push(x, 0, z);
+    const h = .5, W = hy(64), R = hy(44), e = .09, wood = '#9a6a3e', dark = '#5b3a2a';
+    B.disc(0, .025, 0, .95, 32, '#5aa868');
+    B.box(-h, 0, -h, h, W, h, wood, { hull: O, top: '#7d5230' });
+    for (let k = 1; k < 6; k++) { const y = W * k / 6; B.box(-h - .006, y - .007, -h - .006, h + .006, y + .007, h + .006, '#6e4626'); }
+    B.quad([-h - e, W - .01, h + e], [h + e, W - .01, h + e], [h + e, W + R, 0], [-h - e, W + R, 0], dark, [0, .75, .66]);
+    B.quad([h + e, W - .01, -h - e], [-h - e, W - .01, -h - e], [-h - e, W + R, 0], [h + e, W + R, 0], '#4a2f22', [0, .75, -.66]);
+    B.tri([h, W, h], [h, W, -h], [h, W + R, 0], wood, [1, 0, 0]); B.tri([-h, W, -h], [-h, W, h], [-h, W + R, 0], wood, [-1, 0, 0]);
+    B.box(-.13, 0, h, .13, hy(40), h + .012, '#4a2f22');
+    B.box(h, hy(24), -.17, h + .012, hy(46), .17, '#ffd56b');
+    B.box(-.32, W + R * .3, -.3, -.16, W + R + hy(12), -.14, '#7d7769', { hull: O * .6 });
+    B.pop(); };
+
 
   /* --- Benny: built from the 2D drawing (same shapes, colours and face), true proportions, ~2/3 of the 2D size so he fits the houses.
          Head (turns to look at you), right arm (waves) and eyes (blink) are separate parts. Local +z = where he looks. --- */
