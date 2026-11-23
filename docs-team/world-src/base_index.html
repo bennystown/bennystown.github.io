@@ -504,6 +504,16 @@ function drawFlowersTo(g, P, z, h) {   // draws the flower beds of house h with 
   });
 }
 // loyalty tier 1 (3 days): flower beds along the two front sides of the house — cached as small sprites (16 layouts × zoom steps), drawing them live was the main reason the site was slow
+function drawHouseCatBed(h, z) {   // special wish: a pink cat bed (with a little sleeping cat) in front of the house
+  if (z < .14) return; const [x, y] = uvS(h.i - .44, h.j + .44), s = z, ph = (S.T || 0) + h.idx;
+  ellipse(ctx, x, y + 2 * s, 20 * s, 7 * s, 'rgba(0,0,0,.2)');
+  ellipse(ctx, x, y - 4 * s, 19 * s, 9 * s, '#c95d8b', 'rgba(40,20,30,.8)', Math.max(.6, 1.2 * s)); ellipse(ctx, x, y - 6 * s, 13 * s, 5.5 * s, '#f7c8d8');
+  const b = Math.sin(ph * 1.6) * .6 * s;
+  ellipse(ctx, x + 2 * s, y - 9 * s - b, 9 * s, 5 * s, '#f0b25a', 'rgba(40,20,30,.7)', Math.max(.5, s));
+  circle(ctx, x - 6 * s, y - 11 * s - b, 4.6 * s, '#f0b25a', 'rgba(40,20,30,.7)', Math.max(.5, s));
+  poly(ctx, [[x - 9.5 * s, y - 13 * s - b], [x - 8 * s, y - 18 * s - b], [x - 5.5 * s, y - 14.5 * s - b]], '#f0b25a'); poly(ctx, [[x - 4.5 * s, y - 14.5 * s - b], [x - 2.5 * s, y - 18 * s - b], [x - 1.8 * s, y - 13 * s - b]], '#f0b25a');
+  if (s > .5) { const zz = (ph * .5) % 1; ctx.save(); ctx.globalAlpha = Math.sin(zz * Math.PI); ctx.font = '700 ' + Math.round(9 * s) + 'px Poppins,sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('z', x + 6 * s + zz * 6 * s, y - 20 * s - zz * 10 * s); ctx.restore(); }
+}
 function drawTrophy(h, z) {   // treasure-hunt winner: own chest in the front yard + a 🏆 flag (only for treasure finders, not a loyalty tier)
   if (z < .14) return; const P = (u, v) => uvS(u, v), s = z;
   const [fx, fy] = P(h.i - .48, h.j + .46), ph = (S.T || 0) * 3 + h.idx;
@@ -6752,7 +6762,7 @@ if (DEMO) {
 const STANDS = [['🍞', 'bread stand', '#e2483a'], ['🍋', 'lemonade stand', '#f2c230'], ['🍎', 'fruit stand', '#3ddc84'], ['🍪', 'cookie stand', '#8a4b2e'], ['🌭', 'hot dog stand', '#ff8a3d'], ['🧃', 'juice stand', '#4da3ff']];
 const standFor = (name, k) => { return null; // stands removed for now
   if (k < 3) return null; const h = hashStr('stand:' + norm(name)); return h % 9 === 0 ? STANDS[(h >> 4) % STANDS.length] : null; };
-const HOUSES = TOWN.tenants.map((t, k) => { const L = LOTA[k]; return { nick: t.nick || '', al: t.a || '', name: t.name, day: t.day || 1, idx: k, lot: k, i: L.i, j: L.j, v: t.color != null && COLOR_NAMES[t.color] != null ? COLOR_NAMES[t.color] : variantForLot(t.name, k), og: k < TOWN.ogLimit, stand: standFor(t.name, k), trophy: !!t.trophy }; });
+const HOUSES = TOWN.tenants.map((t, k) => { const L = LOTA[k]; return { nick: t.nick || '', al: t.a || '', name: t.name, day: t.day || 1, idx: k, lot: k, i: L.i, j: L.j, v: t.color != null && COLOR_NAMES[t.color] != null ? COLOR_NAMES[t.color] : variantForLot(t.name, k), og: k < TOWN.ogLimit, stand: standFor(t.name, k), trophy: !!t.trophy, catbed: !!t.catbed }; });
 const BY_LOT = new Map(HOUSES.map(h => [h.i + ':' + h.j, h]));
 const BY_NAME = new Map(HOUSES.map(h => [norm(h.name), h]));
 const N = HOUSES.length;
@@ -7048,7 +7058,7 @@ function showCard(h) {
   $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
   $('cardTitle').textContent = '@' + h.name;
-  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '') + (TOWN.tenants[h.idx].trophy ? ' · 🏆 Treasure Hunter' : '');
+  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '') + (TOWN.tenants[h.idx].trophy ? ' · 🏆 Treasure Hunter' : '') + (TOWN.tenants[h.idx].catbed ? ' · 🐱 cat bed' : '');
   $('cardOg').style.display = h.og ? 'inline-flex' : 'none';
   $('cardMsg').textContent = (h.stand ? 'Runs a ' + h.stand[0] + ' ' + h.stand[1] + ' in front of the house. Benny might shop here! ' : '') + (h.og ? 'OG tenants get upgraded first when Benny gets rich 👑' : 'Welcome to Benny\'s Town 🏠');
   $('card').classList.add('on'); $('card').classList.remove('miss');
