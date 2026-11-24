@@ -9522,7 +9522,7 @@ function startControl() {
   document.body.innerHTML = '';
   const st = document.createElement('style');
   st.textContent = `html,body{position:static;overflow:auto;touch-action:auto;height:auto;background:#0e1022}
-  .cp{padding:12px;font:600 14px Poppins,system-ui,sans-serif;color:#fff;max-width:520px}
+  .cp{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:12px 12px 40px;box-sizing:border-box;font:600 14px Poppins,system-ui,sans-serif;color:#fff}.cp>*{max-width:520px}
   .cp h2{font-size:15px;margin:14px 0 6px;color:#ffd23f}.cp .row{display:flex;gap:6px;flex-wrap:wrap}
   .cp button{font:600 13px Poppins,system-ui,sans-serif;background:#23284a;color:#fff;border:1px solid #3a4170;border-radius:10px;padding:8px 10px;cursor:pointer}
   .cp button:hover{background:#2f3666}.cp button.big{background:#ff2e63;border-color:#ff2e63}
