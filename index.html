@@ -9651,6 +9651,9 @@ function liveTourNext() {
   liveFocus(pool[Math.floor(Math.random() * pool.length)], 7.5);
 }
 let BX_L = 0, BY_L = 0;
+// TikTok fills tall phones and cuts ~10% off each side; its own buttons cover the top and the comments the bottom.
+// So all overlays are drawn smaller and towards the middle (safe area), the city itself stays full-screen.
+function liveSafe(toY, fromY, k, fn) { ctx.save(); ctx.translate(540, toY); ctx.scale(k, k); ctx.translate(-540, -fromY); try { fn(); } finally { ctx.restore(); } }
 function liveHUD() {
   panel(200, 262, 680, 206, 44, 'rgba(10,12,26,.9)', 'rgba(70,224,138,.7)', 4);
   txt("BENNY'S BANK", 540, 302, 26, '#9aa3c7', 'center', 'middle');
@@ -9917,7 +9920,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveAlerts(); liveBennyCam(); liveStatus();
+    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveSafe(1060, 1260, .85, liveBennyCam);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
