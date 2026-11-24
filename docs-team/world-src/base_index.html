@@ -7948,8 +7948,9 @@ function streetRender() {
 
 const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
 function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim bar; big version after every gift / from the control panel
-  const busy = (LV.alerts.length && LV.alerts[0].t !== null) || ST.active, full = S.T < (LV.ladderUntil || 0);
-  LV.ladF = clamp((LV.ladF || 0) + (full ? .08 : -.08), 0, 1); LV.ladA = clamp((LV.ladA == null ? 1 : LV.ladA) + (busy ? -.06 : .06), .28, 1);
+  // nearly invisible while a house is built or shown (new follower, !house, gift at a house) or a big alert is on screen
+  const busy = (LV.alerts.length && LV.alerts[0].t !== null) || liveFocusBusy(), full = S.T < (LV.ladderUntil || 0) && !busy;
+  LV.ladF = clamp((LV.ladF || 0) + (full ? .08 : -.08), 0, 1); LV.ladA = clamp((LV.ladA == null ? 1 : LV.ladA) + (busy ? -.07 : .05), .1, 1);
   const f = eInOut(LV.ladF), H = 92 + 76 * f, y0 = 846, T = [['✨', '10'], ['⭐', '100'], ['🏡', '1K'], ['🌴', '2.5K'], ['🏛️', '5K'], ['🏰', '10K'], ['🏙️', '50K']], L = ['gold path', 'supporter', 'VIP Hills', 'villa', 'mansion', 'castle', 'tower'], w = 1000 / 7;
   ctx.save(); ctx.globalAlpha = LV.ladA; panel(40, y0, 1000, H, 30, 'rgba(10,12,26,.9)', '#ffd23f', 3 + f);
   if (f > .02) { ctx.globalAlpha = LV.ladA * f; txt('🎁 GIFT REWARDS · your house, forever', 540, y0 + 32, 30, '#ffd23f', 'center', 'middle'); ctx.globalAlpha = LV.ladA; }
