@@ -9477,19 +9477,19 @@ const LIVE_CLIPS = [
   ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'long'],
   ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
   ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
-  ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!"],
-  ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!"],
-  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!"],
+  ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
+  ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!", 'r:hello'],
+  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'r:follow'],
   ['share', '📤 Share the live', "Hey, can you do me a favor? Share the live with just one friend. One! More neighbors means more houses... and maybe I finally get a real bed."],
   ['country', '🌍 Where from?', "Where are you all watching from? Type your country in the chat! I wanna see how far my town reaches!"],
   ['quiet', '🤫 So quiet', "Hmm... it's so quiet in here. Is anybody there? Say hi in the chat!"],
   ['name', '🔍 Type your name', "Who's new here? Type your name, and I'll find your house!"],
   ['there', '📍 There it is', "Your house is right... there! Nice one, neighbor!"],
   ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
-  ['gift', '🎁 Thanks gift', "Thank you so much for the gift!"],
+  ['gift', '🎁 Thanks gift', "Thank you so much for the gift!", 'r:gift'],
   ['fire', '🎆 Fireworks', "WOW! Fireworks for everyone!"],
-  ['wow', '😮 No way!', "Wait... WAIT! Are you serious?! That's insane!"],
-  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!"],
+  ['wow', '😮 No way!', "Wait... WAIT! Are you serious?! That's insane!", 'r:crazy'],
+  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!", 'r:crazy'],
   ['bank', '💰 Check the bank', "Let's check the bank... Okay, okay! We're getting somewhere! Every single follow counts. Thank you, seriously!"],
   ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
   ['buy', '🛒 What to buy', "Okay chat... what should I buy next?"],
@@ -9502,7 +9502,41 @@ const LIVE_CLIPS = [
   ['laugh', '😂 Laugh', "Hahaha!"],
   ['brb', '☕ Be right back', "I'll be right back! Don't move out while I'm gone!"],
   ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
+  ['gthx1', "gthx1", "Thank you for the gift! You're the best neighbor ever!", 'r:gift'],
+  ['gthx2', "gthx2", "Wait, a gift? For me?! Thank you, thank you, thank you!", 'r:gift'],
+  ['gthx3', "gthx3", "Aww, thank you! That goes straight into the house fund!", 'r:gift'],
+  ['gthx4', "gthx4", "You just made my day. Thank you so much for the gift!", 'r:gift'],
+  ['gthx5', "gthx5", "Another gift?! You guys are spoiling me! Thank you!", 'r:gift'],
+  ['gthx6', "gthx6", "Thank you! I'm putting that right... here. In my piggy bank. Safe.", 'r:gift'],
+  ['gbig1', "gbig1", "NO WAY! NO WAY! Did you just send THAT?! I... I don't even know what to say! You are officially the MVP of this whole town! THANK YOU!", 'r:gbig'],
+  ['gbig2', "gbig2", "Hold on, hold on, HOLD ON! Everybody look at this! That is HUGE! Fireworks for everyone! You're a legend, seriously... thank you so much!", 'r:gbig'],
+  ['gbig3', "gbig3", "Okay... I'm not crying. You're crying. That gift means so much to me. Thank you. Really. One day you're getting the fanciest house on the whole street!", 'r:gbig'],
+  ['gbig4', "gbig4", "WHAT?! I have to sit down. You're insane! The whole town is going crazy right now! THANK YOUUU!", 'r:gbig'],
+  ['hello1', "hello1", "Hey hey hey! Welcome in, neighbor!", 'r:hello'],
+  ['hello2', "hello2", "Oh, new faces! Hi! Welcome to Benny's Town!", 'r:hello'],
+  ['hello3', "hello3", "Hello hello! Grab a house and make yourself at home!", 'r:hello'],
+  ['hello4', "hello4", "Yo! Welcome! Say hi in the chat so I know you're here!", 'r:hello'],
+  ['hello5', "hello5", "Hiii! You came at the perfect time. We're building houses right now!", 'r:hello'],
+  ['crazy1', "crazy1", "You guys are actually crazy. In the best way!", 'r:crazy'],
+  ['crazy2', "crazy2", "This is insane! What is happening right now?!", 'r:crazy'],
+  ['crazy3', "crazy3", "Okay, this chat is on FIRE today! I love you guys!", 'r:crazy'],
+  ['crazy4', "crazy4", "I can't keep up! Slow down! No, actually... don't slow down!", 'r:crazy'],
+  ['fpush1', "fpush1", "Every single follow builds a real house. Right here. Live. Try it!", 'r:follow'],
+  ['fpush2', "fpush2", "We're so close to the next goal! Hit follow and help me get there!", 'r:follow'],
+  ['fpush3', "fpush3", "Psst... the follow button is right there. Your house is waiting!", 'r:follow'],
+  ['likes', "❤️ Like goal → dance", "Tap tap tap! If you fill up the screen with hearts... I'll do a little dance for you!"],
+  ['street', "🛣️ Name a street", "I need your help! What should I name the next street? Type your ideas in the chat!"],
+  ['mvp', "🏆 Top supporters", "Big shoutout to my top supporters today! You know who you are. You keep this town alive!"],
+  ['sleepy', "🥱 Sleepy", "Sorry... I was up all night guarding your houses."],
+  ['scared', "😱 Scared", "Did you hear that?! ...Oh. It's just the wind. Phew."],
+  ['showhouse', "🏡 Show your house", "Already a neighbor? Type !house in the chat, and I'll show everyone your house!"],
+  ['newhere', "🙋 Who is Benny", "If you're new here... I'm Benny. I used to live in a van. Now I'm building a whole town with you. Every follow is a new house!", 'long'],
+  ['proud', "🥹 So proud", "Look at all these houses... I'm so proud of us."],
+  ['upgrade', "🗳️ Which upgrade?", "Quick question! Flowers, a fence, or a second floor? Which upgrade do you want most? Tell me in the chat!"],
+  ['dancego', "🕺 Dance (+ effect)", "Okay, okay... you want a dance? Here we go!"],
 ];
+// Random buttons: each click plays a different line of the group (never the same twice in a row).
+const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
 const LIVE_FX = [['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
@@ -9541,7 +9575,9 @@ function startControl() {
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
   r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
-  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k, text: t }); note('Benny: ' + l); }); b.title = t; }); };
+  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k, text: t }); if (k === 'dancego') setTimeout(() => liveSend({ type: 'fx', fx: 'dance' }), 1600); note('Benny: ' + l); }); b.title = t; }); };
+  h('🎲 Random – every click a different line');
+  r = row(); const lastR = {}; LIVE_RND.forEach(([g, l]) => { const pool = LIVE_CLIPS.filter(c => c[3] === g); const b = btn(r, l + ' (' + pool.length + ')', () => { const opts = pool.filter(c => c[0] !== lastR[g]); const c = opts[Math.floor(Math.random() * opts.length)] || pool[0]; lastR[g] = c[0]; liveSend({ type: 'clip', clip: c[0], text: c[2] }); note('Benny: ' + l + ' → ' + c[2].slice(0, 40)); }, g === 'r:gbig' ? 'big' : ''); });
   h('🎯 Next goals (teaser)'); say('goal');
   h('🎬 Benny talks longer (10–20 s)'); say('long');
   h('🗣️ Benny says (short)'); say('short');
