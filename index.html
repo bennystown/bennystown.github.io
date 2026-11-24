@@ -9541,7 +9541,7 @@ function startControl() {
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
   r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
-  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }); b.title = t; }); };
+  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k, text: t }); note('Benny: ' + l); }); b.title = t; }); };
   h('🎯 Next goals (teaser)'); say('goal');
   h('🎬 Benny talks longer (10–20 s)'); say('long');
   h('🗣️ Benny says (short)'); say('short');
@@ -9560,8 +9560,8 @@ function liveBeep(kind) {
   const notes = kind === 'pop' ? [[520, 0, .12]] : kind === 'coin' ? [[1319, 0, .07], [1976, .07, .2]] : [[784, 0, .15], [988, .1, .15], [1319, .2, .35]];
   for (const [f, d, len] of notes) { const o = ac.createOscillator(), g = ac.createGain(); o.type = kind === 'coin' ? 'square' : 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.18, t0 + d + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len); o.connect(g).connect(ac.destination); o.start(t0 + d); o.stop(t0 + d + len + .05); }
 }
-function livePlay(id) {
-  const c = LIVE_CLIPS.find(x => x[0] === id); if (!c) return;
+function livePlay(id, text) {
+  const c = LIVE_CLIPS.find(x => x[0] === id) || (text && /^[a-z0-9_]+$/i.test(id) ? [id, '', String(text).slice(0, 600)] : null); if (!c) return; // unknown id: newer control panel than this scene -> still play it
   let a = LV.audio[id]; if (!a) { a = LV.audio[id] = new Audio('live/' + id + '.mp3'); a.crossOrigin = 'anonymous'; }
   for (const k in LV.audio) if (k !== id) { LV.audio[k].pause(); }
   const ac = liveAudioCtx();
@@ -9640,7 +9640,7 @@ function liveOnMsg(m) {
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
-  if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip); }
+  if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip, m.text); }
   if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
 }
 function liveTourNext() {
