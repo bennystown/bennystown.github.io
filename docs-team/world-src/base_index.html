@@ -7947,14 +7947,15 @@ function streetRender() {
 }
 
 const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
-function liveGiftLadder() {   // 🎁 "what do gifts do?" panel: every 50 s for 12 s, after every gift, or from the control panel
-  const busyAlert = LV.alerts.length && LV.alerts[0].t !== null, show = S.T < (LV.ladderUntil || 0) || (S.T % 50 > 36);
-  LV.ladA = clamp((LV.ladA || 0) + (show && !busyAlert ? .06 : -.08), 0, 1); const a = LV.ladA; if (a <= 0) return;
-  ctx.save(); ctx.globalAlpha = a; const y0 = 852, H = 168; panel(40, y0, 1000, H, 34, 'rgba(10,12,26,.92)', '#ffd23f', 4);
-  txt('🎁 GIFT REWARDS · your house, forever', 540, y0 + 34, 30, '#ffd23f', 'center', 'middle');
-  const T = [['✨', '10'], ['⭐', '100'], ['🏡', '1K'], ['🌴', '2.5K'], ['🏛️', '5K'], ['🏰', '10K'], ['🏙️', '50K']], L = ['gold path', 'supporter', 'VIP Hills', 'villa', 'mansion', 'castle', 'tower'], w = 1000 / 7;
-  T.forEach(([ic, d], k) => { const x = 40 + w * (k + .5), pulse = k === Math.floor(S.T / 1.2) % 7 ? 1.12 : 1; ctx.save(); ctx.translate(x, y0 + 92); ctx.scale(pulse, pulse); emoji(ctx, ic, 0, 0, 40); ctx.restore();
-    txt(d + ' 💎', x, y0 + 128, 24, '#ffffff', 'center', 'middle'); txt(L[k], x, y0 + 152, 18, '#a9aed6', 'center', 'middle'); });
+function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim bar; big version after every gift / from the control panel
+  const busy = (LV.alerts.length && LV.alerts[0].t !== null) || ST.active, full = S.T < (LV.ladderUntil || 0);
+  LV.ladF = clamp((LV.ladF || 0) + (full ? .08 : -.08), 0, 1); LV.ladA = clamp((LV.ladA == null ? 1 : LV.ladA) + (busy ? -.06 : .06), .28, 1);
+  const f = eInOut(LV.ladF), H = 92 + 76 * f, y0 = 846, T = [['✨', '10'], ['⭐', '100'], ['🏡', '1K'], ['🌴', '2.5K'], ['🏛️', '5K'], ['🏰', '10K'], ['🏙️', '50K']], L = ['gold path', 'supporter', 'VIP Hills', 'villa', 'mansion', 'castle', 'tower'], w = 1000 / 7;
+  ctx.save(); ctx.globalAlpha = LV.ladA; panel(40, y0, 1000, H, 30, 'rgba(10,12,26,.9)', '#ffd23f', 3 + f);
+  if (f > .02) { ctx.globalAlpha = LV.ladA * f; txt('🎁 GIFT REWARDS · your house, forever', 540, y0 + 32, 30, '#ffd23f', 'center', 'middle'); ctx.globalAlpha = LV.ladA; }
+  const yi = y0 + 34 + 58 * f, sz = 32 + 8 * f;
+  T.forEach(([ic, d], k) => { const x = 40 + w * (k + .5), pulse = k === Math.floor(S.T / 1.2) % 7 ? 1.14 : 1; ctx.save(); ctx.translate(x - (1 - f) * 34, yi + (1 - f) * 10); ctx.scale(pulse, pulse); emoji(ctx, ic, 0, 0, sz); ctx.restore();
+    txt(d + ' 💎', x + (1 - f) * 22, yi + (1 - f) * 10 + 36 * f, 24, '#ffffff', 'center', 'middle'); if (f > .02) { ctx.save(); ctx.globalAlpha = LV.ladA * f; txt(L[k], x, yi + 60, 18, '#a9aed6', 'center', 'middle'); ctx.restore(); } });
   ctx.restore();
 }
 function liveTips() {
