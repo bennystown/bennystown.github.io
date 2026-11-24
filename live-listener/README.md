@@ -75,7 +75,7 @@ Was die Website mit den Events macht:
 | `follow` | Haus wird gebaut (Warteschlange, +10¢) |
 | `gift` | unter 10 💎 Konfetti, 10–99 💎 Herzen, ab 100 💎 Feuerwerk (bei Combos erst am Combo-Ende) |
 | `like` | kleine Herzen unten rechts, **kein** Haus, kein Ton |
-| `chat` „house“ | Kamera fliegt zum Haus |
+| `chat` „!house“ / „!haus“ | Kamera fliegt zum Haus (nur mit Ausrufezeichen) |
 | `join`, `viewers`, `share`, `status` | werden von der Website ignoriert, stehen aber im Log und auf der Statusseite |
 
 ## 4. Testen mit einem fremden LIVE
