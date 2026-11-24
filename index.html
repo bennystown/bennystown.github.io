@@ -9464,25 +9464,44 @@ function open3D(h) {
 function close3D() { $('v3d').classList.remove('on'); }
 
 /* ================= LIVE MODE (index.html?live = scene for OBS, index.html?control = control panel) ================= */
+// [id, button label, text, group]. Group 'auto' = no button, plays automatically (milestone animations at 5k/10k/15k).
 const LIVE_CLIPS = [
-  ['ms5', '🛍️ 5k marketplace', "FIVE THOUSAND neighbors! We're building a marketplace!"],
-  ['ms10', '🎢 10k coaster', "TEN THOUSAND?! We're getting a ROLLERCOASTER!"],
-  ['ms15', '⛲ 15k statue', "Fifteen thousand... wait, is that a statue of ME?!"],
+  ['ms5', '🛍️ 5k marketplace', "FIVE THOUSAND neighbors! We're building a marketplace!", 'auto'],
+  ['ms10', '🎢 10k coaster', "TEN THOUSAND?! No way... no WAY! Look! The fog is lifting! A whole new district... and is that... a ROLLERCOASTER?! You guys did this! Ten thousand neighbors! I can't believe it!", 'auto'],
+  ['ms15', '⛲ 15k statue', "Fifteen thousand neighbors... Wait. Is that a fountain? And in the middle... is that a statue of ME?! I'm famous! Thank you, thank you all so much!", 'auto'],
+  ['goal10', '🎢 Next goal: 10K', "Okay neighbors, big news! When we hit TEN THOUSAND... the fog over there lifts, and we build a whole new district! With a GIANT rollercoaster! I've never been on a rollercoaster... I'm kinda scared. But for you guys? I'm doing it!", 'goal'],
+  ['goal15', '⛲ Goal: 15K', "And at fifteen thousand... there's going to be a fountain. With a statue right in the middle. I heard it might be a statue of... me? No. No way. ...Right?", 'goal'],
+  ['howto', '🏠 How it works', "Okay, for everyone who just came in! Here's how it works. You follow... and you get your OWN house in my town. With your name on the mailbox! Every follow gives me ten cents, and together we decide what I buy next. And type !house in the chat... and I'll fly right to your house!", 'long'],
+  ['story', '📖 My story', "You know... not long ago I had nothing. Just my old van. No tires, no home. Then you started following... and every follow became a house. And now look at this! A whole town! I'm still saving up for my own place... ten cents at a time.", 'long'],
+  ['loyal', '🌷 Loyalty secret', "Psst... wanna know a secret? The longer you stay my neighbor, the nicer your house gets. Three days? Flowers! One week? A garden fence! One month? A whole second floor! So... please don't move out, okay?", 'long'],
+  ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'long'],
+  ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
+  ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
   ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!"],
+  ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!"],
+  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!"],
+  ['share', '📤 Share the live', "Hey, can you do me a favor? Share the live with just one friend. One! More neighbors means more houses... and maybe I finally get a real bed."],
+  ['country', '🌍 Where from?', "Where are you all watching from? Type your country in the chat! I wanna see how far my town reaches!"],
+  ['quiet', '🤫 So quiet', "Hmm... it's so quiet in here. Is anybody there? Say hi in the chat!"],
+  ['name', '🔍 Type your name', "Who's new here? Type your name, and I'll find your house!"],
+  ['there', '📍 There it is', "Your house is right... there! Nice one, neighbor!"],
+  ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
   ['gift', '🎁 Thanks gift', "Thank you so much for the gift!"],
   ['fire', '🎆 Fireworks', "WOW! Fireworks for everyone!"],
-  ['name', '🔍 Type your name', "Who's new here? Type your name, and I'll find your house!"],
+  ['wow', '😮 No way!', "Wait... WAIT! Are you serious?! That's insane!"],
+  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!"],
+  ['bank', '💰 Check the bank', "Let's check the bank... Okay, okay! We're getting somewhere! Every single follow counts. Thank you, seriously!"],
   ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
-  ['there', '📍 There it is', "Your house is right... there! Nice one, neighbor!"],
   ['buy', '🛒 What to buy', "Okay chat... what should I buy next?"],
+  ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
+  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
+  ['hungry', '🍕 Hungry', "I'm sooo hungry. If someone votes for pizza next time... I would NOT say no."],
   ['cold', '🥶 Cold', "Brrr... it's getting cold out here."],
   ['nervous', '😅 Nervous', "Hehe... I'm a little nervous. First time live!"],
-  ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
-  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!"],
-  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
-  ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
-  ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
+  ['joke', '🤡 Bad joke', "Why did the house go to the doctor? It had really bad window pains! Get it? Window... panes? Okay. I'll stick to building."],
   ['laugh', '😂 Laugh', "Hahaha!"],
+  ['brb', '☕ Be right back', "I'll be right back! Don't move out while I'm gone!"],
+  ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
 ];
 const LIVE_FX = [['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
@@ -9521,8 +9540,15 @@ function startControl() {
   btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
-  h('🗣️ Benny says');
-  r = row(); LIVE_CLIPS.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }));
+  r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
+  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }); b.title = t; }); };
+  h('🎯 Next goals (teaser)'); say('goal');
+  h('🎬 Benny talks longer (10–20 s)'); say('long');
+  h('🗣️ Benny says (short)'); say('short');
+  h('🤖 Automatic – no button');
+  const auto = document.createElement('div'); auto.className = 'log'; auto.style.marginTop = '0';
+  auto.textContent = 'Milestones play by themselves with a big animation and Benny talking: 10,000 neighbors → District 3 + rollercoaster, 15,000 → fountain + Benny statue. Gifts: <10💎 confetti · 10–99💎 hearts · 100💎+ fireworks. Chat "!house" → camera flies to the house.';
+  cp.appendChild(auto);
   cp.appendChild(log); note('Control panel ready. Scene must be open (…?live).');
 }
 
@@ -9614,7 +9640,7 @@ function liveOnMsg(m) {
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
-  if (m.type === 'clip') livePlay(m.clip);
+  if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip); }
   if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
 }
 function liveTourNext() {
@@ -9688,7 +9714,11 @@ function liveBennyCam() {
   drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
   ctx.restore();
   if (talking && LV.talk) {
-    const s = LV.talk, fs = 38; ctx.font = F(fs);
+    const fs = 38; ctx.font = F(fs);
+    // Long lines: show only the part Benny is saying right now (sentence chunks, max ~3 lines), timed by audio progress.
+    if (!LV.talkChunks || LV.talkChunks.src !== LV.talk) { const parts = LV.talk.match(/[^.!?…]+[.!?…]+["”]?|[^.!?…]+$/g) || [LV.talk], ch = []; let c = ''; for (const p0 of parts.map(x => x.trim())) { if (c && (c + ' ' + p0).length > 95) { ch.push(c); c = p0; } else c = c ? c + ' ' + p0 : p0; } if (c) ch.push(c); LV.talkChunks = ch; LV.talkChunks.src = LV.talk; }
+    const A = LV.talkA, tot = LV.talkChunks.reduce((n, x) => n + x.length, 0), prog = A && isFinite(A.duration) && A.duration ? clamp(A.currentTime / A.duration, 0, .999) : 0; let acc = 0, s = LV.talkChunks[LV.talkChunks.length - 1];
+    for (const x of LV.talkChunks) { acc += x.length; if (acc / tot > prog) { s = x; break; } }
     const words = s.split(' '), lines = []; let cur = '';
     for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 640 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
     const h = lines.length * fs * 1.25 + 34, y0 = 1430;
