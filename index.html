@@ -9264,7 +9264,7 @@ const VB = (() => {
     o = o || {};
     pl(S, [P(S, u0, v1, h0), P(S, u1, v1, h0), P(S, u1, v1, h1), P(S, u0, v1, h1)], col, OUT);
     pl(S, [P(S, u1, v1, h0), P(S, u1, v0, h0), P(S, u1, v0, h1), P(S, u1, v1, h1)], shade(col, .78), OUT);
-    if (o.top !== false) pl(S, [P(S, u0, v0, h1), P(S, u1, v0, h1), P(S, u1, v1, h1), P(S, u0, v1, h1)], o.topCol || shade(col, 1.1), OUT);
+    if (o.top !== false) pl(S, [P(S, u0, v0, h1), P(S, u1, v0, h1), P(S, u1, v1, h1), P(S, u0, v1, h1)], o.topCol || shade(col, 1.1), S.gold && h1 - h0 > .25 ? '#e8b923' : OUT, S.gold ? Math.max(1, S.K / 22) : undefined);
     if (o.win) { const w = o.win; winFace(S, u0, u1, h0, h1, 'L', v1, w.rows, w.lc || w.cols, w); winFace(S, v1, v0, h0, h1, 'R', u1, w.rows, w.rc || w.cols, w); }
   }
   function hip(S, u0, v0, u1, v1, h, rh, col) { const cu = (u0 + u1) / 2, cv = (v0 + v1) / 2, d = Math.min(u1 - u0, v1 - v0) * .3, a = P(S, cu - (u1 - u0) / 2 + d, cv, h + rh), b = P(S, cu + (u1 - u0) / 2 - d, cv, h + rh);
@@ -9292,12 +9292,12 @@ const VB = (() => {
   // ---- the buildings (lot corner u,v; ground height h) ----
   function modern(S, u, v, h, nm) { ground(S, u, v, u + 1, v + 1, h, grass); hedge(S, u + .02, v + .02, u + .98, v + .06, h); hedge(S, u + .02, v + .06, u + .06, v + .98, h);
     box(S, u + .12, v + .12, u + .58, v + .72, h, h + .42, '#f3f3f0', { win: { rows: 1, lc: 2, rc: 3, mu: .08, mh: .12 } });
-    box(S, u + .24, v + .3, u + .66, v + .9, h + .42, h + .82, '#8a5a34', { win: { rows: 1, lc: 1, rc: 2, mu: .1, mh: .14 }, topCol: '#e9e6df' }); box(S, u + .1, v + .1, u + .6, v + .74, h + .42, h + .45, '#2b2840');
+    const E = S.ex ? .38 : 0; box(S, u + .24, v + .3, u + .66, v + .9, h + .42, h + .82 + E, '#8a5a34', { win: { rows: S.ex ? 2 : 1, lc: 1, rc: 2, mu: .1, mh: .14 }, topCol: '#e9e6df' }); box(S, u + .1, v + .1, u + .6, v + .74, h + .42, h + .45, '#2b2840');
     pool(S, u + .66, v + .12, u + .94, v + .62, h); for (const t of [.68, .78]) box(S, u + t, v + .68, u + t + .07, v + .86, h, h + .05, '#ffffff'); mailbox(S, u + .9, v + .92, h); lantern(S, u + .62, v + .95, h); }
   function villa(S, u, v, h, nm) { ground(S, u, v, u + 2, v + 1, h, grass); ground(S, u + .04, v + .78, u + .5, v + .98, h + .005, '#d8d2c6');
     palm(S, u + .12, v + .12, h, 1.1); palm(S, u + 1.9, v + .1, h, 1.2);
-    box(S, u + .55, v + .12, u + 1.35, v + .74, h, h + .5, '#fbfaf6', { win: { rows: 1, lc: 4, rc: 3, mu: .08, mh: .1 } }); box(S, u + .7, v + .2, u + 1.25, v + .66, h + .5, h + .95, '#fbfaf6', { win: { rows: 1, lc: 3, rc: 2, mu: .06, mh: .1 } });
-    box(S, u + .5, v + .08, u + 1.4, v + .78, h + .5, h + .53, '#3c3852'); box(S, u + .65, v + .15, u + 1.3, v + .71, h + .95, h + .98, '#3c3852');
+    box(S, u + .55, v + .12, u + 1.35, v + .74, h, h + .5, '#fbfaf6', { win: { rows: 1, lc: 4, rc: 3, mu: .08, mh: .1 } }); const E = S.ex ? .42 : 0; box(S, u + .7, v + .2, u + 1.25, v + .66, h + .5, h + .95 + E, '#fbfaf6', { win: { rows: S.ex ? 2 : 1, lc: 3, rc: 2, mu: .06, mh: .1 } });
+    box(S, u + .5, v + .08, u + 1.4, v + .78, h + .5, h + .53, '#3c3852'); box(S, u + .65, v + .15, u + 1.3, v + .71, h + .95 + E, h + .98 + E, '#3c3852');
     box(S, u + .12, v + .3, u + .5, v + .7, h, h + .32, '#e9e6df', { win: { rows: 1, lc: 1, rc: 1, mu: .15 } }); pool(S, u + 1.45, v + .15, u + 1.92, v + .62, h);
     if (go()) { const s0 = P(S, u + 1.5, v + .66, h + .5), s1 = P(S, u + 1.62, v + .45, h + .05), g = ctx; g.beginPath(); g.moveTo(s0[0], s0[1]); g.quadraticCurveTo(s0[0] + S.K * .5, s0[1] + S.K * .1, s1[0], s1[1]); g.strokeStyle = '#ff8a3d'; g.lineWidth = S.K * .07; g.stroke(); }
     box(S, u + 1.45, v + .66, u + 1.55, v + .76, h, h + .5, '#e6e1d6'); car(S, u + .27, v + .88, h, '#e8392f', .42); palm(S, u + 1.1, v + .92, h, .9);
@@ -9307,22 +9307,22 @@ const VB = (() => {
     for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) if ((i * 3 + j * 7) % 4) hedge(S, u + .08 + i * .12, v + .08 + j * .12, u + .17 + i * .12, v + .17 + j * .12, h);
     box(S, u + .2, v + .7, u + .62, v + 1.25, h, h + .5, '#f6efe1', { win: { rows: 1, lc: 2, rc: 2 } }); hip(S, u + .2, v + .7, u + .62, v + 1.25, h + .5, .25, '#4a5a7a');
     box(S, u + 1.38, v + .7, u + 1.8, v + 1.25, h, h + .5, '#f6efe1', { win: { rows: 1, lc: 2, rc: 2 } }); hip(S, u + 1.38, v + .7, u + 1.8, v + 1.25, h + .5, .25, '#4a5a7a');
-    box(S, u + .62, v + .62, u + 1.38, v + 1.22, h, h + .82, '#fbf6ea', { win: { rows: 2, lc: 4, rc: 3 } }); hip(S, u + .62, v + .62, u + 1.38, v + 1.22, h + .82, .38, '#3e4c6b');
+    const E = S.ex ? .4 : 0; box(S, u + .62, v + .62, u + 1.38, v + 1.22, h, h + .82 + E, '#fbf6ea', { win: { rows: S.ex ? 3 : 2, lc: 4, rc: 3 } }); hip(S, u + .62, v + .62, u + 1.38, v + 1.22, h + .82 + E, .38, '#3e4c6b');
     for (let i = 0; i < 5; i++) cyl(S, u + .7 + i * .15, v + 1.28, .03, h, h + .7, '#ffffff', 8); box(S, u + .64, v + 1.22, u + 1.36, v + 1.32, h + .7, h + .8, '#fbf6ea');
     cyl(S, u + 1, v + 1.65, .2, h, h + .07, '#e8e2d4', 18, '#5cc8f0'); cyl(S, u + 1, v + 1.65, .05, h + .07, h + .25, '#e8e2d4', 8);
     car(S, u + 1.45, v + 1.55, h, '#16141f', .7, 'v'); for (const t of [.1, 1.9]) { tree(S, u + t, v + 1.9, h); lantern(S, u + t, v + 1.6, h); } }
-  function castle(S, u, v, h, nm) { const st = '#b9b2a6', st2 = '#cfc8ba', roof = '#3b5bd6', W = .16, a = .55, b = 2.45, wh = .7;
+  function castle(S, u, v, h, nm) { const E = S.ex ? .5 : 0, st = '#b9b2a6', st2 = '#cfc8ba', roof = '#3b5bd6', W = .16, a = .55, b = 2.45, wh = .7;
     ground(S, u, v, u + 3, v + 3, h, grass); ground(S, u + .2, v + .2, u + 2.8, v + 2.8, h + .003, '#3e8fc9'); ground(S, u + .42, v + .42, u + 2.58, v + 2.58, h + .006, grass);
     box(S, u + a, v + a, u + b, v + a + W, h, h + wh, st); crenel(S, u + a, v + a, u + b, v + a + W, h + wh, st2); box(S, u + a, v + a, u + a + W, v + b, h, h + wh, st); crenel(S, u + a, v + a, u + a + W, v + b, h + wh, st2);
-    box(S, u + 1.05, v + 1.0, u + 1.95, v + 1.75, h, h + 1.6, '#c9c1b3', { win: { rows: 3, lc: 3, rc: 3, glass: '#2d2a44', mu: .3, mh: .25 } }); crenel(S, u + 1.05, v + 1.0, u + 1.95, v + 1.1, h + 1.6, st2); crenel(S, u + 1.85, v + 1.0, u + 1.95, v + 1.75, h + 1.6, st2);
-    cyl(S, u + 1.12, v + 1.08, .14, h + 1.4, h + 2.1, st2, 14); cone(S, u + 1.12, v + 1.08, .18, h + 2.1, .5, roof); flag(S, u + 1.12, v + 1.08, h + 2.6, '#ff2e63', nm);
-    cyl(S, u + 1.88, v + 1.68, .14, h + 1.4, h + 2.0, st2, 14); cone(S, u + 1.88, v + 1.68, .18, h + 2.0, .45, roof);
+    box(S, u + 1.05, v + 1.0, u + 1.95, v + 1.75, h, h + 1.6 + E, '#c9c1b3', { win: { rows: S.ex ? 4 : 3, lc: 3, rc: 3, glass: '#2d2a44', mu: .3, mh: .25 } }); crenel(S, u + 1.05, v + 1.0, u + 1.95, v + 1.1, h + 1.6 + E, st2); crenel(S, u + 1.85, v + 1.0, u + 1.95, v + 1.75, h + 1.6 + E, st2);
+    cyl(S, u + 1.12, v + 1.08, .14, h + 1.4 + E, h + 2.1 + E, st2, 14); cone(S, u + 1.12, v + 1.08, .18, h + 2.1 + E, .5, roof); flag(S, u + 1.12, v + 1.08, h + 2.6 + E, '#ff2e63', nm);
+    cyl(S, u + 1.88, v + 1.68, .14, h + 1.4 + E, h + 2.0 + E, st2, 14); cone(S, u + 1.88, v + 1.68, .18, h + 2.0 + E, .45, roof);
     for (const [tu, tv] of [[a, a], [b, a], [a, b]]) { cyl(S, u + tu, v + tv, .2, h, h + 1.05, st, 16); cone(S, u + tu, v + tv, .25, h + 1.05, .55, roof); flag(S, u + tu, v + tv, h + 1.6, '#ffd23f'); }
     box(S, u + a, v + b - W, u + b, v + b, h, h + wh, st); crenel(S, u + a, v + b - W, u + b, v + b, h + wh, st2); box(S, u + b - W, v + a, u + b, v + b, h, h + wh, st); crenel(S, u + b - W, v + a, u + b, v + b, h + wh, st2);
     const gu = u + 1.5; pl(S, [P(S, gu - .18, v + b, h), P(S, gu + .18, v + b, h), P(S, gu + .18, v + b, h + .45), P(S, gu - .18, v + b, h + .45)], '#3a2a1e', OUT); ground(S, gu - .16, v + b, gu + .16, v + 2.82, h + .02, '#8a5a34');
     cyl(S, u + b, v + b, .2, h, h + 1.05, st, 16); cone(S, u + b, v + b, .25, h + 1.05, .55, roof); flag(S, u + b, v + b, h + 1.6, '#ff2e63', nm);
     for (const t of [.3, 2.7]) tree(S, u + t, v + 2.9, h, .9); }
-  function tower(S, u, v, h, nm) { const tall = 6.2; ground(S, u, v, u + 2, v + 2, h, '#d8d2c6'); for (const t of [.15, 1.85]) palm(S, u + t, v + .15, h, 1);
+  function tower(S, u, v, h, nm) { const tall = 6.2 + (S.ex ? 1.3 : 0); ground(S, u, v, u + 2, v + 2, h, '#d8d2c6'); for (const t of [.15, 1.85]) palm(S, u + t, v + .15, h, 1);
     box(S, u + .2, v + .2, u + 1.8, v + 1.8, h, h + .45, '#2b2f4a', { win: { rows: 1, cols: 5, glass: '#bfe4ff', mu: .05, mh: .1 } });
     box(S, u + .45, v + .45, u + 1.55, v + 1.55, h + .45, h + tall * .72, '#5c7cc7', { win: { rows: 22, lc: 6, rc: 6, glass: '#a9d8ff', mu: .1, mh: .18, frame: 'rgba(20,30,60,.35)' } });
     box(S, u + .6, v + .6, u + 1.4, v + 1.4, h + tall * .72, h + tall, '#4a67ad', { win: { rows: 8, lc: 4, rc: 4, glass: '#bfe4ff', mu: .1, mh: .16 }, topCol: '#e9e6df' });
@@ -9331,12 +9331,22 @@ const VB = (() => {
     const hc = P(S, u + 1.22, v + .98, H + .16); el(S, hc[0], hc[1], S.K * .16, S.K * .08, '#e8392f'); ln(S, [hc[0] - S.K * .3, hc[1] - S.K * .1], [hc[0] + S.K * .3, hc[1] - S.K * .1], '#2b2840', 2);
     if (nm && S.K > 12 && go()) { const n0 = P(S, u + .62, v + 1.4, H - .25), n1 = P(S, u + 1.38, v + 1.4, H - .25), g = ctx; g.save(); g.translate((n0[0] + n1[0]) / 2, (n0[1] + n1[1]) / 2); g.transform(1, .5, 0, 1, 0, 0); g.font = F(Math.round(S.K * .14)); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ff2e63'; g.fillText('@' + nm.toUpperCase(), 0, 0); g.restore(); }
     car(S, u + .25, v + 1.92, h, '#ffd23f', .55); }
+  function extras(S, u, v, h, o) {   // loyalty rewards move along to VIP Hills: flowers, golden fence + trees, lanterns + bench, hot tub, statue
+    const w = o.w, d = o.d, lt = o.lt, F2 = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff'];
+    if (lt >= 2) { tree(S, u + .1, v + .1, h, .8); tree(S, u + w - .1, v + .1, h, .8); }
+    if (lt >= 1) for (let k = 0; k < 9; k++) { const t = .08 + k * (w - .16) / 8, q = P(S, u + t, v + d - .05, h); ci(S, q[0], q[1] - S.K * .03, S.K * .035, F2[k % 5]); const r = P(S, u + w - .05, v + .08 + k * (d - .16) / 8, h); ci(S, r[0], r[1] - S.K * .03, S.K * .035, F2[(k + 2) % 5]); }
+    if (lt >= 2) { const col = '#e8b923'; for (let k = 0; k <= 10; k++) { const a = P(S, u + w * k / 10, v + d, h), b = P(S, u + w * k / 10, v + d, h + .16); ln(S, a, b, col, Math.max(1, S.K / 28)); } ln(S, P(S, u, v + d, h + .12), P(S, u + w, v + d, h + .12), col, Math.max(1, S.K / 30));
+      for (let k = 0; k <= 8; k++) { const a = P(S, u + w, v + d * k / 8, h), b = P(S, u + w, v + d * k / 8, h + .16); ln(S, a, b, col, Math.max(1, S.K / 28)); } ln(S, P(S, u + w, v, h + .12), P(S, u + w, v + d, h + .12), col, Math.max(1, S.K / 30)); }
+    if (lt >= 3) { lantern(S, u + .06, v + d - .1, h); lantern(S, u + w - .1, v + .06, h); box(S, u + w * .3, v + d - .16, u + w * .3 + .22, v + d - .1, h + .06, h + .09, '#8a5a34'); }
+    if (lt >= 5) cyl(S, u + w - .22, v + d - .25, .12, h, h + .06, '#cfc6b4', 14, '#5fd3ff');
+    if (lt >= 7) { box(S, u + .14, v + d - .34, u + .26, v + d - .22, h, h + .12, '#d9d4c8'); cyl(S, u + .2, v + d - .28, .035, h + .12, h + .34, '#bdb6a8', 8); ci(S, P(S, u + .2, v + d - .28, h + .38)[0], P(S, u + .2, v + d - .28, h + .38)[1], S.K * .05, '#bdb6a8'); }
+  }
   function supporter(S, u, v, h) { lantern(S, u - .38, v + .42, h); lantern(S, u + .42, v - .38, h); mailbox(S, u + .34, v + .4, h); }   // around a normal house (u,v = house centre)
   // count the pieces of a building once (for build-up animations)
   const TOT = {};
   function total(fn, S) { if (TOT[fn.name]) return TOT[fn.name]; const sv = ctx; ctx = document.createElement('canvas').getContext('2d'); lim = 1e9; n = 0; try { fn(S, 0, 0, 0, 'x'); } finally { ctx = sv; } lim = -1; return (TOT[fn.name] = n); }
   function draw(fn, S, u, v, h, nm, k) { if (k != null && k < 1) { const t = total(fn, S); lim = Math.floor(t * Math.max(0, k)); n = 0; } try { fn(S, u, v, h, nm); } finally { lim = -1; } }
-  return { P, modern, villa, mansion, castle, tower, supporter, draw };
+  return { P, modern, villa, mansion, castle, tower, supporter, extras, draw };
 })();
 
 // ---- VIP Hills layout: lots per stage (offsets from W3.VIP.C; lot corner + size) and the hills ----
@@ -9390,7 +9400,9 @@ function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign + "re
     const m = VB.P(S, g[0], g[1], 1.75); if (z > .08) { const fs = Math.max(8, Math.round(26 * z)); ctx.font = F(fs); const w = ctx.measureText('⭐ VIP HILLS').width + fs * 1.4; panel(m[0] - w / 2, m[1] - fs, w, fs * 1.8, fs * .9, 'rgba(10,12,26,.92)', '#ffd23f', Math.max(1, 3 * z)); txt('⭐ VIP HILLS', m[0], m[1] - fs * .08, fs, '#ffd23f', 'center', 'middle'); }
   } });
 }
-function drawVIPHouse(h, z) { const p = h.vip, S = { K: TW / 2 * z * VIP_SC, sc: VIP_SC, ou: p.u0, ov: p.v0 }, k = h.vipAnim ? clamp((S_T() - h.vipAnim.t0) / h.vipAnim.dur, 0, 1) : null; VB.draw(VIP_FN[p.t], S, p.u0, p.v0, p.base, h.name, k); }
+function drawVIPHouse(h, z) { const p = h.vip, lt = tierOf(h), S = { K: TW / 2 * z * VIP_SC, sc: VIP_SC, ou: p.u0, ov: p.v0, ex: lt >= 4, gold: lt >= 6 }, k = h.vipAnim ? clamp((S_T() - h.vipAnim.t0) / h.vipAnim.dur, 0, 1) : null;
+  if (k == null || k >= 1) VB.draw(VB.extras, S, p.u0, p.v0, p.base, { w: p.s[0] / VIP_SC, d: p.s[1] / VIP_SC, lt });   // loyalty extras behind/around …
+  VB.draw(VIP_FN[p.t], S, p.u0, p.v0, p.base, h.name, k); }
 function drawMovedSign(h, z) { if (z < .14) return; const [x, y] = uvS(h.oi, h.oj); line(ctx, x, y, x, y - 30 * z, '#5b4630', Math.max(1, 3 * z)); panel(x - 34 * z, y - 52 * z, 68 * z, 24 * z, 5 * z, '#fff6d6', '#e8b923', Math.max(1, 2 * z)); if (z > .5) txt('⭐ VIP HILLS →', x, y - 40 * z, Math.max(6, Math.round(8.5 * z)), '#7a5300', 'center', 'middle'); }
 function drawSupporter(h, z) {   // ⭐ 100+: golden mailbox, two lanterns and a gold star over the roof
   if (z < .14) return; const S = { K: TW / 2 * z }, ap = h.supT ? clamp((S_T() - h.supT) / 1.5, 0, 1) : 1; if (ap <= 0) return;
@@ -9405,7 +9417,7 @@ function openGiftRewards(h) {
   $('rwSub').textContent = '@' + h.name + ' · ' + (gd ? fmtN(gd) + ' 💎 from LIVE gifts' : 'no LIVE gifts yet');
   $('rwList').innerHTML = GIFT_TIERS.map(([d, ic, nm, desc]) => { const pc = Math.min(100, Math.floor(100 * gd / d)), done = gd >= d;
     return '<div class="rwI gift ' + (done ? 'done' : 'lock') + '"><div class="ic">' + ic + '</div><div class="tx"><b>' + nm + ' · ' + fmtN(d) + ' 💎</b><small>' + desc + '</small><div class="bar"><i style="width:' + Math.max(2, pc) + '%"></i></div></div><div class="pc">' + (done ? '✓' : pc + '%') + '</div></div>'; }).join('');
-  $('rwNote').textContent = 'Every gift in Benny\'s LIVE counts for your house, forever. Thank you 💛';
+  $('rwNote').textContent = 'Every gift in Benny\'s LIVE counts for your house, forever. Your loyalty rewards (flowers, fence, extra floor …) move with you to VIP Hills. Thank you 💛';
   $('rw').classList.add('on');
 }
 function openRewards(h) {
