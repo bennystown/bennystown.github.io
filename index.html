@@ -9653,7 +9653,10 @@ function liveTourNext() {
 let BX_L = 0, BY_L = 0;
 // TikTok fills tall phones and cuts ~10% off each side; its own buttons cover the top and the comments the bottom.
 // So all overlays are drawn smaller and towards the middle (safe area), the city itself stays full-screen.
-function liveSafe(toY, fromY, k, fn) { ctx.save(); ctx.translate(540, toY); ctx.scale(k, k); ctx.translate(-540, -fromY); try { fn(); } finally { ctx.restore(); } }
+function liveSafe(toY, fromY, k, fn, toX = 540, fromX = 540) { ctx.save(); ctx.translate(toX, toY); ctx.scale(k, k); ctx.translate(-fromX, -fromY); try { fn(); } finally { ctx.restore(); } }
+// While a house is being built or shown, Benny moves small to the left and hides his speech bubble, so the name, the mailbox and the house stay visible.
+function liveFocusBusy() { return ST.active || !!(LV.job && LV.job.h && S.T - LV.job.t < (LV.job.dur || 6)); }
+function liveBennyCamSafe() { const tgt = liveFocusBusy() ? 1 : 0; LV.camF = (LV.camF || 0) + (tgt - (LV.camF || 0)) * .12; const f = LV.camF; LV.bubbleA = clamp(1 - f * 2.5, 0, 1); liveSafe(1380 + (1150 - 1380) * f, 1260, .85 + (.55 - .85) * f, liveBennyCam, 829 + (180 - 829) * f, 880); }
 function liveHUD() {
   panel(200, 262, 680, 206, 44, 'rgba(10,12,26,.9)', 'rgba(70,224,138,.7)', 4);
   txt("BENNY'S BANK", 540, 302, 26, '#9aa3c7', 'center', 'middle');
@@ -9692,7 +9695,7 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) { if (S.T < a.after) return; a.t = S.T; } const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  if (a.t === null) { if (S.T < a.after || (ST.active && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } // gift/other alerts wait until the build scene with the name is over const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
@@ -9716,18 +9719,21 @@ function liveBennyCam() {
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, 144, 0, Math.PI * 2); ctx.clip();
   drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
   ctx.restore();
-  if (talking && LV.talk) {
+  if (talking && LV.talk && (LV.bubbleA ?? 1) > .01) {
+    ctx.save(); ctx.globalAlpha = LV.bubbleA ?? 1;
     const fs = 38; ctx.font = F(fs);
     // Long lines: show only the part Benny is saying right now (sentence chunks, max ~3 lines), timed by audio progress.
-    if (!LV.talkChunks || LV.talkChunks.src !== LV.talk) { const parts = LV.talk.match(/[^.!?…]+[.!?…]+["”]?|[^.!?…]+$/g) || [LV.talk], ch = []; let c = ''; for (const p0 of parts.map(x => x.trim())) { if (c && (c + ' ' + p0).length > 95) { ch.push(c); c = p0; } else c = c ? c + ' ' + p0 : p0; } if (c) ch.push(c); LV.talkChunks = ch; LV.talkChunks.src = LV.talk; }
+    if (!LV.talkChunks || LV.talkChunks.src !== LV.talk) { const parts = LV.talk.match(/[^.!?…]+[.!?…]+["”]?|[^.!?…]+$/g) || [LV.talk], ch = []; let c = ''; for (const p0 of parts.map(x => x.trim())) { if (c && (c + ' ' + p0).length > 80) { ch.push(c); c = p0; } else c = c ? c + ' ' + p0 : p0; } if (c) ch.push(c); LV.talkChunks = ch; LV.talkChunks.src = LV.talk; }
     const A = LV.talkA, tot = LV.talkChunks.reduce((n, x) => n + x.length, 0), prog = A && isFinite(A.duration) && A.duration ? clamp(A.currentTime / A.duration, 0, .999) : 0; let acc = 0, s = LV.talkChunks[LV.talkChunks.length - 1];
     for (const x of LV.talkChunks) { acc += x.length; if (acc / tot > prog) { s = x; break; } }
     const words = s.split(' '), lines = []; let cur = '';
-    for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 640 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
-    const h = lines.length * fs * 1.25 + 34, y0 = 1430;
-    panel(270, y0, 720, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
-    poly(ctx, [[830, y0], [870, y0], [880, 1400]], 'rgba(255,255,255,.96)');
-    lines.forEach((l, i) => txt(l, 630, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
+    for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 560 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
+    // bubble sits LEFT of Benny (not below), so it stays out of the TikTok comments and off the house in the middle
+    const h = lines.length * fs * 1.25 + 34, y0 = y - h / 2;
+    panel(95, y0, 610, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
+    poly(ctx, [[703, y - 22], [703, y + 22], [735, y]], 'rgba(255,255,255,.96)');
+    lines.forEach((l, i) => txt(l, 400, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
+    ctx.restore();
   }
 }
 window.__dbg = () => ({ al: LV.alerts.map(a => [a.title, a.t, a.after]), job: LV.job && LV.job.name, q: LV.q.length, talk: LV.talk, tu: LV.talkUntil, T: S.T, cam: { ...cam }, sel: selected && selected.name, cur: LV.cur && LV.cur.name, scr: selected && uvS(selected.i, selected.j), VW, VH, FX, FY });
@@ -9795,6 +9801,7 @@ function streetRender() {
 
 const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🎁 Gifts = confetti, hearts or fireworks for the town', '🗳️ You vote what Benny buys next'];
 function liveTips() {
+  if (LV.hint && S.T < LV.hint.until) { panel(40, 772, 1000, 60, 30, 'rgba(255,46,99,.92)', 'rgba(255,255,255,.35)', 2); txt(LV.hint.text, 540, 803, fitSize(LV.hint.text, 30, 940), '#ffffff', 'center', 'middle'); return; }
   const k = Math.floor(S.T / 7) % LIVE_TIPS.length, ph = S.T % 7, a = clamp(Math.min(ph / .4, (7 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
   panel(40, 772, 1000, 60, 30, 'rgba(10,12,26,.88)', 'rgba(255,255,255,.25)', 2);
   ctx.save(); ctx.globalAlpha = a; txt(s, 540, 803, fitSize(s, 30, 940), '#ffffff', 'center', 'middle'); ctx.restore();
@@ -9804,7 +9811,7 @@ function liveJobs() {
   if (LV.ms && S.T < LV.ms.until) return;
   const busy = LV.job && S.T - LV.job.t < (LV.job.dur || (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2)) + .15;
   if (busy || !LV.q.length) { if (LV.job && !busy) LV.job = null; return; }
-  const j = LV.q.shift(); j.t = S.T; LV.job = j;
+  const bi = LV.q.findIndex(x => x.kind === 'build'), j = LV.q.splice(bi >= 0 ? bi : 0, 1)[0]; j.t = S.T; LV.job = j; // new followers always before !house requests
   if (j.kind === 'build') {
     const { h, isNew } = liveAddHouse(j.name);
     liveFocus(h, 6); j.h = h;
@@ -9816,7 +9823,7 @@ function liveJobs() {
   } else {
     const h = liveFindHouse(j.name);
     if (h) { liveFocus(h, 6); j.h = h; liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
-    else { LV.job = null; liveAlert('🔍 @' + j.name + ' not found yet', 'Follow = your house gets built 🏠', '#ff6b8b'); }
+    else { LV.job = null; LV.hint = { text: '🔍 @' + trunc(j.name, 18) + ': no house yet – follow and it gets built! 🏠', until: S.T + 5 }; } // small hint in the tip bar, no big alert
   }
 }
 function liveCheckMilestone() {
@@ -9920,7 +9927,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveSafe(1060, 1260, .85, liveBennyCam);
+    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
