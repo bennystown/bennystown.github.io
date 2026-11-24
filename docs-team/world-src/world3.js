@@ -216,7 +216,8 @@ const RIVER = []; for (let s = -170; s <= 170; s += 1.5) { const off = Math.sin(
 const RIVER_FAR = []; for (let s = -900; s <= 900; s += 3) { const off = Math.sin(s * .045) * 7 + Math.sin(s * .11) * 2.5 + Math.sin(s * .013) * Math.max(0, Math.abs(s) - 170) * .12; RIVER_FAR.push([MID[0] + off, MID[1] + s]); }
 // houses: #1–5,000 in the Old Town (centre outwards), from #5,001 in District 2 (its own centre outwards)
 HOUSES.forEach((h, i) => { const L = i < 5000 ? T1.lots[i] : i < 10000 ? T2.lots[i - 5000] : null; if (L) { h.i = L[0]; h.j = L[1]; h.L3 = L; h.flip = ((i * 2654435761) >>> 0) % 3 === 0; h.town = i < 5000 ? 1 : 2; } else h.town = 0; });
-const NEXT2 = T2.lots.slice(Math.min(5000, HOUSES.length - 5000), Math.min(5000, HOUSES.length - 5000 + 40));
+// FOR RENT signs always sit on the next free lots, also after houses were added live (was computed once at load before).
+let NEXT2C = null, NEXT2N = -1; function next2() { const n = HOUSES.length; if (n !== NEXT2N) { NEXT2N = n; const a = Math.min(5000, n - 5000); NEXT2C = T2.lots.slice(Math.max(0, a), Math.max(0, a) + 40); } return NEXT2C; }
 
 /* ---------- styles: Old Town = grey stone, red roofs, dark roads; District 2 = red brick, blue slate roofs, cobbles, blossom trees ---------- */
 const STYLE = new Map([[T1, { face: '#a89a80', faceIn: '#beb29a', line: 'rgba(70,55,40,.28)', walk: '#d3c8b0', cren: '#c6baa1', crenTop: '#ddd3bc', stone: '#b8ac93', roof: '#7d2f2a', flag: '#ff2e63', banner: '#ff2e63', ground: '#4f985c',
@@ -517,10 +518,10 @@ function worldObjs(objs, movers) {
   const sel = typeof selected !== 'undefined' ? selected : null;
   for (const h of HOUSES) { if (!h.town) continue; if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.gd >= 10 && z > .14 && !fade) drawGoldPath(h, z); } }); }
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
-  for (const L of NEXT2) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
+  for (const L of next2()) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
   const BL = ['#f6a9c8', '#ffc3d9', '#ff9a4d', '#f4d35e'];
   if (z > .045) {
     for (const L of T1.lots.slice(5000)) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawTreeFast(sx, sy, z * .9, 0) }); }
@@ -735,7 +736,7 @@ function d3Overlay() {
     ctx.save(); ctx.globalAlpha = clamp(1 - tt / 1.7, 0, 1); for (let q = 0; q < 38; q++) { const an = q / 38 * 6.2832 + R() * .2, sp = (110 + R() * 80) * Math.min(1, VW / 420), d = sp * (1 - Math.exp(-tt * 2.6)) / 2.6 * 2.2; ctx.fillStyle = q % 3 ? col : '#ffffff'; ctx.beginPath(); ctx.arc(bx + Math.cos(an) * d, by + Math.sin(an) * d + 40 * tt * tt, 2.8 * Math.min(1.6, VW / 420), 0, 6.2832); ctx.fill(); } ctx.restore(); } }
 }
 function labels() { const z = cam.z; if (z > .45) { const [bx, by] = uvS(3.5, 3.65); tag(bx, by - 104 * z - 6, 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1); } }
-return { D3, d3Labels, d3Overlay, d3Live, makeTown, ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, NEXT2, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
+return { get NEXT2() { return next2(); }, D3, d3Labels, d3Overlay, d3Live, makeTown, ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
 })();
 function w3draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';

@@ -79,6 +79,13 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-ac
 #cardUp.on{display:block}
 #cardUp .bar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
 #cardUp .bar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#ffd23f);border-radius:5px}
+#cardUp .upL,#cardUp .upG{border-radius:8px}
+#cardUp .upL.small{font-size:11px;color:#9aa3c7;margin-top:2px}
+#cardUp .upG.small{font-size:11px;color:#9aa3c7;margin-top:6px}
+#cardUp .upG.small .more{color:#9aa3c7}
+#cardUp .upG.big{background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.45);padding:6px 8px;margin-bottom:6px;color:#ffe9a6}
+#cardUp .upG.big .bar i{background:linear-gradient(90deg,#ffd23f,#f5a524)}
+.rwI.gift .bar i{background:linear-gradient(90deg,#ffd23f,#f5a524)!important}
 #v3d{position:fixed;inset:0;z-index:10;display:none;background:#1b2049}
 #v3d.on{display:block}
 #c3d{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
@@ -7057,7 +7064,31 @@ function moveDate(day) { return new Date(new Date(TOWN.startDate + 'T00:00:00').
 function daysFollowing(h) { return Math.max(0, Math.floor((Date.now() - moveDate(h.day).getTime()) / DAYMS)); }
 function sundaysSince(d) { let n = 0; for (let t = new Date(d); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/* ================= GIFT REWARDS (diamonds from LIVE gifts, per @name, saved in gifts.json) ================= */
+// [diamonds, icon, name, description]. 10 = golden path; 100+ visuals/animations come step by step (VIP Hills from 1,000).
+const GIFT_TIERS = [[10, '✨', 'Golden path', 'Golden stones on the path to your door'], [100, '⭐', 'Supporter', 'Golden mailbox, a gold star on your roof and lanterns'], [1000, '🏡', 'Modern house in VIP Hills', 'You move to VIP Hills: a modern house with a pool'], [2500, '🌴', 'Villa', 'A villa with palms, a pool with a slide and a sports car'], [5000, '🏛️', 'Mansion', 'A mansion with columns, a fountain, a tennis court and a limousine'], [10000, '🏰', 'Castle', 'Your own castle with a moat, and a street with your name'], [50000, '🏙️', 'Tower', 'The tallest tower in town with a penthouse pool and a helipad']];
+const GIFTS = {}; let GIFT_DELTA = {};
+const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
+function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
+function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } }
+async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
+function drawGoldPath(h, z) {   // ✨ 10+ diamonds: golden stepping stones from the door to the street
+  const ap = h.goldT ? clamp((S.T - h.goldT) / 1.4, 0, 1) : 1; if (ap <= 0) return;
+  const d = h.flip ? [1, 0] : [0, 1], o = h.flip ? [0, .06] : [.06, 0];
+  for (let k = 0; k < 6; k++) { const t = .2 + k * .06, [x, y] = uvS(h.i + d[0] * t + o[0] * (k % 2 ? 1 : -1), h.j + d[1] * t + o[1] * (k % 2 ? 1 : -1)), s = z * eBack(clamp(ap * 6 - k * .7, 0, 1)); if (s <= .01) continue;
+    const w = 6.5 * s, hh = 3.3 * s; poly(ctx, [[x - w, y], [x, y + hh], [x + w, y], [x, y - hh]], '#ffd23f', '#a77b00', Math.max(.5, .9 * s)); poly(ctx, [[x - w * .55, y - hh * .1], [x - w * .05, y - hh * .62], [x + w * .25, y - hh * .25]], 'rgba(255,255,255,.65)'); }
+  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = uvS(h.i + d[0] * .32, h.j + d[1] * .32), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 6 * z, x + r, y - 6 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 6 * z - r, x, y - 6 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
+}
+function openGiftRewards(h) {
+  const gd = h.gd || 0; $('rwBox').style.borderColor = '#ffd23f'; $('rwBox').querySelector('h3').textContent = '🎁 Gift rewards';
+  $('rwSub').textContent = '@' + h.name + ' · ' + (gd ? fmtN(gd) + ' 💎 from LIVE gifts' : 'no LIVE gifts yet');
+  $('rwList').innerHTML = GIFT_TIERS.map(([d, ic, nm, desc]) => { const pc = Math.min(100, Math.floor(100 * gd / d)), done = gd >= d;
+    return '<div class="rwI gift ' + (done ? 'done' : 'lock') + '"><div class="ic">' + ic + '</div><div class="tx"><b>' + nm + ' · ' + fmtN(d) + ' 💎</b><small>' + desc + '</small><div class="bar"><i style="width:' + Math.max(2, pc) + '%"></i></div></div><div class="pc">' + (done ? '✓' : pc + '%') + '</div></div>'; }).join('');
+  $('rwNote').textContent = 'Every gift in Benny\'s LIVE counts for your house, forever. Thank you 💛';
+  $('rw').classList.add('on');
+}
 function openRewards(h) {
+  $('rwBox').style.borderColor = ''; $('rwBox').querySelector('h3').textContent = '🏆 Loyalty rewards'; $('rwNote').textContent = 'Rewards come only from staying a follower — they can\'t be bought. If you unfollow, your house goes back to FOR RENT.';
   const dF = daysFollowing(h);
   $('rwSub').textContent = '@' + h.name + ' · following for ' + (dF === 0 ? 'less than a day' : dF + (dF === 1 ? ' day' : ' days'));
   $('rwList').innerHTML = UPGRADES.map(([d, label], k) => {
@@ -7067,19 +7098,24 @@ function openRewards(h) {
   $('rw').classList.add('on');
 }
 function showCard(h) {
-  const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, gifts = TOWN.tenants[h.idx].gifts || 0;
+  const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, tn = TOWN.tenants[h.idx] || {};   // houses added in a LIVE are not in TOWN.tenants yet
   const tiles = [['#' + (h.idx + 1), 'TENANT'], [dF === 0 ? 'today' : dF + (dF === 1 ? ' day' : ' days'), 'FOLLOWING'], ['Day ' + h.day, 'MOVED IN'],
-    ['€' + (rent / 100).toFixed(2), 'RENT PAID'], ['€' + ((10 + rent) / 100).toFixed(2), 'GAVE BENNY'], [String(gifts), 'LIVE GIFTS 🎁']];
+    ['€' + (rent / 100).toFixed(2), 'RENT PAID'], ['€' + ((10 + rent) / 100).toFixed(2), 'GAVE BENNY'], (h.gd || 0) > 0 ? [fmtN(h.gd) + ' 💎', 'GIFTED 🎁'] : [UPGRADES.filter(u => dF >= u[0]).length + ' / ' + UPGRADES.length, 'REWARDS']];
   $('cardStats').innerHTML = tiles.map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on');
   const next = UPGRADES.find(u => u[0] > dF), prev = [...UPGRADES].reverse().find(u => u[0] <= dF);
-  $('cardUp').innerHTML = '<span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆');
-  $('cardUp').onclick = () => openRewards(h);
+  const loyal = '<div class="upL"><span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆') + '</div>';
+  const loyalSmall = '<div class="upL small">🏆 Loyalty: ' + (next ? 'next <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') : 'all unlocked') + ' <span class="more">›</span></div>';
+  const gd = h.gd || 0, gt = giftTier(gd), gn = GIFT_TIERS[gt];
+  const giftBig = '<div class="upG big"><span class="more">Gift rewards ›</span>🎁 <b>' + fmtN(gd) + ' 💎</b>' + (gt ? ' · ' + GIFT_TIERS[gt - 1][1] + ' ' + GIFT_TIERS[gt - 1][2] : '') + '<br>' + (gn ? 'Next: <b>' + gn[1] + ' ' + gn[2] + '</b> · ' + fmtN(gn[0] - gd) + ' 💎 to go<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * gd / gn[0])) + '%"></i></div>' : 'All gift rewards unlocked 👑') + '</div>';
+  const giftSmall = '<div class="upG small">🎁 Gift rewards <span class="more">›</span></div>';
+  $('cardUp').innerHTML = gd > 0 ? giftBig + loyalSmall : loyal + giftSmall;   // loyalty stays big unless this neighbour has gifted
+  $('cardUp').onclick = null; $('cardUp').querySelector('.upL').onclick = () => openRewards(h); $('cardUp').querySelector('.upG').onclick = () => openGiftRewards(h);
   $('cardUp').classList.add('on');
   $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
   $('cardTitle').textContent = '@' + h.name;
-  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '') + (TOWN.tenants[h.idx].trophy ? ' · 🏆 Treasure Hunter' : '') + (TOWN.tenants[h.idx].catbed ? ' · 🐱 cat bed' : '');
+  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (tn.color ? ' · custom colour 🎨' : '') + (tn.trophy ? ' · 🏆 Treasure Hunter' : '') + (tn.catbed ? ' · 🐱 cat bed' : '');
   $('cardOg').style.display = h.og ? 'inline-flex' : 'none';
   $('cardMsg').textContent = (h.stand ? 'Runs a ' + h.stand[0] + ' ' + h.stand[1] + ' in front of the house. Benny might shop here! ' : '') + (h.og ? 'OG tenants get upgraded first when Benny gets rich 👑' : 'Welcome to Benny\'s Town 🏠');
   $('card').classList.add('on'); $('card').classList.remove('miss');
@@ -7359,26 +7395,79 @@ function open3D(h) {
 function close3D() { $('v3d').classList.remove('on'); }
 
 /* ================= LIVE MODE (index.html?live = scene for OBS, index.html?control = control panel) ================= */
+// [id, button label, text, group]. Group 'auto' = no button, plays automatically (milestone animations at 5k/10k/15k).
 const LIVE_CLIPS = [
-  ['ms5', '🛍️ 5k marketplace', "FIVE THOUSAND neighbors! We're building a marketplace!"],
-  ['ms10', '🎢 10k coaster', "TEN THOUSAND?! We're getting a ROLLERCOASTER!"],
-  ['ms15', '⛲ 15k statue', "Fifteen thousand... wait, is that a statue of ME?!"],
-  ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!"],
-  ['gift', '🎁 Thanks gift', "Thank you so much for the gift!"],
-  ['fire', '🎆 Fireworks', "WOW! Fireworks for everyone!"],
+  ['ms5', '🛍️ 5k marketplace', "FIVE THOUSAND neighbors! We're building a marketplace!", 'auto'],
+  ['ms10', '🎢 10k coaster', "TEN THOUSAND?! No way... no WAY! Look! The fog is lifting! A whole new district... and is that... a ROLLERCOASTER?! You guys did this! Ten thousand neighbors! I can't believe it!", 'auto'],
+  ['ms15', '⛲ 15k statue', "Fifteen thousand neighbors... Wait. Is that a fountain? And in the middle... is that a statue of ME?! I'm famous! Thank you, thank you all so much!", 'auto'],
+  ['goal10', '🎢 Next goal: 10K', "Okay neighbors, big news! When we hit TEN THOUSAND... the fog over there lifts, and we build a whole new district! With a GIANT rollercoaster! I've never been on a rollercoaster... I'm kinda scared. But for you guys? I'm doing it!", 'goal'],
+  ['goal15', '⛲ Goal: 15K', "And at fifteen thousand... there's going to be a fountain. With a statue right in the middle. I heard it might be a statue of... me? No. No way. ...Right?", 'goal'],
+  ['howto', '🏠 How it works', "Okay, for everyone who just came in! Here's how it works. You follow... and you get your OWN house in my town. With your name on the mailbox! Every follow gives me ten cents, and together we decide what I buy next. And type !house in the chat... and I'll fly right to your house!", 'long'],
+  ['story', '📖 My story', "You know... not long ago I had nothing. Just my old van. No tires, no home. Then you started following... and every follow became a house. And now look at this! A whole town! I'm still saving up for my own place... ten cents at a time.", 'long'],
+  ['loyal', '🌷 Loyalty secret', "Psst... wanna know a secret? The longer you stay my neighbor, the nicer your house gets. Three days? Flowers! One week? A garden fence! One month? A whole second floor! So... please don't move out, okay?", 'long'],
+  ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'long'],
+  ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
+  ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
+  ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
+  ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!", 'r:hello'],
+  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'r:follow'],
+  ['share', '📤 Share the live', "Hey, can you do me a favor? Share the live with just one friend. One! More neighbors means more houses... and maybe I finally get a real bed."],
+  ['country', '🌍 Where from?', "Where are you all watching from? Type your country in the chat! I wanna see how far my town reaches!"],
+  ['quiet', '🤫 So quiet', "Hmm... it's so quiet in here. Is anybody there? Say hi in the chat!"],
   ['name', '🔍 Type your name', "Who's new here? Type your name, and I'll find your house!"],
-  ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
   ['there', '📍 There it is', "Your house is right... there! Nice one, neighbor!"],
+  ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
+  ['gift', '🎁 Thanks gift', "Thank you so much for the gift!", 'r:gift'],
+  ['fire', '🎆 Fireworks', "WOW! Fireworks for everyone!"],
+  ['wow', '😮 No way!', "Wait... WAIT! Are you serious?! That's insane!", 'r:crazy'],
+  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!", 'r:crazy'],
+  ['bank', '💰 Check the bank', "Let's check the bank... Okay, okay! We're getting somewhere! Every single follow counts. Thank you, seriously!"],
+  ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
   ['buy', '🛒 What to buy', "Okay chat... what should I buy next?"],
+  ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
+  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
+  ['hungry', '🍕 Hungry', "I'm sooo hungry. If someone votes for pizza next time... I would NOT say no."],
   ['cold', '🥶 Cold', "Brrr... it's getting cold out here."],
   ['nervous', '😅 Nervous', "Hehe... I'm a little nervous. First time live!"],
-  ['new', '🏠 New neighbor', "Let's gooo! Another neighbor just moved in!"],
-  ['crazy', '🤯 You are crazy', "You guys are crazy. Thank you!"],
-  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
-  ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
-  ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
+  ['joke', '🤡 Bad joke', "Why did the house go to the doctor? It had really bad window pains! Get it? Window... panes? Okay. I'll stick to building."],
   ['laugh', '😂 Laugh', "Hahaha!"],
+  ['brb', '☕ Be right back', "I'll be right back! Don't move out while I'm gone!"],
+  ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
+  ['gthx1', "gthx1", "Thank you for the gift! You're the best neighbor ever!", 'r:gift'],
+  ['gthx2', "gthx2", "Wait, a gift? For me?! Thank you, thank you, thank you!", 'r:gift'],
+  ['gthx3', "gthx3", "Aww, thank you! That goes straight into the house fund!", 'r:gift'],
+  ['gthx4', "gthx4", "You just made my day. Thank you so much for the gift!", 'r:gift'],
+  ['gthx5', "gthx5", "Another gift?! You guys are spoiling me! Thank you!", 'r:gift'],
+  ['gthx6', "gthx6", "Thank you! I'm putting that right... here. In my piggy bank. Safe.", 'r:gift'],
+  ['gbig1', "gbig1", "NO WAY! NO WAY! Did you just send THAT?! I... I don't even know what to say! You are officially the MVP of this whole town! THANK YOU!", 'r:gbig'],
+  ['gbig2', "gbig2", "Hold on, hold on, HOLD ON! Everybody look at this! That is HUGE! Fireworks for everyone! You're a legend, seriously... thank you so much!", 'r:gbig'],
+  ['gbig3', "gbig3", "Okay... I'm not crying. You're crying. That gift means so much to me. Thank you. Really. One day you're getting the fanciest house on the whole street!", 'r:gbig'],
+  ['gbig4', "gbig4", "WHAT?! I have to sit down. You're insane! The whole town is going crazy right now! THANK YOUUU!", 'r:gbig'],
+  ['hello1', "hello1", "Hey hey hey! Welcome in, neighbor!", 'r:hello'],
+  ['hello2', "hello2", "Oh, new faces! Hi! Welcome to Benny's Town!", 'r:hello'],
+  ['hello3', "hello3", "Hello hello! Grab a house and make yourself at home!", 'r:hello'],
+  ['hello4', "hello4", "Yo! Welcome! Say hi in the chat so I know you're here!", 'r:hello'],
+  ['hello5', "hello5", "Hiii! You came at the perfect time. We're building houses right now!", 'r:hello'],
+  ['crazy1', "crazy1", "You guys are actually crazy. In the best way!", 'r:crazy'],
+  ['crazy2', "crazy2", "This is insane! What is happening right now?!", 'r:crazy'],
+  ['crazy3', "crazy3", "Okay, this chat is on FIRE today! I love you guys!", 'r:crazy'],
+  ['crazy4', "crazy4", "I can't keep up! Slow down! No, actually... don't slow down!", 'r:crazy'],
+  ['fpush1', "fpush1", "Every single follow builds a real house. Right here. Live. Try it!", 'r:follow'],
+  ['fpush2', "fpush2", "We're so close to the next goal! Hit follow and help me get there!", 'r:follow'],
+  ['fpush3', "fpush3", "Psst... the follow button is right there. Your house is waiting!", 'r:follow'],
+  ['likes', "❤️ Like goal → dance", "Tap tap tap! If you fill up the screen with hearts... I'll do a little dance for you!"],
+  ['street', "🛣️ Name a street", "I need your help! What should I name the next street? Type your ideas in the chat!"],
+  ['mvp', "🏆 Top supporters", "Big shoutout to my top supporters today! You know who you are. You keep this town alive!"],
+  ['sleepy', "🥱 Sleepy", "Sorry... I was up all night guarding your houses."],
+  ['scared', "😱 Scared", "Did you hear that?! ...Oh. It's just the wind. Phew."],
+  ['showhouse', "🏡 Show your house", "Already a neighbor? Type !house in the chat, and I'll show everyone your house!"],
+  ['newhere', "🙋 Who is Benny", "If you're new here... I'm Benny. I used to live in a van. Now I'm building a whole town with you. Every follow is a new house!", 'long'],
+  ['proud', "🥹 So proud", "Look at all these houses... I'm so proud of us."],
+  ['upgrade', "🗳️ Which upgrade?", "Quick question! Flowers, a fence, or a second floor? Which upgrade do you want most? Tell me in the chat!"],
+  ['dancego', "🕺 Dance (+ effect)", "Okay, okay... you want a dance? Here we go!"],
 ];
+// Random buttons: each click plays a different line of the group (never the same twice in a row).
+const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
 const LIVE_FX = [['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
@@ -7398,7 +7487,7 @@ function startControl() {
   document.body.innerHTML = '';
   const st = document.createElement('style');
   st.textContent = `html,body{position:static;overflow:auto;touch-action:auto;height:auto;background:#0e1022}
-  .cp{padding:12px;font:600 14px Poppins,system-ui,sans-serif;color:#fff;max-width:520px}
+  .cp{position:fixed;inset:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:12px 12px 40px;box-sizing:border-box;font:600 14px Poppins,system-ui,sans-serif;color:#fff}.cp>*{max-width:520px}
   .cp h2{font-size:15px;margin:14px 0 6px;color:#ffd23f}.cp .row{display:flex;gap:6px;flex-wrap:wrap}
   .cp button{font:600 13px Poppins,system-ui,sans-serif;background:#23284a;color:#fff;border:1px solid #3a4170;border-radius:10px;padding:8px 10px;cursor:pointer}
   .cp button:hover{background:#2f3666}.cp button.big{background:#ff2e63;border-color:#ff2e63}
@@ -7416,8 +7505,17 @@ function startControl() {
   btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
-  h('🗣️ Benny says');
-  r = row(); LIVE_CLIPS.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'clip', clip: k }); note('Benny: ' + l); }));
+  r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
+  const say = g => { r = row(); LIVE_CLIPS.filter(c => (c[3] || 'short') === g).forEach(([k, l, t]) => { const b = btn(r, l, () => { liveSend({ type: 'clip', clip: k, text: t }); if (k === 'dancego') setTimeout(() => liveSend({ type: 'fx', fx: 'dance' }), 1600); note('Benny: ' + l); }); b.title = t; }); };
+  h('🎲 Random – every click a different line');
+  r = row(); const lastR = {}; LIVE_RND.forEach(([g, l]) => { const pool = LIVE_CLIPS.filter(c => c[3] === g); const b = btn(r, l + ' (' + pool.length + ')', () => { const opts = pool.filter(c => c[0] !== lastR[g]); const c = opts[Math.floor(Math.random() * opts.length)] || pool[0]; lastR[g] = c[0]; liveSend({ type: 'clip', clip: c[0], text: c[2] }); note('Benny: ' + l + ' → ' + c[2].slice(0, 40)); }, g === 'r:gbig' ? 'big' : ''); });
+  h('🎯 Next goals (teaser)'); say('goal');
+  h('🎬 Benny talks longer (10–20 s)'); say('long');
+  h('🗣️ Benny says (short)'); say('short');
+  h('🤖 Automatic – no button');
+  const auto = document.createElement('div'); auto.className = 'log'; auto.style.marginTop = '0';
+  auto.textContent = 'Milestones play by themselves with a big animation and Benny talking: 10,000 neighbors → District 3 + rollercoaster, 15,000 → fountain + Benny statue. Gifts: <10💎 confetti · 10–99💎 hearts · 100💎+ fireworks. Chat "!house" → camera flies to the house.';
+  cp.appendChild(auto);
   cp.appendChild(log); note('Control panel ready. Scene must be open (…?live).');
 }
 
@@ -7429,8 +7527,8 @@ function liveBeep(kind) {
   const notes = kind === 'pop' ? [[520, 0, .12]] : kind === 'coin' ? [[1319, 0, .07], [1976, .07, .2]] : [[784, 0, .15], [988, .1, .15], [1319, .2, .35]];
   for (const [f, d, len] of notes) { const o = ac.createOscillator(), g = ac.createGain(); o.type = kind === 'coin' ? 'square' : 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t0 + d); g.gain.exponentialRampToValueAtTime(.18, t0 + d + .01); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + len); o.connect(g).connect(ac.destination); o.start(t0 + d); o.stop(t0 + d + len + .05); }
 }
-function livePlay(id) {
-  const c = LIVE_CLIPS.find(x => x[0] === id); if (!c) return;
+function livePlay(id, text) {
+  const c = LIVE_CLIPS.find(x => x[0] === id) || (text && /^[a-z0-9_]+$/i.test(id) ? [id, '', String(text).slice(0, 600)] : null); if (!c) return; // unknown id: newer control panel than this scene -> still play it
   let a = LV.audio[id]; if (!a) { a = LV.audio[id] = new Audio('live/' + id + '.mp3'); a.crossOrigin = 'anonymous'; }
   for (const k in LV.audio) if (k !== id) { LV.audio[k].pause(); }
   const ac = liveAudioCtx();
@@ -7486,6 +7584,7 @@ function liveFx(kind, n) {
   const W_ = 1080, cnt = n || 1;
   if (kind === 'confetti') for (let k = 0; k < 160 * cnt; k++) LV.parts.push({ k: 'c', x: Math.random() * W_, y: -40 - Math.random() * 600, vx: (Math.random() - .5) * 120, vy: 300 + Math.random() * 300, r: Math.random() * 6, col: CONF[k % CONF.length], life: 6 });
   if (kind === 'hearts') for (let k = 0; k < 60 * cnt; k++) LV.parts.push({ k: 'h', x: 200 + Math.random() * 680, y: 1950 + Math.random() * 400, vx: (Math.random() - .5) * 60, vy: -380 - Math.random() * 300, r: 0, e: ['💖', '❤️', '💕', '🩷'][k % 4], s: 40 + Math.random() * 40, life: 6 });
+  if (kind === 'likes') for (let k = 0; k < Math.min(8, cnt); k++) LV.parts.push({ k: 'h', x: 910 + Math.random() * 130, y: 1760 + Math.random() * 120, vx: (Math.random() - .5) * 40, vy: -230 - Math.random() * 170, r: 0, e: ['❤️', '💖', '🩷'][k % 3], s: 26 + Math.random() * 16, life: 3 });
   if (kind === 'coins') for (let k = 0; k < 70 * cnt; k++) LV.parts.push({ k: 'o', x: Math.random() * W_, y: -60 - Math.random() * 900, vx: 0, vy: 500 + Math.random() * 300, r: Math.random() * 6, life: 5 });
   if (kind === 'fireworks') for (let b = 0; b < 7 * cnt; b++) { const x = 150 + Math.random() * 780, y = 600 + Math.random() * 500, col = CONF[b % CONF.length], d = b * .35; for (let k = 0; k < 70; k++) { const a = k / 70 * Math.PI * 2, sp = 250 + Math.random() * 250; LV.parts.push({ k: 'f', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, col, delay: d, life: 1.8 + d }); } }
   if (kind === 'dance') LV.dance = S.T;
@@ -7506,7 +7605,7 @@ function liveOnMsg(m) {
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
-  if (m.type === 'clip') livePlay(m.clip);
+  if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip, m.text); }
   if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
 }
 function liveTourNext() {
@@ -7517,6 +7616,12 @@ function liveTourNext() {
   liveFocus(pool[Math.floor(Math.random() * pool.length)], 7.5);
 }
 let BX_L = 0, BY_L = 0;
+// TikTok fills tall phones and cuts ~10% off each side; its own buttons cover the top and the comments the bottom.
+// So all overlays are drawn smaller and towards the middle (safe area), the city itself stays full-screen.
+function liveSafe(toY, fromY, k, fn, toX = 540, fromX = 540) { ctx.save(); ctx.translate(toX, toY); ctx.scale(k, k); ctx.translate(-fromX, -fromY); try { fn(); } finally { ctx.restore(); } }
+// While a house is being built or shown, Benny moves small to the left and hides his speech bubble, so the name, the mailbox and the house stay visible.
+function liveFocusBusy() { return ST.active || !!(LV.job && LV.job.h && S.T - LV.job.t < (LV.job.dur || 6)); }
+function liveBennyCamSafe() { const tgt = liveFocusBusy() ? 1 : 0; LV.camF = (LV.camF || 0) + (tgt - (LV.camF || 0)) * .12; const f = LV.camF; LV.bubbleA = clamp(1 - f * 2.5, 0, 1); liveSafe(1380 + (1150 - 1380) * f, 1260, .85 + (.55 - .85) * f, liveBennyCam, 829 + (180 - 829) * f, 880); }
 function liveHUD() {
   panel(200, 262, 680, 206, 44, 'rgba(10,12,26,.9)', 'rgba(70,224,138,.7)', 4);
   txt("BENNY'S BANK", 540, 302, 26, '#9aa3c7', 'center', 'middle');
@@ -7555,7 +7660,7 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) { if (S.T < a.after) return; a.t = S.T; } const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  if (a.t === null) { if (S.T < a.after || (ST.active && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
@@ -7579,14 +7684,21 @@ function liveBennyCam() {
   ctx.save(); ctx.beginPath(); ctx.arc(x, y, 144, 0, Math.PI * 2); ctx.clip();
   drawBenny(ctx, x + (dancing ? Math.sin((S.T - LV.dance) * 5) * 14 : 0), y + 330 + bob, 1.0, { pose: 'stand', mood: 'happy', armsUp: dancing && Math.sin((S.T - LV.dance) * 5) > 0, talk: LV.level, look: [0, 0] });
   ctx.restore();
-  if (talking && LV.talk) {
-    const s = LV.talk, fs = 38; ctx.font = F(fs);
+  if (talking && LV.talk && (LV.bubbleA ?? 1) > .01) {
+    ctx.save(); ctx.globalAlpha = LV.bubbleA ?? 1;
+    const fs = 38; ctx.font = F(fs);
+    // Long lines: show only the part Benny is saying right now (sentence chunks, max ~3 lines), timed by audio progress.
+    if (!LV.talkChunks || LV.talkChunks.src !== LV.talk) { const parts = LV.talk.match(/[^.!?…]+[.!?…]+["”]?|[^.!?…]+$/g) || [LV.talk], ch = []; let c = ''; for (const p0 of parts.map(x => x.trim())) { if (c && (c + ' ' + p0).length > 80) { ch.push(c); c = p0; } else c = c ? c + ' ' + p0 : p0; } if (c) ch.push(c); LV.talkChunks = ch; LV.talkChunks.src = LV.talk; }
+    const A = LV.talkA, tot = LV.talkChunks.reduce((n, x) => n + x.length, 0), prog = A && isFinite(A.duration) && A.duration ? clamp(A.currentTime / A.duration, 0, .999) : 0; let acc = 0, s = LV.talkChunks[LV.talkChunks.length - 1];
+    for (const x of LV.talkChunks) { acc += x.length; if (acc / tot > prog) { s = x; break; } }
     const words = s.split(' '), lines = []; let cur = '';
-    for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 640 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
-    const h = lines.length * fs * 1.25 + 34, y0 = 1430;
-    panel(270, y0, 720, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
-    poly(ctx, [[830, y0], [870, y0], [880, 1400]], 'rgba(255,255,255,.96)');
-    lines.forEach((l, i) => txt(l, 630, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
+    for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 560 && cur) { lines.push(cur); cur = w; } else cur = t; } lines.push(cur);
+    // bubble sits LEFT of Benny (not below), so it stays out of the TikTok comments and off the house in the middle
+    const h = lines.length * fs * 1.25 + 34, y0 = y - h / 2;
+    panel(95, y0, 610, h, 28, 'rgba(255,255,255,.96)', '#ff6b8b', 4);
+    poly(ctx, [[703, y - 22], [703, y + 22], [735, y]], 'rgba(255,255,255,.96)');
+    lines.forEach((l, i) => txt(l, 400, y0 + 17 + fs * .62 + i * fs * 1.25, fs, '#1b1728', 'center', 'middle'));
+    ctx.restore();
   }
 }
 window.__dbg = () => ({ al: LV.alerts.map(a => [a.title, a.t, a.after]), job: LV.job && LV.job.name, q: LV.q.length, talk: LV.talk, tu: LV.talkUntil, T: S.T, cam: { ...cam }, sel: selected && selected.name, cur: LV.cur && LV.cur.name, scr: selected && uvS(selected.i, selected.j), VW, VH, FX, FY });
@@ -7652,8 +7764,9 @@ function streetRender() {
   }
 }
 
-const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🎁 Gifts = fireworks for the whole town', '🗳️ You vote what Benny buys next'];
+const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🎁 Gifts = confetti, hearts or fireworks for the town', '🗳️ You vote what Benny buys next'];
 function liveTips() {
+  if (LV.hint && S.T < LV.hint.until) { panel(40, 772, 1000, 60, 30, 'rgba(255,46,99,.92)', 'rgba(255,255,255,.35)', 2); txt(LV.hint.text, 540, 803, fitSize(LV.hint.text, 30, 940), '#ffffff', 'center', 'middle'); return; }
   const k = Math.floor(S.T / 7) % LIVE_TIPS.length, ph = S.T % 7, a = clamp(Math.min(ph / .4, (7 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
   panel(40, 772, 1000, 60, 30, 'rgba(10,12,26,.88)', 'rgba(255,255,255,.25)', 2);
   ctx.save(); ctx.globalAlpha = a; txt(s, 540, 803, fitSize(s, 30, 940), '#ffffff', 'center', 'middle'); ctx.restore();
@@ -7663,7 +7776,7 @@ function liveJobs() {
   if (LV.ms && S.T < LV.ms.until) return;
   const busy = LV.job && S.T - LV.job.t < (LV.job.dur || (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2)) + .15;
   if (busy || !LV.q.length) { if (LV.job && !busy) LV.job = null; return; }
-  const j = LV.q.shift(); j.t = S.T; LV.job = j;
+  const bi = LV.q.findIndex(x => x.kind === 'build'), j = LV.q.splice(bi >= 0 ? bi : 0, 1)[0]; j.t = S.T; LV.job = j; // new followers always before !house requests
   if (j.kind === 'build') {
     const { h, isNew } = liveAddHouse(j.name);
     liveFocus(h, 6); j.h = h;
@@ -7672,11 +7785,46 @@ function liveJobs() {
     else if (isNew) { liveAt(1.1, () => liveBeep('pop')); liveAlert('🏠 @' + h.name + ' moved in!', 'House #' + (h.idx + 1).toLocaleString('en-US') + ' · +10¢ for Benny 💰', '#46e08a', 1.2); liveAt(1.3, () => liveFx('confetti', .5)); }
     else liveAlert('🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US'), '#46e08a');
     liveCheckMilestone();
+  } else if (j.kind === 'gift') { liveGiftJob(j);
   } else {
     const h = liveFindHouse(j.name);
     if (h) { liveFocus(h, 6); j.h = h; liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
-    else { LV.job = null; liveAlert('🔍 @' + j.name + ' not found yet', 'Follow = your house gets built 🏠', '#ff6b8b'); }
+    else { LV.job = null; LV.hint = { text: '🔍 @' + trunc(j.name, 18) + ': no house yet – follow and it gets built! 🏠', until: S.T + 5 }; } // small hint in the tip bar, no big alert
   }
+}
+function liveGiftAdd(name, dia) {
+  const k = norm(name); if (!k || !(dia > 0)) return; const g = GIFTS[k] || (GIFTS[k] = { d: 0, n: 0 }); g.d += dia; g.n = (g.n || 0) + 1; g.last = new Date().toISOString();
+  const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += dia; dl.n++; LV.giftDirty = true; applyGifts(k);
+}
+async function giftPush() {   // adds only what came in since the last push onto the file on GitHub, so nothing is counted twice
+  if (!LV.gh || !LV.giftDirty || LV.giftPushing) return; LV.giftPushing = true; LV.giftDirty = false; const delta = GIFT_DELTA; GIFT_DELTA = {};
+  const api = 'https://api.github.com/repos/bennystown/bennystown.github.io/contents/gifts.json', H = { Authorization: 'Bearer ' + LV.gh, Accept: 'application/vnd.github+json' };
+  try {
+    const cur = await fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+    let base = { users: {} }; if (cur && cur.content) base = JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\s/g, ''))))); base.users = base.users || {};
+    for (const k in delta) { const b = base.users[k] || (base.users[k] = { d: 0, n: 0 }); b.d += delta[k].d; b.n = (b.n || 0) + delta[k].n; b.last = new Date().toISOString(); }
+    base.updated = new Date().toISOString();
+    const body = { message: 'gifts: +' + Object.values(delta).reduce((a, x) => a + x.d, 0) + ' 💎', branch: 'main', content: b64u(JSON.stringify(base, null, 0)) }; if (cur && cur.sha) body.sha = cur.sha;
+    const r = await fetch(api, { method: 'PUT', headers: H, body: JSON.stringify(body) }); if (!r.ok) throw new Error('put ' + r.status); LV.ghOk = true;
+  } catch (e) { for (const k in delta) { const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += delta[k].d; dl.n += delta[k].n; } LV.giftDirty = true; LV.ghOk = false; }
+  LV.giftPushing = false;
+}
+function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold sparkles, coins fly into Benny's bank, Benny says thank you
+  const h = BY_NAME.get(norm(j.name)) || null, tot = giftOf(j.name), prevT = giftTier(tot - j.dia), nowT = giftTier(tot), nx = GIFT_TIERS[nowT];
+  const pool = LIVE_CLIPS.filter(c => c[3] === (j.dia >= 100 ? 'r:gbig' : 'r:gift')); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]);
+  liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · ' + (nx ? fmtN(tot) + ' / ' + fmtN(nx[0]) + ' to ' + nx[1] + ' ' + nx[2] : 'all gift rewards 👑');
+  if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 saved · follow me and your house gets built 🏠', '#ffd23f'); return; }
+  j.h = h; j.dur = 9; liveFocus(h, 9.5); LV.giftFx = { h, t0: S.T };
+  if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) h.goldT = S.T + 2; liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
+  else liveAlert('🎁 THANK YOU @' + trunc(h.name, 16) + '!', sub, '#ffd23f', .4);
+  liveAt(2.4, () => { const [x, y] = uvS(h.i, h.j); for (let k = 0; k < 14; k++) { const tx = 540 + (Math.random() - .5) * 60, ty = 410; LV.parts.push({ k: 'o', x: x + (Math.random() - .5) * 60, y: y - 40, vx: (tx - x) / 1.1, vy: (ty - y + 40) / 1.1, r: 0, life: 1.1, delay: k * .06 }); } });
+  for (let k = 0; k < 5; k++) liveAt(3.4 + k * .1, () => liveBeep('coin'));
+}
+function liveGiftFx() {   // golden ring + rising sparkles around the house during the gift job
+  const g = LV.giftFx; if (!g) return; const p = S.T - g.t0; if (p > 8.5) { LV.giftFx = null; return; }
+  const [x, y] = uvS(g.h.i, g.h.j), z = cam.z, a = clamp(Math.min(p / .5, (8.5 - p) / .8), 0, 1);
+  ctx.save(); ctx.globalAlpha = a * (.55 + .25 * Math.sin(S.T * 5)); ellipse(ctx, x, y, 95 * z, 48 * z, null, '#ffd23f', 5 * z); ctx.restore();
+  if (Math.random() < .5) LV.parts.push({ k: 'h', x: x + (Math.random() - .5) * 150 * z, y: y - Math.random() * 40 * z, vx: (Math.random() - .5) * 30, vy: -90 - Math.random() * 90, r: 0, e: Math.random() < .7 ? '✨' : '💎', s: 26 + Math.random() * 18, life: 2 });
 }
 function liveCheckMilestone() {
   const n = HOUSES.length, m = MILESTONES.find(x => x[0] === n); if (!m || LV.msShown[m[0]]) return; LV.msShown[m[0]] = 1;
@@ -7739,7 +7887,7 @@ async function livePush() {
 }
 function liveConnect() {
   const P = new URLSearchParams(location.search); LV.key = P.get('key'); LV.gh = P.get('gh');
-  if (LV.gh && !LV.ghTimer) LV.ghTimer = setInterval(livePush, 45000); LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
+  if (LV.gh && !LV.ghTimer) { LV.ghTimer = setInterval(livePush, 45000); setInterval(giftPush, 20000); } LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
   LV.wsUrl = P.get('ws'); if (LV.wsUrl && !LV.key) LV.key = 'local';
   if (P.has('mic')) liveMicStart();
   if (!LV.key) return;
@@ -7757,16 +7905,18 @@ function liveTikTok(type, d) {
   if (type === 'gift' && u) {
     if (d.giftType === 1 && !d.repeatEnd) return;
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
-    liveOnMsg({ type: 'gift', name: u, fx });
+    liveGiftAdd(u, dia);
+    if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
-  if (type === 'chat' && u && /^\s*!?(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
+  if (type === 'chat' && u && /^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
+  if (type === 'like') { const n = Math.max(1, Math.round(Math.sqrt(d.likeCount || 1))); if (LV.parts.length < 900) liveFx('likes', n); } // nur kleiner Herz-Effekt unten rechts, kein Haus, kein Ton
 }
 function startLive() {
   document.querySelectorAll('body > *').forEach(e => { if (e.id !== 'c' && e.tagName !== 'SCRIPT') e.style.display = 'none'; });
   const st = document.createElement('style'); st.textContent = '#c{width:auto!important;height:100vh!important;aspect-ratio:9/16;left:50%!important;transform:translateX(-50%);inset:auto}html,body{background:#000}'; document.head.appendChild(st);
   DPR = 1; VW = 1080; VH = 1920; cv.width = 1080; cv.height = 1920; FX = 540; FY = 1150;
   [BX_L, BY_L] = isoW(3.5, 3.65);
-  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true); streetInit(); LV.__t0 = 0;
+  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true).then(() => loadGifts()); streetInit(); LV.__t0 = 0;
   addEventListener('keydown', e => { const m = { '1': 'confetti', '2': 'hearts', '3': 'fireworks', '4': 'coins', '5': 'dance', '6': 'snow', '7': 'rain', '8': 'night', '9': 'tour' }[e.key]; if (m) liveFx(m); });
   addEventListener('pointerdown', () => liveAudioCtx());
   target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; cam.x = target.x; cam.y = target.y; cam.z = .5; LV.holdUntil = 6;
@@ -7776,7 +7926,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveAlerts(); liveBennyCam(); liveStatus();
+    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
@@ -7784,7 +7934,7 @@ function startLive() {
 
 window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
 setInterval(() => { try { updateEnvChip(); } catch (e) {} }, 30000);
-function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
+function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { loadGifts(); if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); overview(); cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; requestAnimationFrame(frame); }
 
 const go = () => CONTROL ? startControl() : LIVE ? startLive() : start();
 if (document.fonts && document.fonts.load) Promise.race([document.fonts.load(F(20)), new Promise(r => setTimeout(r, 1500))]).then(go, go); else go();
