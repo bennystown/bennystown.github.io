@@ -9346,7 +9346,7 @@ const VB = (() => {
   const TOT = {};
   function total(fn, S) { if (TOT[fn.name]) return TOT[fn.name]; const sv = ctx; ctx = document.createElement('canvas').getContext('2d'); lim = 1e9; n = 0; try { fn(S, 0, 0, 0, 'x'); } finally { ctx = sv; } lim = -1; return (TOT[fn.name] = n); }
   function draw(fn, S, u, v, h, nm, k) { if (k != null && k < 1) { const t = total(fn, S); lim = Math.floor(t * Math.max(0, k)); n = 0; } try { fn(S, u, v, h, nm); } finally { lim = -1; } }
-  return { P, modern, villa, mansion, castle, tower, supporter, extras, draw };
+  return { P, modern, villa, mansion, castle, tower, supporter, extras, draw, prim: { box, cyl, cone, tree, palm, lantern } };
 })();
 
 // ---- VIP Hills layout: lots per stage (offsets from W3.VIP.C; lot corner + size) and the hills ----
@@ -9378,7 +9378,7 @@ function vipGround(box) {   // gold-fenced hills south of the old town
   const z = cam.z, C = W3.VIP.C, R = W3.VIP.R, S = { K: TW / 2 * z };
   if (C[0] + R < box[0] || C[0] - R > box[2] || C[1] + R < box[1] || C[1] - R > box[3]) return;
   const ring = (r, h, fill, stroke, lw) => { ctx.beginPath(); for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.2832, p = VB.P(S, C[0] + Math.cos(a) * r, C[1] + Math.sin(a) * r, h); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } };
-  ring(R + 1.2, 0, '#7cc06f'); ring(R + .3, 0, null, '#e8b923', Math.max(1, 5 * z));
+  ring(R + 1.2, 0, '#7cc06f');
   // road to the old town's south gate + golden avenue to the big hill
   const lane = (a, b, w, col) => { const d = [b[0] - a[0], b[1] - a[1]], L = Math.hypot(d[0], d[1]), n = [-d[1] / L * w, d[0] / L * w]; poly(ctx, [uvS(a[0] + n[0], a[1] + n[1]), uvS(b[0] + n[0], b[1] + n[1]), uvS(b[0] - n[0], b[1] - n[1]), uvS(a[0] - n[0], a[1] - n[1])], col); };
   const gate = W3.VIP.gate; lane([gate[0], W3.VIP.road0], [gate[0], gate[1]], .9, '#b9a77e'); lane([C[0] - 1.4, gate[1]], [C[0] - 1.4, C[1] - 16], 2, '#e8c04a');
@@ -9386,6 +9386,7 @@ function vipGround(box) {   // gold-fenced hills south of the old town
   for (const [du, dv, r, H] of VIP_HILLS) { const L = 7; for (let l = 0; l < L; l++) { const t = l / L, rr = r * Math.sqrt(1 - t); ctx.beginPath(); for (let k = 0; k <= 40; k++) { const a = k / 40 * 6.2832, p = VB.P(S, C[0] + du + Math.cos(a) * rr, C[1] + dv + Math.sin(a) * rr, H * t); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.fillStyle = shade('#6fb86b', .86 + t * .3); ctx.fill(); } }
   // golden ring road around the big hill
   { const r0 = 18.8, r1 = 21.2; ctx.beginPath(); for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r1, C[1] - 2 + Math.sin(a) * r1); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } for (let k = 64; k >= 0; k--) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r0, C[1] - 2 + Math.sin(a) * r0); ctx.lineTo(p[0], p[1]); } ctx.fillStyle = '#e8c04a'; ctx.fill(); }
+  VIP_DECO.ground(box);
 }
 const VIP_LOT_LABEL = { 3: '🏡 1K 💎', 4: '🌴 VILLA · 2.5K 💎', 5: '🏛️ MANSION · 5K 💎', 6: '🏰 CASTLE · 10K 💎', 7: '🏙️ TOWER · 50K 💎' };
 function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign + "reserved" signs on the free lots
@@ -9394,12 +9395,55 @@ function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign + "re
     const u = C[0] + (sl.at[k][0] + sl.s[0] / 2) * VIP_SC, v = C[1] + (sl.at[k][1] + sl.s[1] / 2) * VIP_SC; if (!inB(u, v)) continue; const base = vipH(u, v);
     objs.push({ d: u + v, f: () => { const [x, y0] = uvS(u, v), y = y0 - base * TW / 2 * z, lbl = VIP_LOT_LABEL[t], fs = Math.round(clamp(40 * z, 13, 30) * (t >= 6 ? 1.25 : 1)), ph = Math.max(26, 60 * z);
       line(ctx, x, y, x, y - ph, '#7a5300', Math.max(1.5, 3 * z)); ctx.font = F(fs); const w = ctx.measureText(lbl).width + fs; panel(x - w / 2, y - ph - fs * 1.5, w, fs * 1.6, fs * .5, 'rgba(255,246,214,.95)', '#e8b923', Math.max(1.5, 2 * z)); txt(lbl, x, y - ph - fs * .7, fs, '#7a5300', 'center', 'middle'); } }); } }
-  if (!inB(g[0], g[1])) return;
-  objs.push({ d: g[0] + g[1], f: () => { const S = { K: TW / 2 * z };
-    for (const s of [-1.6, 1.6]) { const a = VB.P(S, g[0] + s, g[1], 0), b = VB.P(S, g[0] + s, g[1], 1.6); line(ctx, a[0], a[1], b[0], b[1], '#c9971a', Math.max(2, 10 * z)); circle(ctx, b[0], b[1], Math.max(2, 8 * z), '#ffd23f', '#7a5300', Math.max(1, 2 * z)); }
-    const m = VB.P(S, g[0], g[1], 1.75); if (z > .08) { const fs = Math.max(8, Math.round(26 * z)); ctx.font = F(fs); const w = ctx.measureText('⭐ VIP HILLS').width + fs * 1.4; panel(m[0] - w / 2, m[1] - fs, w, fs * 1.8, fs * .9, 'rgba(10,12,26,.92)', '#ffd23f', Math.max(1, 3 * z)); txt('⭐ VIP HILLS', m[0], m[1] - fs * .08, fs, '#ffd23f', 'center', 'middle'); }
-  } });
+  VIP_DECO.objs(objs, inB);
 }
+// ---- VIP Hills decoration: white marble wall with gold-domed towers, grand gatehouse, palms + cypresses, lanterns, fountain plaza ----
+const VIP_DECO = (() => {
+  let D = null;
+  function build() {
+    const C = W3.VIP.C, R = W3.VIP.R, r = seeded(911), gA = -Math.PI / 2, out = { wall: [], towers: [], trees: [], lamps: [], plaza: [C[0] - 1.4, C[1] - 36] };
+    const N = 120; for (let k = 0; k < N; k++) { const a0 = k / N * 6.2832, a1 = (k + 1) / N * 6.2832, am = (a0 + a1) / 2; let da = Math.abs(((am - gA + Math.PI) % 6.2832 + 6.2832) % 6.2832 - Math.PI); if (da < .055) continue; out.wall.push([a0, a1]); }
+    for (let k = 0; k < 12; k++) { const a = gA + (k + .5) / 12 * 6.2832; out.towers.push([C[0] + Math.cos(a) * R, C[1] + Math.sin(a) * R]); }
+    const lots = []; for (const t in VIP_SLOTS) { const sl = VIP_SLOTS[t]; for (const at of sl.at) lots.push([C[0] + at[0] * VIP_SC - 1.2, C[1] + at[1] * VIP_SC - 1.2, C[0] + (at[0] + sl.s[0]) * VIP_SC + 1.2, C[1] + (at[1] + sl.s[1]) * VIP_SC + 1.2]); }
+    const free = (u, v) => { const d = Math.hypot(u - C[0], v - C[1]); if (d > R - 2.5 || d < 4) return false; const dr = Math.hypot(u - C[0], v - C[1] + 2); if (dr > 17.5 && dr < 22.5) return false;
+      if (Math.abs(u - C[0] + 1.4) < 3.5 && v < C[1] - 15) return false; if (Math.hypot(u - out.plaza[0], v - out.plaza[1]) < 5.5) return false;
+      for (const L of lots) if (u > L[0] && u < L[2] && v > L[1] && v < L[3]) return false; return true; };
+    for (let n = 0; n < 2600 && out.trees.length < 150; n++) { const a = r() * 6.2832, d = 8 + Math.sqrt(r()) * (R - 9), u = C[0] + Math.cos(a) * d, v = C[1] + Math.sin(a) * d; if (free(u, v) && !out.trees.some(t => Math.hypot(t[0] - u, t[1] - v) < 2.6)) out.trees.push([u, v, r() < .5 ? 'palm' : 'cyp', .9 + r() * .5]); }
+    for (let k = 0; k < 24; k++) { const a = k / 24 * 6.2832, u = C[0] + Math.cos(a) * 22.6, v = C[1] - 2 + Math.sin(a) * 22.6; if (Math.abs(u - C[0] + 1.4) < 2.5 && v < C[1]) continue; out.lamps.push([u, v]); }
+    for (let v = C[1] - 54; v < C[1] - 24; v += 5) for (const s of [-2.6, 2.6]) if (Math.hypot(C[0] - 1.4 + s - out.plaza[0], v - out.plaza[1]) > 4.5) out.lamps.push([C[0] - 1.4 + s, v]);
+    return out;
+  }
+  const MARBLE = '#f3efe6', GOLD = '#e8b923';
+  function wallSeg(S, a0, a1, C, R) { const H = 1.0, p0 = [C[0] + Math.cos(a0) * R, C[1] + Math.sin(a0) * R], p1 = [C[0] + Math.cos(a1) * R, C[1] + Math.sin(a1) * R], am = (a0 + a1) / 2, facing = Math.cos(am) + Math.sin(am);
+    const q = [VB.P(S, p0[0], p0[1], 0), VB.P(S, p1[0], p1[1], 0), VB.P(S, p1[0], p1[1], H), VB.P(S, p0[0], p0[1], H)];
+    poly(ctx, q, shade(MARBLE, facing > 0 ? .95 - .12 * (1 - Math.sin(am)) : .78), 'rgba(80,70,50,.35)', Math.max(.5, S.K / 60));
+    const t0 = VB.P(S, p0[0], p0[1], H), t1 = VB.P(S, p1[0], p1[1], H); line(ctx, t0[0], t0[1], t1[0], t1[1], GOLD, Math.max(1, S.K / 12));
+    if (S.K > 20) { const m = VB.P(S, (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, H * .55); circle(ctx, m[0], m[1], S.K * .07, 'rgba(232,185,35,.8)'); } }
+  function domeTower(S, u, v, s) { const k = s || 1; VB.prim.cyl(S, u, v, 1.3 * k, 0, 2.3 * k, MARBLE, 18); VB.prim.cyl(S, u, v, 1.42 * k, 2.3 * k, 2.45 * k, GOLD, 18); VB.prim.cone(S, u, v, 1.2 * k, 2.45 * k, 1.5 * k, GOLD); const t = VB.P(S, u, v, 4.05 * k); circle(ctx, t[0], t[1], S.K * .16 * k, '#fff3c4', '#a77b00', 1); }
+  function gatehouse(S, g) { // two domed towers, a golden arch and the sign
+    domeTower(S, g[0] - 3.4, g[1], 1.05); domeTower(S, g[0] + 3.4, g[1], 1.05);
+    const a = VB.P(S, g[0] - 2.2, g[1], 2.6), b = VB.P(S, g[0] + 2.2, g[1], 2.6), m = VB.P(S, g[0], g[1], 3.6); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(m[0], m[1] - S.K * .8, b[0], b[1]); ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(2, S.K * .35); ctx.stroke();
+    for (const s of [-2.2, 2.2]) { const p0 = VB.P(S, g[0] + s, g[1], 0), p1 = VB.P(S, g[0] + s, g[1], 2.7); line(ctx, p0[0], p0[1], p1[0], p1[1], MARBLE, Math.max(2, S.K * .45)); line(ctx, p0[0] + S.K * .2, p0[1], p1[0] + S.K * .2, p1[1], 'rgba(0,0,0,.12)', Math.max(1, S.K * .1)); }
+    const z = cam.z; if (z > .05) { const s = VB.P(S, g[0], g[1], 4.4), fs = Math.max(9, Math.round(30 * z)); ctx.font = F(fs); const w = ctx.measureText('⭐ VIP HILLS').width + fs * 1.4; panel(s[0] - w / 2, s[1] - fs, w, fs * 1.8, fs * .9, 'rgba(10,12,26,.92)', '#ffd23f', Math.max(1.5, 3 * z)); txt('⭐ VIP HILLS', s[0], s[1] - fs * .08, fs, '#ffd23f', 'center', 'middle'); } }
+  function cypress(S, u, v, s) { const [x, y] = VB.P(S, u, v, vipH(u, v)), K = S.K * s; ellipse(ctx, x, y, K * .3, K * .13, 'rgba(0,0,0,.18)'); ctx.beginPath(); ctx.moveTo(x, y - K * 2.1); ctx.quadraticCurveTo(x + K * .45, y - K * 1.1, x + K * .18, y - K * .1); ctx.lineTo(x - K * .18, y - K * .1); ctx.quadraticCurveTo(x - K * .45, y - K * 1.1, x, y - K * 2.1); ctx.fillStyle = '#2f6b3d'; ctx.fill(); ctx.beginPath(); ctx.moveTo(x, y - K * 2.05); ctx.quadraticCurveTo(x - K * .38, y - K * 1.1, x - K * .14, y - K * .15); ctx.lineTo(x, y - K * .15); ctx.closePath(); ctx.fillStyle = '#3f8a4e'; ctx.fill(); }
+  function fountain(S, p) { VB.prim.cyl(S, p[0], p[1], 2.4, 0, .35, '#e8e2d4', 24, '#5cc8f0'); VB.prim.cyl(S, p[0], p[1], .5, .35, 1.3, '#e8e2d4', 12); VB.prim.cyl(S, p[0], p[1], 1.0, 1.3, 1.45, '#e8e2d4', 16, '#7fd6f5'); const t = VB.P(S, p[0], p[1], 2.1); for (let k = 0; k < 6; k++) { const a = k / 6 * 6.28 + (typeof S_T === 'function' ? S_T() : 0) * .6, e = VB.P(S, p[0] + Math.cos(a) * 1.3, p[1] + Math.sin(a) * 1.3, .4); ctx.beginPath(); ctx.moveTo(t[0], t[1]); ctx.quadraticCurveTo((t[0] + e[0]) / 2, t[1] - S.K * .4, e[0], e[1]); ctx.strokeStyle = 'rgba(190,235,255,.85)'; ctx.lineWidth = Math.max(1, S.K * .06); ctx.stroke(); } }
+  function ground(box) {   // plaza + lawn stripes (called from vipGround)
+    D = D || build(); const C = W3.VIP.C, R = W3.VIP.R, z = cam.z, p = D.plaza;
+    ctx.save(); ctx.beginPath(); for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.2832, q = uvS(C[0] + Math.cos(a) * R, C[1] + Math.sin(a) * R); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.clip();
+    ctx.globalAlpha = .1; for (let k = -R; k < R; k += 4) poly(ctx, [uvS(C[0] + k, C[1] - R), uvS(C[0] + k + 2, C[1] - R), uvS(C[0] + k + 2, C[1] + R), uvS(C[0] + k, C[1] + R)], '#ffffff'); ctx.restore();
+    ctx.beginPath(); for (let k = 0; k <= 40; k++) { const a = k / 40 * 6.2832, q = uvS(p[0] + Math.cos(a) * 4.6, p[1] + Math.sin(a) * 4.6); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.fillStyle = '#e8c04a'; ctx.fill(); ctx.strokeStyle = '#c9971a'; ctx.lineWidth = Math.max(1, 3 * z); ctx.stroke();
+  }
+  function objs(list, inB) {
+    D = D || build(); const z = cam.z, C = W3.VIP.C, R = W3.VIP.R, S = { K: TW / 2 * z };
+    for (const [a0, a1] of D.wall) { const am = (a0 + a1) / 2, u = C[0] + Math.cos(am) * R, v = C[1] + Math.sin(am) * R; if (!inB(u, v)) continue; list.push({ d: u + v, f: () => wallSeg(S, a0, a1, C, R) }); }
+    for (const t of D.towers) if (inB(t[0], t[1])) list.push({ d: t[0] + t[1] + 1, f: () => domeTower(S, t[0], t[1]) });
+    if (z > .045) for (const t of D.trees) if (inB(t[0], t[1])) list.push({ d: t[0] + t[1], f: () => t[2] === 'palm' ? VB.prim.palm(S, t[0], t[1], vipH(t[0], t[1]), t[3] * 1.6) : cypress(S, t[0], t[1] - 0, t[3]) });
+    if (z > .1) for (const l of D.lamps) if (inB(l[0], l[1])) list.push({ d: l[0] + l[1], f: () => VB.prim.lantern({ K: S.K * 3.2 }, l[0], l[1], 0) });
+    const p = D.plaza; if (inB(p[0], p[1])) list.push({ d: p[0] + p[1], f: () => fountain(S, p) });
+    const g = W3.VIP.gate; if (inB(g[0], g[1])) list.push({ d: g[0] + g[1] + 2, f: () => gatehouse(S, g) });
+  }
+  return { ground, objs };
+})();
 function drawVIPHouse(h, z) { const p = h.vip, lt = tierOf(h), S = { K: TW / 2 * z * VIP_SC, sc: VIP_SC, ou: p.u0, ov: p.v0, ex: lt >= 4, gold: lt >= 6 }, k = h.vipAnim ? clamp((S_T() - h.vipAnim.t0) / h.vipAnim.dur, 0, 1) : null;
   if (k == null || k >= 1) VB.draw(VB.extras, S, p.u0, p.v0, p.base, { w: p.s[0] / VIP_SC, d: p.s[1] / VIP_SC, lt });   // loyalty extras behind/around …
   VB.draw(VIP_FN[p.t], S, p.u0, p.v0, p.base, h.name, k); }
