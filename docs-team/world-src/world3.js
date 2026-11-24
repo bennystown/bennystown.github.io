@@ -258,13 +258,16 @@ const FOREST = [];
   const nz = Math.sin(u * .09) + Math.cos(v * .08) + Math.sin((u - v) * .05), lone = r() < .07; if (nz < .35 && !lone) continue;
   if (RIVER.some(p => (p[0] - u) ** 2 + (p[1] - v) ** 2 < 64)) continue; FOREST.push([u, v, r() < .5 ? 1 : 0, 1.05]); } }
 const dropD3 = A => { let n = 0; for (const t of A) if (!inD3(t[0], t[1], 5) && !nearD3Road(t[0], t[1], 4.5)) A[n++] = t; A.length = n; };
-dropD3(FOREST);
+// 💎 VIP Hills: gift-reward quarter south of the old town (gold gate faces the old town's south gate)
+const VIP_C = [8, 181], VIP_R = 56, VIP_GATE = [8, 181 - 57];
+const dropVIP = A => { let n = 0; for (const t of A) if (dist(t, VIP_C) > VIP_R + 3 && !(Math.abs(t[0] - VIP_C[0]) < 3 && t[1] > 100 && t[1] < VIP_GATE[1] + 1)) A[n++] = t; A.length = n; };
+dropD3(FOREST); dropVIP(FOREST);
 // further out (only seen zoomed far out on the map): more forests and meadows all the way to the horizon
 const FOREST_FAR = [];
 { const r = seeded(37); for (let n = 0; n < 70000; n++) { const u = MID[0] + (r() - .5) * 1300, v = MID[1] + (r() - .5) * 1300; if (Math.abs(u - MID[0]) < 180 && Math.abs(v - MID[1]) < 180) continue;
   const nz = Math.sin(u * .03) + Math.cos(v * .027) + Math.sin((u - v) * .017) + Math.sin(u * .09) * .5; if (nz < .2 && r() > .06) continue;
   const k = Math.round((v - MID[1] + 900) / 3), p = RIVER_FAR[k]; if (p && Math.abs(p[0] - u) < 9) continue; FOREST_FAR.push([u, v, r() < .5 ? 1 : 0, 1.05]); } }
-dropD3(FOREST_FAR);
+dropD3(FOREST_FAR); dropVIP(FOREST_FAR);
 
 /* ---------- cars: a few cars on long random drives through the street network (no turning on the spot),
    their position is a pure function of time, so the map and the 3D streets always show the same cars ---------- */
@@ -391,6 +394,7 @@ function ground() {
   if (z > .2) { ctx.save(); ctx.globalAlpha = .4; ctx.strokeStyle = '#bfe3ff'; ctx.lineWidth = 1.5 * z; ctx.beginPath(); for (let k = 2; k < RIVER.length - 3; k += 3) { const p = RIVER[k], o = Math.sin(k * 1.7) * 3, a = uvS(p[0] + o, p[1]); ctx.moveTo(a[0], a[1]); ctx.lineTo(a[0] + 16 * z, a[1] + 2 * z); } ctx.stroke(); ctx.restore(); }
   for (const T of [T1, T2]) townGround(T, box);
   d3Ground(box);
+  vipGround(box);
   // the square, town hall, park, block parks, building sites and the marketplace — exactly as on the live site
   drawPlazaGround(); drawParkGround(); drawBlockParks(); drawHallGround(); drawSiteGround(); drawMarketGround(1);
 }
@@ -516,9 +520,12 @@ function carObjs(objs) { const z = cam.z, box = visBox(); if (z <= .14) return; 
 function worldObjs(objs, movers) {
   const z = cam.z, lo = z < .6, box = visBox(), inB = (u, v) => u > box[0] && u < box[2] && v > box[1] && v < box[3];
   const sel = typeof selected !== 'undefined' ? selected : null;
-  for (const h of HOUSES) { if (!h.town) continue; if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
+  for (const h of HOUSES) { if (!h.town) continue;
+    if (h.vip) { if (inB(h.oi, h.oj)) objs.push({ d: h.oi + h.oj, f: () => drawMovedSign(h, z) }); if (inB(h.i, h.j)) objs.push({ d: h.vip.u0 + h.vip.v0 + h.vip.s[0] + h.vip.s[1] - .6, f: () => drawVIPHouse(h, z) }); continue; }
+    if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.gd >= 10 && z > .14 && !fade) drawGoldPath(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.gd >= 10 && z > .14 && !fade) drawGoldPath(h, z); if (h.sup && !fade) drawSupporter(h, z); } }); }
+  vipObjs(objs, inB);
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
   for (const L of next2()) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
@@ -736,7 +743,7 @@ function d3Overlay() {
     ctx.save(); ctx.globalAlpha = clamp(1 - tt / 1.7, 0, 1); for (let q = 0; q < 38; q++) { const an = q / 38 * 6.2832 + R() * .2, sp = (110 + R() * 80) * Math.min(1, VW / 420), d = sp * (1 - Math.exp(-tt * 2.6)) / 2.6 * 2.2; ctx.fillStyle = q % 3 ? col : '#ffffff'; ctx.beginPath(); ctx.arc(bx + Math.cos(an) * d, by + Math.sin(an) * d + 40 * tt * tt, 2.8 * Math.min(1.6, VW / 420), 0, 6.2832); ctx.fill(); } ctx.restore(); } }
 }
 function labels() { const z = cam.z; if (z > .45) { const [bx, by] = uvS(3.5, 3.65); tag(bx, by - 104 * z - 6, 'BENNY · €' + (TOWN.bankCents / 100).toFixed(2), '#ff6b8b', 1); } }
-return { get NEXT2() { return next2(); }, D3, d3Labels, d3Overlay, d3Live, makeTown, ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
+return { VIP: { C: VIP_C, R: VIP_R, gate: VIP_GATE, road0: 106 }, get NEXT2() { return next2(); }, D3, d3Labels, d3Overlay, d3Live, makeTown, ground, worldObjs, labels, T1, T2, C1, C2, G1, G2, GA1, GA2, MID, LM_LOOPS, STYLE, FOREST, FOREST_FAR, RIVER, RIVER_FAR, carLights, BG1, BG2, BR_W, drawTown2Square, P2R, lmSDF, M, CARS, carAt, bennyRoute, carObjs };
 })();
 function w3draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
