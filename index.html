@@ -9537,7 +9537,7 @@ function goBenny() {
   $('cardOg').style.display = 'none';
   $('cardStats').innerHTML = [['€' + (TOWN.bankCents / 100).toFixed(2), 'BANK'], [N.toLocaleString('en-US'), 'TENANTS'], ['Day ' + TOWN.day, 'TODAY']].map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on'); $('cardUp').classList.remove('on'); $('view3d').classList.remove('on');
-  $('cardMsg').textContent = (TOWN.milestones.cabin ? 'Lives in his own wooden cabin with his kitten 🏡🐱' : TOWN.milestones.van ? (SNOWY ? 'Sleeps in his campervan 🚐 but it’s freezing ❄️' : 'Has a campervan with tires now 🚐') : TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
+  $('cardMsg').textContent = (TOWN.milestones.cabin ? 'Lives in his own wooden cabin with his kitten Mittens 🏡🐱' : TOWN.milestones.van ? (SNOWY ? 'Sleeps in his campervan 🚐 but it’s freezing ❄️' : 'Has a campervan with tires now 🚐') : TOWN.milestones.tent ? 'Finally sleeps in a tent ⛺' : 'Still sleeping on cardboard.') + ' Vote on TikTok for what he buys next 👇';
   $('card').classList.add('on'); $('card').classList.remove('miss');
 }
 let hintT = 0;
