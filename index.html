@@ -79,6 +79,13 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-ac
 #cardUp.on{display:block}
 #cardUp .bar{height:8px;border-radius:5px;background:rgba(255,255,255,.1);margin-top:5px;overflow:hidden}
 #cardUp .bar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#ffd23f);border-radius:5px}
+#cardUp .upL,#cardUp .upG{border-radius:8px}
+#cardUp .upL.small{font-size:11px;color:#9aa3c7;margin-top:2px}
+#cardUp .upG.small{font-size:11px;color:#9aa3c7;margin-top:6px}
+#cardUp .upG.small .more{color:#9aa3c7}
+#cardUp .upG.big{background:rgba(255,210,63,.1);border:1px solid rgba(255,210,63,.45);padding:6px 8px;margin-bottom:6px;color:#ffe9a6}
+#cardUp .upG.big .bar i{background:linear-gradient(90deg,#ffd23f,#f5a524)}
+.rwI.gift .bar i{background:linear-gradient(90deg,#ffd23f,#f5a524)!important}
 #v3d{position:fixed;inset:0;z-index:10;display:none;background:#1b2049}
 #v3d.on{display:block}
 #c3d{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
@@ -7636,7 +7643,7 @@ function worldObjs(objs, movers) {
   const sel = typeof selected !== 'undefined' ? selected : null;
   for (const h of HOUSES) { if (!h.town) continue; if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.gd >= 10 && z > .14 && !fade) drawGoldPath(h, z); } }); }
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
   for (const L of next2()) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
@@ -9205,7 +9212,31 @@ function moveDate(day) { return new Date(new Date(TOWN.startDate + 'T00:00:00').
 function daysFollowing(h) { return Math.max(0, Math.floor((Date.now() - moveDate(h.day).getTime()) / DAYMS)); }
 function sundaysSince(d) { let n = 0; for (let t = new Date(d); t <= new Date(); t = new Date(t.getTime() + DAYMS)) if (t.getDay() === 0) n++; return n; }
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/* ================= GIFT REWARDS (diamonds from LIVE gifts, per @name, saved in gifts.json) ================= */
+// [diamonds, icon, name, description]. 10 = golden path; 100+ visuals/animations come step by step (VIP Hills from 1,000).
+const GIFT_TIERS = [[10, '✨', 'Golden path', 'Golden stones on the path to your door'], [100, '⭐', 'Supporter', 'Golden mailbox, a gold star on your roof and lanterns'], [1000, '🏡', 'Modern house in VIP Hills', 'You move to VIP Hills: a modern house with a pool'], [2500, '🌴', 'Villa', 'A villa with palms, a pool with a slide and a sports car'], [5000, '🏛️', 'Mansion', 'A mansion with columns, a fountain, a tennis court and a limousine'], [10000, '🏰', 'Castle', 'Your own castle with a moat, and a street with your name'], [50000, '🏙️', 'Tower', 'The tallest tower in town with a penthouse pool and a helipad']];
+const GIFTS = {}; let GIFT_DELTA = {};
+const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
+function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
+function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } }
+async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
+function drawGoldPath(h, z) {   // ✨ 10+ diamonds: golden stepping stones from the door to the street
+  const ap = h.goldT ? clamp((S.T - h.goldT) / 1.4, 0, 1) : 1; if (ap <= 0) return;
+  const d = h.flip ? [1, 0] : [0, 1], o = h.flip ? [0, .06] : [.06, 0];
+  for (let k = 0; k < 6; k++) { const t = .2 + k * .06, [x, y] = uvS(h.i + d[0] * t + o[0] * (k % 2 ? 1 : -1), h.j + d[1] * t + o[1] * (k % 2 ? 1 : -1)), s = z * eBack(clamp(ap * 6 - k * .7, 0, 1)); if (s <= .01) continue;
+    const w = 6.5 * s, hh = 3.3 * s; poly(ctx, [[x - w, y], [x, y + hh], [x + w, y], [x, y - hh]], '#ffd23f', '#a77b00', Math.max(.5, .9 * s)); poly(ctx, [[x - w * .55, y - hh * .1], [x - w * .05, y - hh * .62], [x + w * .25, y - hh * .25]], 'rgba(255,255,255,.65)'); }
+  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = uvS(h.i + d[0] * .32, h.j + d[1] * .32), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 6 * z, x + r, y - 6 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 6 * z - r, x, y - 6 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
+}
+function openGiftRewards(h) {
+  const gd = h.gd || 0; $('rwBox').style.borderColor = '#ffd23f'; $('rwBox').querySelector('h3').textContent = '🎁 Gift rewards';
+  $('rwSub').textContent = '@' + h.name + ' · ' + (gd ? fmtN(gd) + ' 💎 from LIVE gifts' : 'no LIVE gifts yet');
+  $('rwList').innerHTML = GIFT_TIERS.map(([d, ic, nm, desc]) => { const pc = Math.min(100, Math.floor(100 * gd / d)), done = gd >= d;
+    return '<div class="rwI gift ' + (done ? 'done' : 'lock') + '"><div class="ic">' + ic + '</div><div class="tx"><b>' + nm + ' · ' + fmtN(d) + ' 💎</b><small>' + desc + '</small><div class="bar"><i style="width:' + Math.max(2, pc) + '%"></i></div></div><div class="pc">' + (done ? '✓' : pc + '%') + '</div></div>'; }).join('');
+  $('rwNote').textContent = 'Every gift in Benny\'s LIVE counts for your house, forever. Thank you 💛';
+  $('rw').classList.add('on');
+}
 function openRewards(h) {
+  $('rwBox').style.borderColor = ''; $('rwBox').querySelector('h3').textContent = '🏆 Loyalty rewards'; $('rwNote').textContent = 'Rewards come only from staying a follower — they can\'t be bought. If you unfollow, your house goes back to FOR RENT.';
   const dF = daysFollowing(h);
   $('rwSub').textContent = '@' + h.name + ' · following for ' + (dF === 0 ? 'less than a day' : dF + (dF === 1 ? ' day' : ' days'));
   $('rwList').innerHTML = UPGRADES.map(([d, label], k) => {
@@ -9215,19 +9246,24 @@ function openRewards(h) {
   $('rw').classList.add('on');
 }
 function showCard(h) {
-  const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, gifts = TOWN.tenants[h.idx].gifts || 0;
+  const dF = daysFollowing(h), md = moveDate(h.day), rent = sundaysSince(md) * 10, tn = TOWN.tenants[h.idx] || {};   // houses added in a LIVE are not in TOWN.tenants yet
   const tiles = [['#' + (h.idx + 1), 'TENANT'], [dF === 0 ? 'today' : dF + (dF === 1 ? ' day' : ' days'), 'FOLLOWING'], ['Day ' + h.day, 'MOVED IN'],
-    ['€' + (rent / 100).toFixed(2), 'RENT PAID'], ['€' + ((10 + rent) / 100).toFixed(2), 'GAVE BENNY'], [String(gifts), 'LIVE GIFTS 🎁']];
+    ['€' + (rent / 100).toFixed(2), 'RENT PAID'], ['€' + ((10 + rent) / 100).toFixed(2), 'GAVE BENNY'], (h.gd || 0) > 0 ? [fmtN(h.gd) + ' 💎', 'GIFTED 🎁'] : [UPGRADES.filter(u => dF >= u[0]).length + ' / ' + UPGRADES.length, 'REWARDS']];
   $('cardStats').innerHTML = tiles.map(([b, sp]) => '<div><b>' + b + '</b><span>' + sp + '</span></div>').join('');
   $('cardStats').classList.add('on');
   const next = UPGRADES.find(u => u[0] > dF), prev = [...UPGRADES].reverse().find(u => u[0] <= dF);
-  $('cardUp').innerHTML = '<span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆');
-  $('cardUp').onclick = () => openRewards(h);
+  const loyal = '<div class="upL"><span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆') + '</div>';
+  const loyalSmall = '<div class="upL small">🏆 Loyalty: ' + (next ? 'next <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') : 'all unlocked') + ' <span class="more">›</span></div>';
+  const gd = h.gd || 0, gt = giftTier(gd), gn = GIFT_TIERS[gt];
+  const giftBig = '<div class="upG big"><span class="more">Gift rewards ›</span>🎁 <b>' + fmtN(gd) + ' 💎</b>' + (gt ? ' · ' + GIFT_TIERS[gt - 1][1] + ' ' + GIFT_TIERS[gt - 1][2] : '') + '<br>' + (gn ? 'Next: <b>' + gn[1] + ' ' + gn[2] + '</b> · ' + fmtN(gn[0] - gd) + ' 💎 to go<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * gd / gn[0])) + '%"></i></div>' : 'All gift rewards unlocked 👑') + '</div>';
+  const giftSmall = '<div class="upG small">🎁 Gift rewards <span class="more">›</span></div>';
+  $('cardUp').innerHTML = gd > 0 ? giftBig + loyalSmall : loyal + giftSmall;   // loyalty stays big unless this neighbour has gifted
+  $('cardUp').onclick = null; $('cardUp').querySelector('.upL').onclick = () => openRewards(h); $('cardUp').querySelector('.upG').onclick = () => openGiftRewards(h);
   $('cardUp').classList.add('on');
   $('view3d').classList.add('on'); $('view3d').onclick = () => open3D(h);
 
   $('cardTitle').textContent = '@' + h.name;
-  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (TOWN.tenants[h.idx].color ? ' · custom colour 🎨' : '') + (TOWN.tenants[h.idx].trophy ? ' · 🏆 Treasure Hunter' : '') + (TOWN.tenants[h.idx].catbed ? ' · 🐱 cat bed' : '');
+  $('cardMeta').textContent = (h.nick ? h.nick + ' · ' : '') + 'Moved in ' + DOW[md.getDay()] + ', ' + md.getDate() + ' ' + MON[md.getMonth()] + (tn.color ? ' · custom colour 🎨' : '') + (tn.trophy ? ' · 🏆 Treasure Hunter' : '') + (tn.catbed ? ' · 🐱 cat bed' : '');
   $('cardOg').style.display = h.og ? 'inline-flex' : 'none';
   $('cardMsg').textContent = (h.stand ? 'Runs a ' + h.stand[0] + ' ' + h.stand[1] + ' in front of the house. Benny might shop here! ' : '') + (h.og ? 'OG tenants get upgraded first when Benny gets rich 👑' : 'Welcome to Benny\'s Town 🏠');
   $('card').classList.add('on'); $('card').classList.remove('miss');
@@ -9774,7 +9810,7 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) { if (S.T < a.after || (ST.active && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } // gift/other alerts wait until the build scene with the name is over const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  if (a.t === null) { if (S.T < a.after || (ST.active && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
@@ -9899,11 +9935,46 @@ function liveJobs() {
     else if (isNew) { liveAt(1.1, () => liveBeep('pop')); liveAlert('🏠 @' + h.name + ' moved in!', 'House #' + (h.idx + 1).toLocaleString('en-US') + ' · +10¢ for Benny 💰', '#46e08a', 1.2); liveAt(1.3, () => liveFx('confetti', .5)); }
     else liveAlert('🏠 @' + h.name + ' lives here!', 'House #' + (h.idx + 1).toLocaleString('en-US'), '#46e08a');
     liveCheckMilestone();
+  } else if (j.kind === 'gift') { liveGiftJob(j);
   } else {
     const h = liveFindHouse(j.name);
     if (h) { liveFocus(h, 6); j.h = h; liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
     else { LV.job = null; LV.hint = { text: '🔍 @' + trunc(j.name, 18) + ': no house yet – follow and it gets built! 🏠', until: S.T + 5 }; } // small hint in the tip bar, no big alert
   }
+}
+function liveGiftAdd(name, dia) {
+  const k = norm(name); if (!k || !(dia > 0)) return; const g = GIFTS[k] || (GIFTS[k] = { d: 0, n: 0 }); g.d += dia; g.n = (g.n || 0) + 1; g.last = new Date().toISOString();
+  const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += dia; dl.n++; LV.giftDirty = true; applyGifts(k);
+}
+async function giftPush() {   // adds only what came in since the last push onto the file on GitHub, so nothing is counted twice
+  if (!LV.gh || !LV.giftDirty || LV.giftPushing) return; LV.giftPushing = true; LV.giftDirty = false; const delta = GIFT_DELTA; GIFT_DELTA = {};
+  const api = 'https://api.github.com/repos/bennystown/bennystown.github.io/contents/gifts.json', H = { Authorization: 'Bearer ' + LV.gh, Accept: 'application/vnd.github+json' };
+  try {
+    const cur = await fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(r => r.ok ? r.json() : null);
+    let base = { users: {} }; if (cur && cur.content) base = JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\s/g, ''))))); base.users = base.users || {};
+    for (const k in delta) { const b = base.users[k] || (base.users[k] = { d: 0, n: 0 }); b.d += delta[k].d; b.n = (b.n || 0) + delta[k].n; b.last = new Date().toISOString(); }
+    base.updated = new Date().toISOString();
+    const body = { message: 'gifts: +' + Object.values(delta).reduce((a, x) => a + x.d, 0) + ' 💎', branch: 'main', content: b64u(JSON.stringify(base, null, 0)) }; if (cur && cur.sha) body.sha = cur.sha;
+    const r = await fetch(api, { method: 'PUT', headers: H, body: JSON.stringify(body) }); if (!r.ok) throw new Error('put ' + r.status); LV.ghOk = true;
+  } catch (e) { for (const k in delta) { const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += delta[k].d; dl.n += delta[k].n; } LV.giftDirty = true; LV.ghOk = false; }
+  LV.giftPushing = false;
+}
+function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold sparkles, coins fly into Benny's bank, Benny says thank you
+  const h = BY_NAME.get(norm(j.name)) || null, tot = giftOf(j.name), prevT = giftTier(tot - j.dia), nowT = giftTier(tot), nx = GIFT_TIERS[nowT];
+  const pool = LIVE_CLIPS.filter(c => c[3] === (j.dia >= 100 ? 'r:gbig' : 'r:gift')); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]);
+  liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · ' + (nx ? fmtN(tot) + ' / ' + fmtN(nx[0]) + ' to ' + nx[1] + ' ' + nx[2] : 'all gift rewards 👑');
+  if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 saved · follow me and your house gets built 🏠', '#ffd23f'); return; }
+  j.h = h; j.dur = 9; liveFocus(h, 9.5); LV.giftFx = { h, t0: S.T };
+  if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) h.goldT = S.T + 2; liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
+  else liveAlert('🎁 THANK YOU @' + trunc(h.name, 16) + '!', sub, '#ffd23f', .4);
+  liveAt(2.4, () => { const [x, y] = uvS(h.i, h.j); for (let k = 0; k < 14; k++) { const tx = 540 + (Math.random() - .5) * 60, ty = 410; LV.parts.push({ k: 'o', x: x + (Math.random() - .5) * 60, y: y - 40, vx: (tx - x) / 1.1, vy: (ty - y + 40) / 1.1, r: 0, life: 1.1, delay: k * .06 }); } });
+  for (let k = 0; k < 5; k++) liveAt(3.4 + k * .1, () => liveBeep('coin'));
+}
+function liveGiftFx() {   // golden ring + rising sparkles around the house during the gift job
+  const g = LV.giftFx; if (!g) return; const p = S.T - g.t0; if (p > 8.5) { LV.giftFx = null; return; }
+  const [x, y] = uvS(g.h.i, g.h.j), z = cam.z, a = clamp(Math.min(p / .5, (8.5 - p) / .8), 0, 1);
+  ctx.save(); ctx.globalAlpha = a * (.55 + .25 * Math.sin(S.T * 5)); ellipse(ctx, x, y, 95 * z, 48 * z, null, '#ffd23f', 5 * z); ctx.restore();
+  if (Math.random() < .5) LV.parts.push({ k: 'h', x: x + (Math.random() - .5) * 150 * z, y: y - Math.random() * 40 * z, vx: (Math.random() - .5) * 30, vy: -90 - Math.random() * 90, r: 0, e: Math.random() < .7 ? '✨' : '💎', s: 26 + Math.random() * 18, life: 2 });
 }
 function liveCheckMilestone() {
   const n = HOUSES.length, m = MILESTONES.find(x => x[0] === n); if (!m || LV.msShown[m[0]]) return; LV.msShown[m[0]] = 1;
@@ -9967,7 +10038,7 @@ async function livePush() {
 }
 function liveConnect() {
   const P = new URLSearchParams(location.search); LV.key = P.get('key'); LV.gh = P.get('gh');
-  if (LV.gh && !LV.ghTimer) LV.ghTimer = setInterval(livePush, 45000); LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
+  if (LV.gh && !LV.ghTimer) { LV.ghTimer = setInterval(livePush, 45000); setInterval(giftPush, 20000); } LV.user = (P.get('user') || 'bennys.town').replace(/^@/, '');
   LV.wsUrl = P.get('ws'); if (LV.wsUrl && !LV.key) LV.key = 'local';
   if (P.has('mic')) liveMicStart();
   if (!LV.key) return;
@@ -9985,7 +10056,8 @@ function liveTikTok(type, d) {
   if (type === 'gift' && u) {
     if (d.giftType === 1 && !d.repeatEnd) return;
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
-    liveOnMsg({ type: 'gift', name: u, fx });
+    liveGiftAdd(u, dia);
+    if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
   if (type === 'chat' && u && /^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
   if (type === 'like') { const n = Math.max(1, Math.round(Math.sqrt(d.likeCount || 1))); if (LV.parts.length < 900) liveFx('likes', n); } // nur kleiner Herz-Effekt unten rechts, kein Haus, kein Ton
@@ -9995,7 +10067,7 @@ function startLive() {
   const st = document.createElement('style'); st.textContent = '#c{width:auto!important;height:100vh!important;aspect-ratio:9/16;left:50%!important;transform:translateX(-50%);inset:auto}html,body{background:#000}'; document.head.appendChild(st);
   DPR = 1; VW = 1080; VH = 1920; cv.width = 1080; cv.height = 1920; FX = 540; FY = 1150;
   [BX_L, BY_L] = isoW(3.5, 3.65);
-  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true); streetInit(); LV.__t0 = 0;
+  liveListen(liveOnMsg); liveConnect(); loadLiveJoins(true).then(() => loadGifts()); streetInit(); LV.__t0 = 0;
   addEventListener('keydown', e => { const m = { '1': 'confetti', '2': 'hearts', '3': 'fireworks', '4': 'coins', '5': 'dance', '6': 'snow', '7': 'rain', '8': 'night', '9': 'tour' }[e.key]; if (m) liveFx(m); });
   addEventListener('pointerdown', () => liveAudioCtx());
   target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; cam.x = target.x; cam.y = target.y; cam.z = .5; LV.holdUntil = 6;
@@ -10006,7 +10078,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
+    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
@@ -10014,7 +10086,7 @@ function startLive() {
 
 window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
 setInterval(() => { try { updateEnvChip(); } catch (e) {} }, 30000);
-function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); { const [bx, by] = isoW(BHOME[0], BHOME[1]), R = 11; target.x = bx; target.y = by + 10; target.z = clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .12, 1.2); } cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; if (!location.hash || location.hash === '#') GLOBE.enter(true); requestAnimationFrame(frame); }
+function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { loadGifts(); if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); { const [bx, by] = isoW(BHOME[0], BHOME[1]), R = 11; target.x = bx; target.y = by + 10; target.z = clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .12, 1.2); } cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; if (!location.hash || location.hash === '#') GLOBE.enter(true); requestAnimationFrame(frame); }
 
 STREET_LAMPS.length = 0; for (const p of W3.T1.lamps.concat(W3.T2.lamps)) STREET_LAMPS.push(p);
 updateEnvBar(); setInterval(updateEnvBar, 15000);
