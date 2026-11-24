@@ -7199,10 +7199,11 @@ for (let v = -4; v <= 8; v += 2) { VIP_SLOTS[3].at.push([-26, v]); VIP_SLOTS[3].
 const VIP_HILLS = [[0, -1, 9, 1.0], [-17, 2, 7, .55], [15, 2, 7, .55], [-6, 15, 6, .4], [6, 15, 6, .4], [-10, -15, 5, .35], [9, -15, 5, .35]].map(([a, b, r, H]) => [a * VIP_SC, b * VIP_SC, r * VIP_SC, H * VIP_SC]);   // [du, dv, radius, height]
 function vipH(u, v) { const C = W3.VIP.C; let m = 0; for (const [du, dv, r, H] of VIP_HILLS) { const d = Math.hypot(u - C[0] - du, v - C[1] - dv); if (d < r) m = Math.max(m, H * (1 - (d / r) ** 2)); } return m; }
 const VIP_FN = { 3: VB.modern, 4: VB.villa, 5: VB.mansion, 6: VB.castle, 7: VB.tower };
+const VIP_COUNT = {};
 function assignVIP() {   // who lives where in VIP Hills (sorted by diamonds, biggest first); also marks 100+ supporters
-  const C = W3.VIP.C, by = {};
+  const C = W3.VIP.C, by = {}; for (const t in VIP_SLOTS) VIP_COUNT[t] = 0;
   for (const h of HOUSES) { const t = giftTier(h.gd || 0); h.sup = t >= 2; if (t >= 3) (by[t] = by[t] || []).push(h); else if (h.vip) { h.i = h.oi; h.j = h.oj; h.vip = null; } }
-  for (const t in by) { const list = by[t].sort((a, b) => b.gd - a.gd || a.idx - b.idx), sl = VIP_SLOTS[t];
+  for (const t in by) { const list = by[t].sort((a, b) => b.gd - a.gd || a.idx - b.idx), sl = VIP_SLOTS[t]; VIP_COUNT[t] = list.length;
     list.forEach((h, k) => { let at = sl.at[k]; if (!at) { const a = k * 2.399, r = 30 + k * .6; at = [Math.cos(a) * r, Math.sin(a) * r]; }
       if (!h.vip) { h.oi = h.i; h.oj = h.j; }
       const u0 = C[0] + at[0] * VIP_SC, v0 = C[1] + at[1] * VIP_SC, w = sl.s[0] * VIP_SC, d = sl.s[1] * VIP_SC; h.vip = { t: +t, u0, v0, s: [w, d], base: vipH(u0 + w / 2, v0 + d / 2) / VIP_SC };
@@ -7221,8 +7222,14 @@ function vipGround(box) {   // gold-fenced hills south of the old town
   // golden ring road around the big hill
   { const r0 = 18.8, r1 = 21.2; ctx.beginPath(); for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r1, C[1] - 2 + Math.sin(a) * r1); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } for (let k = 64; k >= 0; k--) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r0, C[1] - 2 + Math.sin(a) * r0); ctx.lineTo(p[0], p[1]); } ctx.fillStyle = '#e8c04a'; ctx.fill(); }
 }
-function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign
-  const z = cam.z, g = W3.VIP.gate; if (!inB(g[0], g[1])) return;
+const VIP_LOT_LABEL = { 3: '🏡 1K 💎', 4: '🌴 VILLA · 2.5K 💎', 5: '🏛️ MANSION · 5K 💎', 6: '🏰 CASTLE · 10K 💎', 7: '🏙️ TOWER · 50K 💎' };
+function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign + "reserved" signs on the free lots
+  const z = cam.z, g = W3.VIP.gate, C = W3.VIP.C;
+  if (z > .07) for (const t in VIP_SLOTS) { const sl = VIP_SLOTS[t], max = t == 3 ? 6 : sl.at.length; for (let k = VIP_COUNT[t] || 0; k < Math.min(max, sl.at.length); k++) {
+    const u = C[0] + (sl.at[k][0] + sl.s[0] / 2) * VIP_SC, v = C[1] + (sl.at[k][1] + sl.s[1] / 2) * VIP_SC; if (!inB(u, v)) continue; const base = vipH(u, v);
+    objs.push({ d: u + v, f: () => { const [x, y0] = uvS(u, v), y = y0 - base * TW / 2 * z, lbl = VIP_LOT_LABEL[t], fs = Math.round(clamp(40 * z, 13, 30) * (t >= 6 ? 1.25 : 1)), ph = Math.max(26, 60 * z);
+      line(ctx, x, y, x, y - ph, '#7a5300', Math.max(1.5, 3 * z)); ctx.font = F(fs); const w = ctx.measureText(lbl).width + fs; panel(x - w / 2, y - ph - fs * 1.5, w, fs * 1.6, fs * .5, 'rgba(255,246,214,.95)', '#e8b923', Math.max(1.5, 2 * z)); txt(lbl, x, y - ph - fs * .7, fs, '#7a5300', 'center', 'middle'); } }); } }
+  if (!inB(g[0], g[1])) return;
   objs.push({ d: g[0] + g[1], f: () => { const S = { K: TW / 2 * z };
     for (const s of [-1.6, 1.6]) { const a = VB.P(S, g[0] + s, g[1], 0), b = VB.P(S, g[0] + s, g[1], 1.6); line(ctx, a[0], a[1], b[0], b[1], '#c9971a', Math.max(2, 10 * z)); circle(ctx, b[0], b[1], Math.max(2, 8 * z), '#ffd23f', '#7a5300', Math.max(1, 2 * z)); }
     const m = VB.P(S, g[0], g[1], 1.75); if (z > .08) { const fs = Math.max(8, Math.round(26 * z)); ctx.font = F(fs); const w = ctx.measureText('⭐ VIP HILLS').width + fs * 1.4; panel(m[0] - w / 2, m[1] - fs, w, fs * 1.8, fs * .9, 'rgba(10,12,26,.92)', '#ffd23f', Math.max(1, 3 * z)); txt('⭐ VIP HILLS', m[0], m[1] - fs * .08, fs, '#ffd23f', 'center', 'middle'); }
@@ -7564,7 +7571,9 @@ const LIVE_CLIPS = [
   ['howto', '🏠 How it works', "Okay, for everyone who just came in! Here's how it works. You follow... and you get your OWN house in my town. With your name on the mailbox! Every follow gives me ten cents, and together we decide what I buy next. And type !house in the chat... and I'll fly right to your house!", 'long'],
   ['story', '📖 My story', "You know... not long ago I had nothing. Just my old van. No tires, no home. Then you started following... and every follow became a house. And now look at this! A whole town! I'm still saving up for my own place... ten cents at a time.", 'long'],
   ['loyal', '🌷 Loyalty secret', "Psst... wanna know a secret? The longer you stay my neighbor, the nicer your house gets. Three days? Flowers! One week? A garden fence! One month? A whole second floor! So... please don't move out, okay?", 'long'],
-  ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'long'],
+  ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'old'],
+  ['vipexplain', '💎 Gift rewards explained', "Did you know? Every gift you send counts for YOUR house... forever! Ten diamonds? A golden path to your door. A hundred? You become a Supporter, with a gold star on your roof! A thousand? You move to VIP Hills! And at ten thousand... your own castle. Fifty thousand? Your very own tower. The tallest one in town!", 'long'],
+  ['viptease', '🏰 VIP Hills teaser', "Psst... have you seen VIP Hills yet? That's where my biggest supporters live. Villas... castles... and maybe one day, a giant tower!"],
   ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
   ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
   ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
@@ -7627,7 +7636,7 @@ const LIVE_CLIPS = [
 ];
 // Random buttons: each click plays a different line of the group (never the same twice in a row).
 const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
-const LIVE_FX = [['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
+const LIVE_FX = [['ladder', '💎 Show gift rewards'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
   msg.mid = Date.now() + Math.random();
@@ -7747,6 +7756,8 @@ function liveFx(kind, n) {
   if (kind === 'coins') for (let k = 0; k < 70 * cnt; k++) LV.parts.push({ k: 'o', x: Math.random() * W_, y: -60 - Math.random() * 900, vx: 0, vy: 500 + Math.random() * 300, r: Math.random() * 6, life: 5 });
   if (kind === 'fireworks') for (let b = 0; b < 7 * cnt; b++) { const x = 150 + Math.random() * 780, y = 600 + Math.random() * 500, col = CONF[b % CONF.length], d = b * .35; for (let k = 0; k < 70; k++) { const a = k / 70 * Math.PI * 2, sp = 250 + Math.random() * 250; LV.parts.push({ k: 'f', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, col, delay: d, life: 1.8 + d }); } }
   if (kind === 'dance') LV.dance = S.T;
+  if (kind === 'ladder') LV.ladderUntil = S.T + 15;
+  if (kind === 'vip') { const V = W3.VIP, go = (u, v, z, dy) => { const [x, y] = isoW(u, v); selected = null; LV.cur = null; target.x = x; target.y = y - dy; target.z = z; LV.holdUntil = S.T + 7; }; go(V.C[0], V.C[1], .3, 0); LV.ladderUntil = S.T + 14; liveAt(6, () => go(V.C[0], V.C[1] - 2, .75, 120)); }
   if (kind === 'snow') LV.snow = !LV.snow;
   if (kind === 'rain') LV.rain = !LV.rain;
   if (kind === 'night') LV.night = LV.night ? 0 : 1;
@@ -7923,7 +7934,17 @@ function streetRender() {
   }
 }
 
-const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🎁 Gifts = confetti, hearts or fireworks for the town', '🗳️ You vote what Benny buys next'];
+const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
+function liveGiftLadder() {   // 🎁 "what do gifts do?" panel: every 50 s for 12 s, after every gift, or from the control panel
+  const busyAlert = LV.alerts.length && LV.alerts[0].t !== null, show = S.T < (LV.ladderUntil || 0) || (S.T % 50 > 36);
+  LV.ladA = clamp((LV.ladA || 0) + (show && !busyAlert ? .06 : -.08), 0, 1); const a = LV.ladA; if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a; const y0 = 852, H = 168; panel(40, y0, 1000, H, 34, 'rgba(10,12,26,.92)', '#ffd23f', 4);
+  txt('🎁 GIFT REWARDS · your house, forever', 540, y0 + 34, 30, '#ffd23f', 'center', 'middle');
+  const T = [['✨', '10'], ['⭐', '100'], ['🏡', '1K'], ['🌴', '2.5K'], ['🏛️', '5K'], ['🏰', '10K'], ['🏙️', '50K']], L = ['gold path', 'supporter', 'VIP Hills', 'villa', 'mansion', 'castle', 'tower'], w = 1000 / 7;
+  T.forEach(([ic, d], k) => { const x = 40 + w * (k + .5), pulse = k === Math.floor(S.T / 1.2) % 7 ? 1.12 : 1; ctx.save(); ctx.translate(x, y0 + 92); ctx.scale(pulse, pulse); emoji(ctx, ic, 0, 0, 40); ctx.restore();
+    txt(d + ' 💎', x, y0 + 128, 24, '#ffffff', 'center', 'middle'); txt(L[k], x, y0 + 152, 18, '#a9aed6', 'center', 'middle'); });
+  ctx.restore();
+}
 function liveTips() {
   if (LV.hint && S.T < LV.hint.until) { panel(40, 772, 1000, 60, 30, 'rgba(255,46,99,.92)', 'rgba(255,255,255,.35)', 2); txt(LV.hint.text, 540, 803, fitSize(LV.hint.text, 30, 940), '#ffffff', 'center', 'middle'); return; }
   const k = Math.floor(S.T / 7) % LIVE_TIPS.length, ph = S.T % 7, a = clamp(Math.min(ph / .4, (7 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
@@ -8100,7 +8121,7 @@ function liveTikTok(type, d) {
   if (type === 'gift' && u) {
     if (d.giftType === 1 && !d.repeatEnd) return;
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
-    liveGiftAdd(u, dia);
+    liveGiftAdd(u, dia); LV.ladderUntil = Math.max(LV.ladderUntil || 0, S.T + 10);
     if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
   if (type === 'chat' && u && /^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
@@ -8121,7 +8142,7 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
+    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveGiftLadder(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
