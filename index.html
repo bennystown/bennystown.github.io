@@ -9560,12 +9560,13 @@ async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.
 function drawGoldPath(h, z) {}   /* replaced by drawDriveway */
 /* ✨ 10+ diamonds: a golden driveway straight from the front door through a real garden gate onto the street.
    Houses only have a door on the +v face (+u when mirrored), so a gold house swaps lots with the nearest neighbour whose street is straight in front of the door. */
-let SUP_DW = null; const DOOR_U = -.11, DOOR_V = .25, DW_W = .085;   /* cottage door: 18–38 % along the +v face */
+let SUP_DW = null; const DOOR_U = -.11, DOOR_V = .25, DW_W = .13;   /* cottage door: 18–38 % along the +v face */
 function lotFace(h) {   /* street straight ahead of the door? {flip, s = distance to the road edge}; cached per lot */
   const L = h.L3; if (!L) return null; if (L.face !== undefined) return L.face; const T = h.town === 1 ? W3.T1 : h.town === 2 ? W3.T2 : null; if (!T || !T.SH) return (L.face = null);
-  const ahead = (u, v, du, dv) => { for (let s = .3; s <= 1.8; s += .03) { const q = T.SH.near(u + du * s, v + dv * s, .2); if (q.p && q.d < .2) return s; } return 0; };
+  if (!T.AV) T.AV = new Set(T.streets.filter(x => x.kind === 'avenue').map(x => x.id));
+  const ahead = (u, v, du, dv) => { for (let s = .3; s <= 2.4; s += .01) { const q = T.SH.near(u + du * s, v + dv * s, .7); if (q.p && q.d < (T.AV.has(q.tag) ? .6 : .48)) return s; } return 0; };   /* s = exactly where the road (its kerb) starts */
   const f = ahead(L[0] + DOOR_U, L[1], 0, 1), r = ahead(L[0], L[1] + DOOR_U, 1, 0);
-  return (L.face = f && (!r || f <= r) ? { flip: false, s: f } : r ? { flip: true, s: r } : null);
+  return (L.face = f && f <= 2.1 && (!r || f <= r) ? { flip: false, s: f } : r && r <= 2.1 ? { flip: true, s: r } : null);
 }
 function driveReset() { for (const h of HOUSES) if (h.sw) { h.i = h.sw.i; h.j = h.sw.j; h.L3 = h.sw.L3; h.flip = h.sw.flip; h.sw = null; h.dw = undefined; } }
 function assignDrive() {   /* run after assignVIP: every 10+ 💎 house in town 1/2 ends up on a lot that faces its street */
@@ -9574,7 +9575,7 @@ function assignDrive() {   /* run after assignVIP: every 10+ 💎 house in town 
   for (const h of want) {
     let F = lotFace(h);
     if (!F) { const c = []; for (const o of HOUSES) { if (o === h || o.town !== h.town || !o.L3 || o.vip || (o.gd || 0) >= 10 || o.sw || o.bt) continue; const d = (o.i - h.i) ** 2 + (o.j - h.j) ** 2; if (d < 900) c.push([d, o]); }
-      c.sort((a, b) => a[0] - b[0]); const near = c.slice(0, 60), o = (near.find(x => { const F = lotFace(x[1]); return F && F.s <= 1.15; }) || c.find(x => lotFace(x[1])) || [])[1];   /* prefer a short driveway */ if (!o) continue;
+      c.sort((a, b) => a[0] - b[0]); const near = c.slice(0, 60), o = (near.find(x => { const F = lotFace(x[1]); return F && F.s <= 1.45; }) || c.find(x => lotFace(x[1])) || [])[1];   /* prefer a short driveway */ if (!o) continue;
       keep(h); keep(o); [h.i, o.i] = [o.i, h.i]; [h.j, o.j] = [o.j, h.j]; [h.L3, o.L3] = [o.L3, h.L3]; [h.flip, o.flip] = [o.flip, h.flip]; F = lotFace(h); }
     keep(h); h.flip = F.flip;
   }
@@ -9582,12 +9583,12 @@ function assignDrive() {   /* run after assignVIP: every 10+ 💎 house in town 
 function driveway(h) { if (h.dw !== undefined) return h.dw; const F = lotFace(h); return (h.dw = F && F.flip === !!h.flip ? { s: F.s, flip: F.flip } : null); }
 function drawDriveway(h, z) {   /* pale stone, gold kerbs, gold tiles, a gold post on each side at the road – grows from the door to the street */
   const D = driveway(h); if (!D) return; const ap = h.goldT ? clamp((S.T - h.goldT) / 1.8, 0, 1) : 1; if (ap <= 0) return;
-  const M = (a, b) => D.flip ? uvS(h.i + b, h.j + a) : uvS(h.i + a, h.j + b), b0 = DOOR_V - .02, b1 = b0 + (D.s + .03 - b0) * eOut(ap), A = DOOR_U, W = DW_W, gp = h.gd >= 100;
+  const M = (a, b) => D.flip ? uvS(h.i + b, h.j + a) : uvS(h.i + a, h.j + b), b0 = DOOR_V - .02, b1 = b0 + (D.s - b0) * eOut(ap), A = DOOR_U, W = DW_W, gp = h.gd >= 100;
   const quad = (a0, a1, c0, c1, col) => poly(ctx, [M(a0, c0), M(a1, c0), M(a1, c1), M(a0, c1)], col);
   quad(A - W - .03, A + W + .03, b0, b1, '#c9971a'); quad(A - W, A + W, b0, b1, '#f1e7cf');
-  for (let b = b0 + .07; b < b1 - .05; b += .11) { const s = .032; poly(ctx, [M(A - s, b), M(A, b - s), M(A + s, b), M(A, b + s)], gp ? '#ffcf33' : '#e6b62e'); }
+  for (let b = b0 + .08; b < b1 - .05; b += .13) for (const o of [-.055, .055]) { const s = .033, c = A + o; poly(ctx, [M(c - s, b), M(c, b - s), M(c + s, b), M(c, b + s)], gp ? '#ffcf33' : '#e6b62e'); }   /* two rows of gold tiles */
   quad(A - W, A + W, b0, b0 + .05, '#d9cdb0');   /* doorstep */
-  if (ap >= 1 && z > .3) for (const o of [-1, 1]) { const [x, y] = M(A + o * (W + .07), D.s - .02); line(ctx, x, y, x, y - 14 * z, '#b8860b', Math.max(1.2, 3.4 * z)); circle(ctx, x, y - 15 * z, Math.max(1, 2.8 * z), '#ffd23f', '#7a5300', Math.max(.5, z)); }
+  if (ap >= 1 && z > .3) for (const o of [-1, 1]) { const [x, y] = M(A + o * (W + .06), D.s - .04); line(ctx, x, y, x, y - 14 * z, '#b8860b', Math.max(1.2, 3.4 * z)); circle(ctx, x, y - 15 * z, Math.max(1, 2.8 * z), '#ffd23f', '#7a5300', Math.max(.5, z)); }
   const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = M(A, (b0 + b1) / 2), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 4 * z, x + r, y - 4 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 4 * z - r, x, y - 4 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
 }
 function flowerGap(h, z) {   /* clip that keeps the flower beds off the driveway (incl. the flower heads that would stand on it) */
@@ -10035,8 +10036,8 @@ function buildHouse3D(h, tier) {
   // tier 2: fence + tree
   if (tier >= 2 || GD >= 10) {
     const fm = M('#f4efe4');
-    for (let k = 0; k <= 16; k++) { const t = -3.8 + k * .475; if (GD < 10 || Math.abs(t + .6) > .8) box(.12, .8, .12, fm, t, .4, 3.85); box(.12, .8, .12, fm, -3.85, .4, t); box(.12, .8, .12, fm, 3.85, .4, t); }
-    if (GD >= 10) { box(3.15, .1, .06, fm, -2.275, .6, 3.85); box(3.85, .1, .06, fm, 1.925, .6, 3.85); } else box(7.7, .1, .06, fm, 0, .6, 3.85); box(.06, .1, 7.7, fm, -3.85, .6, 0); box(.06, .1, 7.7, fm, 3.85, .6, 0);
+    for (let k = 0; k <= 16; k++) { const t = -3.8 + k * .475; if (GD < 10 || Math.abs(t + .6) > 1.05) box(.12, .8, .12, fm, t, .4, 3.85); box(.12, .8, .12, fm, -3.85, .4, t); box(.12, .8, .12, fm, 3.85, .4, t); }
+    if (GD >= 10) { box(2.2, .1, .06, fm, -2.75, .6, 3.85); box(3.4, .1, .06, fm, 2.15, .6, 3.85); } else box(7.7, .1, .06, fm, 0, .6, 3.85); box(.06, .1, 7.7, fm, -3.85, .6, 0); box(.06, .1, 7.7, fm, 3.85, .6, 0);
     box(.35, 1.6, .35, M('#6b4a2e'), -2.8, .8, -2.6); const crown = new T.Mesh(new T.SphereGeometry(1.1, 14, 10), M('#2f8a45')); crown.position.set(-2.8, 2.3, -2.6); crown.castShadow = true; g.add(crown);
   }
   // tier 3: lantern + bench
@@ -10129,19 +10130,19 @@ function buildHouse3D(h, tier) {
   if (GD >= 10) {
     const gp = GD >= 100, goldM = M('#f2c94c', { metalness: .75, roughness: .25, emissive: '#7a5a10', emissiveIntensity: .3 }), stone = M('#efe4c8', { roughness: .7 }), white = M('#fbf7ee');
     const tag = (o, st, go) => { o.userData.gs = st; o.userData.go = go; return o; };
-    tag(box(1.1, .06, 3.35, stone, -.6, .03, 3.55), 1, 0);   /* doorstep → road edge */
-    for (const sx of [-.6, .6]) tag(box(.1, .1, 3.35, goldM, -.6 + sx, .05, 3.55), 1, .5);
-    for (let k = 0; k < 7; k++) { const t = tag(box(.26, .08, .26, goldM, -.6, .06, 2.2 + k * .45), 1, 1 + k * .12); t.rotation.y = Math.PI / 4; }
-    for (const sx of [-.72, .72]) { tag(box(.24, 1.3, .24, white, -.6 + sx, .65, 3.85), 1, 2); const b = new T.Mesh(new T.SphereGeometry(.16, 16, 12), goldM); b.position.set(-.6 + sx, 1.42, 3.85); b.castShadow = true; g.add(b); tag(b, 1, 2.3); }
+    tag(box(1.6, .06, 3.35, stone, -.6, .03, 3.55), 1, 0);   /* doorstep → road edge */
+    for (const sx of [-.82, .82]) tag(box(.12, .1, 3.35, goldM, -.6 + sx, .05, 3.55), 1, .5);
+    for (let k = 0; k < 7; k++) for (const ox of [-.3, .3]) { const t = tag(box(.26, .08, .26, goldM, -.6 + ox, .06, 2.2 + k * .45), 1, 1 + k * .12); t.rotation.y = Math.PI / 4; }
+    for (const sx of [-.97, .97]) { tag(box(.24, 1.3, .24, white, -.6 + sx, .65, 3.85), 1, 2); const b = new T.Mesh(new T.SphereGeometry(.16, 16, 12), goldM); b.position.set(-.6 + sx, 1.42, 3.85); b.castShadow = true; g.add(b); tag(b, 1, 2.3); }
     for (const sd of [-1, 1]) {   /* two gate leaves hinged at the posts, they swing open into the garden */
-      const lg = new T.Group(), lm = gp ? goldM : white; lg.position.set(-.6 + sd * .6, 0, 3.85); g.add(lg);
-      for (let k = 0; k < 4; k++) { const pk = new T.Mesh(new T.BoxGeometry(.08, .72, .06), lm); pk.position.set(-sd * (.08 + k * .15), .46, 0); pk.castShadow = true; lg.add(pk); }
-      for (const y of [.26, .66]) { const r = new T.Mesh(new T.BoxGeometry(.58, .06, .05), lm); r.position.set(-sd * .3, y, 0); lg.add(r); }
+      const lg = new T.Group(), lm = gp ? goldM : white; lg.position.set(-.6 + sd * .85, 0, 3.85); g.add(lg);
+      for (let k = 0; k < 5; k++) { const pk = new T.Mesh(new T.BoxGeometry(.08, .72, .06), lm); pk.position.set(-sd * (.08 + k * .16), .46, 0); pk.castShadow = true; lg.add(pk); }
+      for (const y of [.26, .66]) { const r = new T.Mesh(new T.BoxGeometry(.8, .06, .05), lm); r.position.set(-sd * .42, y, 0); lg.add(r); }
       lg.userData.gate = -sd * 1.25; lg.rotation.y = lg.userData.gate; tag(lg, 1, 2.6);
     }
-    for (const sx of [-.95, .95]) { const p = tag(box(.1, .9, .1, goldM, -.6 + sx, .45, 5.05), 1, 3); const b = new T.Mesh(new T.SphereGeometry(.1, 12, 8), goldM); b.position.set(-.6 + sx, .95, 5.05); g.add(b); tag(b, 1, 3.1); }   /* gold posts at the road */
+    for (const sx of [-1.1, 1.1]) { const p = tag(box(.1, .9, .1, goldM, -.6 + sx, .45, 5.05), 1, 3); const b = new T.Mesh(new T.SphereGeometry(.1, 12, 8), goldM); b.position.set(-.6 + sx, .95, 5.05); g.add(b); tag(b, 1, 3.1); }   /* gold posts at the road */
     if (gp) {
-      for (const sx of [-1.05, 1.05]) { tag(box(.1, 1.9, .1, M('#2b2f45'), -.6 + sx, .95, 4.25), 2, 0); const lb = new T.Mesh(new T.SphereGeometry(.2, 14, 10), M('#ffe08a', { emissive: '#ffd56b', emissiveIntensity: 1.8 })); lb.position.set(-.6 + sx, 2.0, 4.25); g.add(lb); tag(lb, 2, .3); }
+      for (const sx of [-1.3, 1.3]) { tag(box(.1, 1.9, .1, M('#2b2f45'), -.6 + sx, .95, 4.25), 2, 0); const lb = new T.Mesh(new T.SphereGeometry(.2, 14, 10), M('#ffe08a', { emissive: '#ffd56b', emissiveIntensity: 1.8 })); lb.position.set(-.6 + sx, 2.0, 4.25); g.add(lb); tag(lb, 2, .3); }
       const pl = new T.PointLight('#ffcf7a', .8, 7); pl.position.set(-.6, 2, 4.4); g.add(pl);
       const gm = tag(box(.78, .52, .46, goldM, 2.4, 1.3, 3.7), 2, 1); gm.userData.swap = true;   /* golden mailbox over the red one */
       const st = new T.Shape(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .22 : .5; i ? st.lineTo(Math.cos(a) * r, -Math.sin(a) * r) : st.moveTo(Math.cos(a) * r, -Math.sin(a) * r); }
