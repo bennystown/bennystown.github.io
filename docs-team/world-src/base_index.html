@@ -7072,12 +7072,11 @@ const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
 function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
 function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { assignVIP(); updateTop10(); } catch (e) {} }
 async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
-function drawGoldPath(h, z) {   // ✨ 10+ diamonds: golden stepping stones from the door to the street
+function drawGoldPath(h, z) {   /* ✨ 10+ diamonds: a straight row of golden stepping stones from the house through the garden gate (gate = middle of the front fence) */
   const ap = h.goldT ? clamp((S.T - h.goldT) / 1.4, 0, 1) : 1; if (ap <= 0) return;
-  const d = h.flip ? [1, 0] : [0, 1], o = h.flip ? [0, .06] : [.06, 0];
-  for (let k = 0; k < 6; k++) { const t = .2 + k * .06, [x, y] = uvS(h.i + d[0] * t + o[0] * (k % 2 ? 1 : -1), h.j + d[1] * t + o[1] * (k % 2 ? 1 : -1)), s = z * eBack(clamp(ap * 6 - k * .7, 0, 1)); if (s <= .01) continue;
-    const w = 6.5 * s, hh = 3.3 * s; poly(ctx, [[x - w, y], [x, y + hh], [x + w, y], [x, y - hh]], '#ffd23f', '#a77b00', Math.max(.5, .9 * s)); poly(ctx, [[x - w * .55, y - hh * .1], [x - w * .05, y - hh * .62], [x + w * .25, y - hh * .25]], 'rgba(255,255,255,.65)'); }
-  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = uvS(h.i + d[0] * .32, h.j + d[1] * .32), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 6 * z, x + r, y - 6 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 6 * z - r, x, y - 6 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
+  for (let k = 0; k < 7; k++) { const [x, y] = uvS(h.i, h.j + .37 + k * .065), s = z * eBack(clamp(ap * 7 - k * .7, 0, 1)); if (s <= .01) continue;
+    const w = 7 * s, hh = 3.5 * s; poly(ctx, [[x - w, y], [x, y + hh], [x + w, y], [x, y - hh]], '#ffd23f', '#a77b00', Math.max(.5, .9 * s)); poly(ctx, [[x - w * .55, y - hh * .1], [x - w * .05, y - hh * .62], [x + w * .25, y - hh * .25]], 'rgba(255,255,255,.65)'); }
+  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = uvS(h.i, h.j + .4), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 6 * z, x + r, y - 6 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 6 * z - r, x, y - 6 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
 }
 /* ================= VIP HILLS (gift rewards from 1,000 💎) + Supporter (100 💎) =================
    VIP Hills lies south of the old town (W3.VIP.C, radius W3.VIP.R), on rolling hills, with a golden gate towards the
@@ -7186,7 +7185,7 @@ const VB = (() => {
     if (lt >= 5) cyl(S, u + w - .22, v + d - .25, .12, h, h + .06, '#cfc6b4', 14, '#5fd3ff');
     if (lt >= 7) { box(S, u + .14, v + d - .34, u + .26, v + d - .22, h, h + .12, '#d9d4c8'); cyl(S, u + .2, v + d - .28, .035, h + .12, h + .34, '#bdb6a8', 8); ci(S, P(S, u + .2, v + d - .28, h + .38)[0], P(S, u + .2, v + d - .28, h + .38)[1], S.K * .05, '#bdb6a8'); }
   }
-  function supporter(S, u, v, h) { lantern(S, u - .38, v + .42, h); lantern(S, u + .42, v - .38, h); mailbox(S, u + .34, v + .4, h); }   // around a normal house (u,v = house centre)
+  function supporter(S, u, v, h) { lantern(S, u - .38, v + .42, h); lantern(S, u + .42, v - .38, h); mailbox(S, u + .34, v + .6, h); }   // around a normal house (u,v = house centre)
   // count the pieces of a building once (for build-up animations)
   const TOT = {};
   function total(fn, S) { if (TOT[fn.name]) return TOT[fn.name]; const sv = ctx; ctx = document.createElement('canvas').getContext('2d'); lim = 1e9; n = 0; try { fn(S, 0, 0, 0, 'x'); } finally { ctx = sv; } lim = -1; return (TOT[fn.name] = n); }
