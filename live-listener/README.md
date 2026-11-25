@@ -49,6 +49,8 @@ Das Fenster bleibt offen und zeigt alle Follows, Geschenke und Chat-Nachrichten.
 | Gewinn-Rechnung | was Zuschauer ausgegeben haben, was TikTok behält, dein Anteil |
 | Live-Feed | letzte Events, filterbar |
 
+**Vergangene LIVEs:** Oben im Dashboard steht eine Liste aller LIVEs (aus den Logdateien) mit Dauer, Followern, Diamanten, Gewinn ca., Zuschauer-Höchststand und Likes. Antippen zeigt alle Zahlen, Diagramme, Follower, Unterstützer und den Feed dieses LIVEs. Endet ein LIVE, bleiben seine Zahlen stehen („LIVE beendet · 14:17–14:56 · 38 min“), bis das nächste beginnt. Ist gerade kein LIVE, zeigt das Dashboard automatisch das letzte.
+
 Startest du den Listener neu, während das LIVE noch läuft, stellt er alle Zahlen aus der Logdatei wieder her. Nachrichten, die TikTok nach dem Neuverbinden noch einmal schickt, erkennt er an der Nachrichten-ID und zählt sie nicht doppelt.
 
 ### Wie der Gewinn geschätzt wird

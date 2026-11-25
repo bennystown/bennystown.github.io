@@ -77,16 +77,17 @@ const S = {
 };
 // ---------- Kennzahlen pro LIVE (für das Dashboard) ----------
 let L;
-function resetLive() {
-  L = { start: null, follows: [], likeEvents: 0, totalLikes: null, likesSum: 0, gifts: 0, diamonds: 0,
+const newAgg = () => ({ start: null, end: null, last: null, follows: [], likeEvents: 0, totalLikes: null, likesSum: 0, gifts: 0, diamonds: 0,
         gifters: new Map(), giftTypes: new Map(), chat: 0, joins: 0, shares: 0,
-        viewers: null, peakViewers: 0, viewerSeries: [], lastSample: 0 };
-}
+        viewers: null, peakViewers: 0, viewerSeries: [], lastSample: 0 });
+function resetLive() { L = newAgg(); globalThis.__L = L; }
 resetLive();
-// Wendet ein Event auf die Kennzahlen an – live und beim Wiederherstellen aus der Logdatei.
-function account(event, d, t, dup) {
+// Wendet ein Event auf die Kennzahlen an – live, beim Wiederherstellen aus der Logdatei und für vergangene LIVEs (agg).
+function account(event, d, t, dup, agg) {
+  const L = agg || globalThis.__L;
   const ms = Date.parse(t);
   if (!L.start) L.start = t;
+  L.last = t;
   if (event === 'follow' && !dup) L.follows.push({ t, uniqueId: d.user?.uniqueId, nickname: d.user?.nickname || '' });
   else if (event === 'like') { L.likeEvents++; L.likesSum += d.likeCount || 0; if (d.totalLikeCount != null) L.totalLikes = d.totalLikeCount; }
   else if (event === 'gift' && d.repeatEnd) {
@@ -107,10 +108,11 @@ function account(event, d, t, dup) {
     if (ms - L.lastSample >= 20000) { L.viewerSeries.push([t, d.viewerCount]); L.lastSample = ms; if (L.viewerSeries.length > 1500) L.viewerSeries.shift(); }
   }
 }
-function liveSummary() {
+function liveSummary(agg) {
+  const L = agg || globalThis.__L;
   const top = (m, n) => [...m.values()].sort((a, b) => b.diamonds - a.diamonds).slice(0, n);
   return {
-    start: L.start, follows: L.follows, likeEvents: L.likeEvents, likesSum: L.likesSum, totalLikes: L.totalLikes,
+    start: L.start, end: L.end, last: L.last, follows: L.follows, likeEvents: L.likeEvents, likesSum: L.likesSum, totalLikes: L.totalLikes,
     gifts: L.gifts, diamonds: L.diamonds, chat: L.chat, joins: L.joins, shares: L.shares,
     viewers: L.viewers, peakViewers: L.peakViewers, viewerSeries: L.viewerSeries,
     topGifters: top(L.gifters, 10), giftTypes: top(L.giftTypes, 12), gifterCount: L.gifters.size,
@@ -225,6 +227,7 @@ const ctx = {
     writeLog({ event: '_disconnected', data: { reason } });
     if (reason === 'streamEnd') {
       log('LIVE beendet.');
+      L.end = now(); historyCache.clear();   // Kennzahlen bleiben stehen (Dashboard zeigt „LIVE beendet“), bis das nächste LIVE beginnt
       if (logStream) { logStream.end(); logStream = null; logRoom = null; }
       followSeen.clear(); S.roomId = null;
       setState('offline', null);
@@ -280,9 +283,45 @@ async function mockLoop() {
   }
 }
 
+// ---------- Vergangene LIVEs (aus den Logdateien) ----------
+const historyCache = new Map();   // Datei -> { key, sum }
+function logDir() { return path.join(DIR, 'logs', MOCK ? 'mock' : USER); }
+function readStream(file) {   // eine Logdatei komplett auswerten
+  const full = path.join(logDir(), file), st = fs.statSync(full), key = st.size + ':' + st.mtimeMs, c = historyCache.get(file);
+  if (c && c.key === key) return c.sum;
+  const agg = newAgg(), seen = new Set(), feed = []; let ended = null;
+  for (const line of fs.readFileSync(full, 'utf8').split('\n')) {
+    let e; try { e = JSON.parse(line); } catch { continue; }
+    if (e.event === '_disconnected' && e.data?.reason === 'streamEnd') ended = e.t;
+    if (!e.event || e.event.startsWith('_')) continue;
+    if (e.id) { if (seen.has(e.id)) continue; seen.add(e.id); }
+    account(e.event, e.data || {}, e.t, e.dup, agg);
+    if (['follow', 'gift', 'chat', 'share'].includes(e.event) && !(e.event === 'gift' && !e.data?.repeatEnd)) feed.push({ t: e.t, event: e.event, data: e.data, dup: e.dup });
+  }
+  agg.end = ended || agg.last;
+  const sum = { ...liveSummary(agg), file, roomId: (file.match(/_(\d+)\.jsonl$/) || [])[1] || null, recent: feed.slice(-400).reverse() };
+  historyCache.set(file, { key, sum }); return sum;
+}
+function history() {
+  let files = []; try { files = fs.readdirSync(logDir()).filter(f => f.endsWith('.jsonl')); } catch {}
+  return files.map(f => { try { const s = readStream(f); if (!s.start) return null; return { file: f, start: s.start, end: s.end, follows: s.follows.length, diamonds: s.diamonds, gifts: s.gifts, peakViewers: s.peakViewers, likes: s.totalLikes ?? s.likesSum, chat: s.chat, joins: s.joins, yourShareEur: s.money.yourShareEur, live: !!(logStream && S.logFile && S.logFile.endsWith(f)) }; } catch { return null; } })
+    .filter(Boolean).sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+}
+
 // ---------- Statusseite ----------
 const PAGE = fs.readFileSync(path.join(DIR, 'dashboard.html'), 'utf8');
 http.createServer((req, res) => {
+  if (req.url.startsWith('/history.json')) {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify(history()));
+  }
+  if (req.url.startsWith('/stream.json')) {   // ?f=<Dateiname> – nur Dateien aus dem Log-Ordner, kein Pfad
+    const f = new URL(req.url, 'http://x').searchParams.get('f') || '';
+    let ok = false; try { ok = /^[\w.-]+\.jsonl$/.test(f) && fs.readdirSync(logDir()).includes(f); } catch {}
+    if (!ok) { res.writeHead(404); return res.end('{}'); }
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify(readStream(f)));
+  }
   if (req.url.startsWith('/status.json')) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify({ ...S, live: liveSummary(), wsPort: WS_PORT, now: now() }));

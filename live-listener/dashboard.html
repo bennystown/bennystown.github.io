@@ -73,6 +73,17 @@
   table.feed td.e { white-space:nowrap; width:1%; font-weight:600; color:var(--ink2); }
   .filters { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:13px; color:var(--ink2); }
   .dup { opacity:.5 }
+  .viewbar { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:10px 14px; border-radius:12px; background:var(--accent-soft, rgba(70,130,220,.14)); border:1px solid var(--line, rgba(127,127,127,.25)); font-weight:600; }
+  .viewbar button, .hist tr { cursor:pointer; }
+  .viewbar button { font:inherit; padding:6px 12px; border-radius:8px; border:1px solid var(--line, rgba(127,127,127,.35)); background:transparent; color:inherit; }
+  .histwrap { overflow:auto; max-height:230px; }
+  .hist { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:14px; }
+  .hist th, .hist td { text-align:left; padding:7px 8px; border-top:1px solid var(--line, rgba(127,127,127,.2)); white-space:nowrap; }
+  .hist th { font-size:12px; opacity:.7; border-top:0; }
+  .hist .r { text-align:right; }
+  .hist tbody tr:hover { background:rgba(127,127,127,.08); }
+  .hist tr.sel { background:rgba(70,130,220,.16); }
+  .hist .liveTag { color:#e23d5b; font-weight:700; }
   .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 </style>
 </head>
@@ -88,6 +99,11 @@
     <button id="theme" title="Hell/Dunkel">◐</button>
   </header>
   <div class="err" id="err"></div>
+  <section class="card" id="histCard">
+    <h2>📅 Vergangene LIVEs <span class="muted">zum Ansehen antippen</span></h2>
+    <div class="histwrap"><table class="hist"><thead><tr><th>Datum</th><th>Start</th><th>Dauer</th><th class="r">Follower</th><th class="r">💎</th><th class="r">Gewinn ca.</th><th class="r">Zuschauer max.</th><th class="r">Likes</th></tr></thead><tbody id="hist"></tbody></table></div>
+  </section>
+  <div class="viewbar" id="viewbar" hidden><span id="viewTxt"></span><button id="back">← Zurück zum aktuellen LIVE</button></div>
 
   <section class="grid hero">
     <div class="card"><div class="k">Neue Follower</div><div class="big" id="h-follow">0</div><div class="sub" id="h-follow-sub">&nbsp;</div></div>
@@ -231,15 +247,21 @@ function describe(e) {
   return esc(JSON.stringify(d));
 }
 
-let S = null, lastChartKey = '';
+let S = null, lastChartKey = '', VIEW = null, HIST = [], AUTO = false;
+const durTxt = (a, b) => { const min = Math.max(0, Math.round((Date.parse(b) - Date.parse(a)) / 60000)); return (min >= 60 ? Math.floor(min / 60) + ' h ' : '') + (min % 60) + ' min'; };
+const dayTxt = t => new Date(t).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 function render() {
   if (!S) return;
-  const L = S.live || {}, M = L.money || {};
+  const isLive = S.state === 'connected' || S.state === 'reconnecting';
+  // nicht live und noch keine Zahlen -> automatisch das letzte LIVE zeigen
+  if (!VIEW && !isLive && !(S.live && S.live.start) && HIST.length && !AUTO) { AUTO = true; openStream(HIST[0].file, true); }
+  const L = VIEW || S.live || {}, M = L.money || {}, ended = !!VIEW || (!isLive && !!L.start), endT = L.end || L.last || S.now;
   // Kopf
   $('state').className = 'pill s-' + S.state;
   $('stateTxt').textContent = (S.mode === 'mock' ? 'DEMO · ' : '') + (STATE[S.state] || S.state);
   $('user').textContent = '@' + S.user;
-  if (L.start) { const min = Math.floor((Date.parse(S.now) - Date.parse(L.start)) / 60000); $('dur').textContent = 'LIVE seit ' + hm(L.start) + ' · ' + (min >= 60 ? Math.floor(min / 60) + ' h ' : '') + (min % 60) + ' min'; } else $('dur').textContent = '';
+  if (L.start) $('dur').textContent = ended ? 'LIVE beendet · ' + dayTxt(L.start) + ' ' + hm(L.start) + '–' + hm(endT) + ' · ' + durTxt(L.start, endT) : 'LIVE seit ' + hm(L.start) + ' · ' + durTxt(L.start, S.now); else $('dur').textContent = '';
+  $('viewbar').hidden = !VIEW; if (VIEW) $('viewTxt').textContent = (VIEW.auto ? 'Letztes LIVE: ' : 'Rückblick: ') + dayTxt(VIEW.start) + ', ' + hm(VIEW.start) + '–' + hm(endT) + ' · ' + durTxt(VIEW.start, endT);
   $('obs').textContent = 'OBS/Website: ' + (S.wsClients ? '✓ verbunden' : '✗ nicht verbunden');
   $('err').textContent = S.lastError ? '⚠ ' + S.lastError : '';
   // Kennzahlen
@@ -248,8 +270,9 @@ function render() {
   const lastF = fol[fol.length - 1]; $('h-follow-sub').textContent = lastF ? 'zuletzt @' + lastF.uniqueId + ' · ' + hm(lastF.t) : 'noch keiner in diesem LIVE';
   $('h-money').textContent = eur(M.yourShareEur);
   $('h-money-sub').textContent = nf(L.diamonds) + ' 💎 × ' + (M.diamondEur ?? 0).toLocaleString('de-DE', { maximumFractionDigits: 4 }) + ' €';
-  $('h-view').textContent = L.viewers != null ? nf(L.viewers) : '–';
-  $('h-view-sub').textContent = L.peakViewers ? 'Höchststand ' + nf(L.peakViewers) : ' ';
+  $('h-view').textContent = ended ? nf(L.peakViewers) : L.viewers != null ? nf(L.viewers) : '–';
+  $('h-view').previousElementSibling.textContent = ended ? 'Zuschauer max.' : 'Zuschauer jetzt';
+  $('h-view-sub').textContent = ended ? (L.joins ? nf(L.joins) + ' Beitritte insgesamt' : ' ') : L.peakViewers ? 'Höchststand ' + nf(L.peakViewers) : ' ';
   $('h-like').textContent = nf(L.totalLikes ?? L.likesSum);
   $('h-like-sub').textContent = L.totalLikes != null ? '+' + nf(L.likesSum) + ' seit Start des Listeners' : ' ';
   $('s-gifts').textContent = nf(L.gifts); $('s-gifters').textContent = nf(L.gifterCount) + ' Unterstützer';
@@ -270,28 +293,37 @@ function render() {
   const gt = L.giftTypes || [];
   $('gifttypes').innerHTML = gt.length ? gt.map(g => `<li><span class="who">${esc(g.name)} <span class="muted">(${nf(g.each)} 💎)</span></span><span class="num">×${nf(g.count)} = ${nf(g.diamonds)} 💎</span></li>`).join('') : '<li class="empty" style="border:0;display:block">–</li>';
   // Feed
-  $('feed').innerHTML = (S.recent || []).filter(e => filt[e.event] !== false && (e.event in filt)).slice(0, 60)
+  $('feed').innerHTML = ((VIEW ? VIEW.recent : S.recent) || []).filter(e => filt[e.event] !== false && (e.event in filt)).slice(0, 60)
     .map(e => `<tr class="${e.dup ? 'dup' : ''}"><td class="t">${hms(e.t)}</td><td class="e">${e.event}</td><td>${describe(e)}</td></tr>`).join('') || '<tr><td class="empty" colspan="3">Noch nichts</td></tr>';
   // Charts (nur neu zeichnen, wenn sich etwas geändert hat)
   const vs = L.viewerSeries || [];
-  const key = vs.length + ':' + fol.length + ':' + (vs.length ? vs[vs.length - 1][1] : '') + ':' + $('c-view').clientWidth;
+  const key = (VIEW ? VIEW.file : 'live') + ':' + vs.length + ':' + fol.length + ':' + (vs.length ? vs[vs.length - 1][1] : '') + ':' + $('c-view').clientWidth;
   if (key !== lastChartKey) {
     lastChartKey = key;
     chart($('c-view'), vs.map(([t, v]) => ({ x: Date.parse(t), y: v })), 'line', p => `${hm(p.x)} · <b>${nf(p.y)}</b> Zuschauer`);
     const perMin = new Map(); const startMin = L.start ? Math.floor(Date.parse(L.start) / 60000) : null;
     for (const f of fol) { const m = Math.floor(Date.parse(f.t) / 60000); perMin.set(m, (perMin.get(m) || 0) + 1); }
-    const pts = []; if (startMin != null) { const endMin = Math.floor(Date.parse(S.now) / 60000); for (let m = Math.max(startMin, endMin - 179); m <= endMin; m++) pts.push({ x: m * 60000, y: perMin.get(m) || 0 }); }
+    const pts = []; if (startMin != null) { const endMin = Math.floor(Date.parse(ended ? endT : S.now) / 60000); for (let m = Math.max(startMin, endMin - 179); m <= endMin; m++) pts.push({ x: m * 60000, y: perMin.get(m) || 0 }); }
     chart($('c-follow'), fol.length ? pts : [], 'bar', p => `${hm(p.x)} · <b>${nf(p.y)}</b> neue Follower`);
     $('c2-range').textContent = pts.length > 1 ? 'letzte ' + pts.length + ' min' : '';
   }
+  renderHist();
   $('foot').textContent = (S.engine ? 'Bibliothek: ' + S.engine + ' · ' : '') + (S.logFile ? 'Log: ' + S.logFile : '');
 }
 $('copy').onclick = async () => {
-  const names = (S?.live?.follows || []).map(f => f.uniqueId);
+  const names = ((VIEW || S?.live || {}).follows || []).map(f => f.uniqueId);
   try { await navigator.clipboard.writeText(JSON.stringify(names)); $('copy').textContent = '✓ ' + names.length + ' kopiert'; }
   catch { prompt('Namen kopieren:', JSON.stringify(names)); }
   setTimeout(() => { $('copy').textContent = 'Namen kopieren'; }, 2000);
 };
+function renderHist() {
+  $('hist').innerHTML = HIST.length ? HIST.map(h => `<tr data-f="${esc(h.file)}" class="${VIEW && VIEW.file === h.file ? 'sel' : ''}"><td>${dayTxt(h.start)}${h.live ? ' <span class="liveTag">● LIVE</span>' : ''}</td><td>${hm(h.start)}</td><td>${durTxt(h.start, h.end || h.start)}</td><td class="r">${nf(h.follows)}</td><td class="r">${nf(h.diamonds)}</td><td class="r">${eur(h.yourShareEur)}</td><td class="r">${nf(h.peakViewers)}</td><td class="r">${nf(h.likes)}</td></tr>`).join('') : '<tr><td colspan="8" class="empty">Noch keine vergangenen LIVEs</td></tr>';
+}
+$('hist').onclick = e => { const tr = e.target.closest('tr[data-f]'); if (!tr) return; const h = HIST.find(x => x.file === tr.dataset.f); if (h && h.live) { VIEW = null; render(); } else openStream(tr.dataset.f); scrollTo({ top: 0, behavior: 'smooth' }); };
+$('back').onclick = () => { VIEW = null; AUTO = true; lastChartKey = ''; render(); };
+async function openStream(f, auto) { try { const d = await fetch('/stream.json?f=' + encodeURIComponent(f), { cache: 'no-store' }).then(r => r.json()); if (!d.file) return; d.auto = !!auto; VIEW = d; lastChartKey = ''; render(); } catch {} }
+async function loadHist() { try { HIST = await fetch('/history.json', { cache: 'no-store' }).then(r => r.json()); render(); } catch {} }
+loadHist(); setInterval(loadHist, 20000);
 async function tick() {
   try { S = await fetch('/status.json', { cache: 'no-store' }).then(r => r.json()); render(); }
   catch { $('state').className = 'pill s-error'; $('stateTxt').textContent = 'Listener aus'; }
