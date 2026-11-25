@@ -56,7 +56,7 @@ Startest du den Listener neu, während das LIVE noch läuft, stellt er alle Zahl
 ### Wie der Gewinn geschätzt wird
 TikTok veröffentlicht keine offiziellen Kurse. Die Rechnung im Dashboard nutzt die üblichen Richtwerte:
 - Ein Geschenk mit N 💎 kostet den Zuschauer N Coins, ca. **0,0125 € pro Coin** (`COIN_EUR`).
-- Du bekommst davon etwa die Hälfte, ca. **0,005 $ ≈ 0,0045 € pro 💎** (`DIAMOND_EUR`).
+- Du bekommst davon ca. **0,004 $ ≈ 0,0037 € pro 💎** (`DIAMOND_EUR`). Das ist TikToks eigene Schätzung für dein LIVE vom 24.11. (10 💎 ≈ 0,04 $) bei der Grundstufe von 40 %. Mit den „Gestaffelten LIVE-Belohnungen“ (Missionen pro LIVE bis +40 %, wöchentlich bis +13 %) kann es mehr werden; dann `DIAMOND_EUR` in `.env` erhöhen.
 - Steuern sind nicht abgezogen. Ausgezahlt wird erst ab 10.000 💎. Je nach Land und Agentur kann es weniger sein.
 - Die echten Werte siehst du in der TikTok-App unter LIVE-Belohnungen. Passen sie nicht, trag sie in `.env` ein.
 
@@ -123,7 +123,7 @@ Follows, die im selben LIVE doppelt kommen (z. B. entfolgen und wieder folgen), 
 | `ENGINE` | leer (= `piratetok`) | `piratetok` oder `connector`, siehe unten |
 | `EULER_API_KEY` | leer | nur für `connector`: kostenloser Euler-Key für höhere Limits |
 | `OFFLINE_CHECK_SECONDS` | `30` | Prüfabstand, solange du offline bist |
-| `DIAMOND_EUR` | `0.0045` | dein Anteil pro 💎 in € (für „Gewinn ca.“) |
+| `DIAMOND_EUR` | `0.0037` | dein Anteil pro 💎 in € (für „Gewinn ca.“) |
 | `COIN_EUR` | `0.0125` | was ein Zuschauer ca. pro Coin zahlt |
 
 Weitere Schalter: `--debug` (zeigt auch Likes und Beitritte im Terminal) und `--engine connector`.

@@ -50,7 +50,7 @@ const EULER_API_KEY = (process.env.EULER_API_KEY || '').trim() || undefined;
 // Grobe Geld-Schätzung (TikTok veröffentlicht keine offiziellen Kurse):
 // Ein Geschenk mit N 💎 kostet den Zuschauer N Coins. Davon bekommt der Creator ca. 50 %,
 // üblich genannt werden ~0,005 $ pro 💎. Werte bei Bedarf in .env anpassen.
-const DIAMOND_EUR = +(process.env.DIAMOND_EUR || 0.0045); // dein Anteil pro 💎 in €
+const DIAMOND_EUR = +(process.env.DIAMOND_EUR || 0.0037); // dein Anteil pro 💎 in € (TikTok zeigte am 24.11. ca. 0,04 $ für 10 💎 = Grundstufe 40 %)
 const COIN_EUR = +(process.env.COIN_EUR || 0.0125);       // was ein Zuschauer ca. pro Coin zahlt
 const BENNY_CENTS_PER_FOLLOW = 10;                         // Story-Geld: Benny bekommt 10 ¢ pro Follow
 const ENGINE_FIXED = !!(opt('--engine') || process.env.ENGINE);
