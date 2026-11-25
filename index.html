@@ -7979,7 +7979,7 @@ function worldObjs(objs, movers) {
     if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
     objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.gd >= 10 && z > .14 && !fade) drawGoldPath(h, z); if (h.sup && !fade) drawSupporter(h, z); } }); }
-  vipObjs(objs, inB);
+  vipObjs(objs, inB); boardObjs(objs, inB);
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
   for (const L of next2()) { if (!inB(L[0], L[1])) continue; const [sx, sy] = uvS(L[0], L[1]); objs.push({ d: L[0] + L[1], f: () => drawSignPost(sx, sy, z) }); }
@@ -9554,7 +9554,7 @@ const GIFT_TIERS = [[10, '✨', 'Golden path', 'Golden stones on the path to you
 const GIFTS = {}; let GIFT_DELTA = {};
 const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
 function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
-function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { assignVIP(); } catch (e) {} }
+function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { assignVIP(); updateTop10(); } catch (e) {} }
 async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
 function drawGoldPath(h, z) {   // ✨ 10+ diamonds: golden stepping stones from the door to the street
   const ap = h.goldT ? clamp((S.T - h.goldT) / 1.4, 0, 1) : 1; if (ap <= 0) return;
@@ -9693,6 +9693,30 @@ for (let v = -4; v <= 8; v += 2) { VIP_SLOTS[3].at.push([-26, v]); VIP_SLOTS[3].
 const VIP_HILLS = [[0, -1, 9, 1.0], [-17, 2, 7, .55], [15, 2, 7, .55], [-6, 15, 6, .4], [6, 15, 6, .4], [-10, -15, 5, .35], [9, -15, 5, .35]].map(([a, b, r, H]) => [a * VIP_SC, b * VIP_SC, r * VIP_SC, H * VIP_SC]);   // [du, dv, radius, height]
 function vipH(u, v) { const C = W3.VIP.C; let m = 0; for (const [du, dv, r, H] of VIP_HILLS) { const d = Math.hypot(u - C[0] - du, v - C[1] - dv); if (d < r) m = Math.max(m, H * (1 - (d / r) ** 2)); } return m; }
 const VIP_FN = { 3: VB.modern, 4: VB.villa, 5: VB.mansion, 6: VB.castle, 7: VB.tower };
+// ---- 🏆 Top-supporters billboard on the marketplace: podium for the top 3, places 4–10 below (from gifts.json) ----
+const BOARD_AT = [-14.9, -14.9];
+let TOP10 = [];
+function updateTop10() { TOP10 = Object.entries(GIFTS).filter(([, g]) => g.d > 0).sort((a, b) => b[1].d - a[1].d).slice(0, 10).map(([n, g]) => ({ n, d: g.d })); }
+function drawBoard(z) {
+  const [bx, by] = uvS(BOARD_AT[0], BOARD_AT[1]), k = z * .72, W = 360 * k, H = 330 * k, x0 = bx - W / 2, y0 = by - 70 * k - H;
+  ellipse(ctx, bx, by + 2 * k, W * .42, 14 * k, 'rgba(0,0,0,.2)');
+  for (const s of [-1, 1]) { line(ctx, bx + s * W * .32, by, bx + s * W * .32, y0 + H - 4 * k, '#4a4560', Math.max(1.5, 10 * k)); }
+  panel(x0, y0, W, H, 18 * k, '#14183a', '#ffd23f', Math.max(1.5, 6 * k));
+  for (let i = 0; i < 24; i++) circle(ctx, x0 + 10 * k + i * (W - 20 * k) / 23, y0, Math.max(1, 4 * k), (i + Math.floor((S_T() || 0) * 3)) % 2 ? '#ffd23f' : '#ff2e63');
+  if (k < .13) return;
+  txt('🏆 TOP SUPPORTERS', bx, y0 + 30 * k, Math.round(24 * k), '#ffd23f', 'center', 'middle');
+  const T = TOP10, nm = i => T[i] ? '@' + trunc(T[i].n, 13) : '—', dd = i => T[i] ? fmtN(T[i].d) + ' 💎' : '';
+  // podium: 2nd left, 1st middle, 3rd right
+  const pw = W * .28, base = y0 + 190 * k, P3 = [[1, '🥈', '#c9ced8', 46], [0, '👑', '#ffd23f', 70], [2, '🥉', '#d08a4a', 32]];
+  P3.forEach(([i, ic, col, hgt], c) => { const px = bx + (c - 1) * (pw + 8 * k), top = base - hgt * k;
+    panel(px - pw / 2, top, pw, hgt * k, 6 * k, col, 'rgba(0,0,0,.25)', Math.max(1, 1.5 * k)); txt(String(i + 1), px, top + hgt * k / 2, Math.round(20 * k), '#1b1728', 'center', 'middle');
+    emoji(ctx, ic, px, top - 52 * k, Math.round(22 * k)); txt(nm(i), px, top - 30 * k, Math.round((i === 0 ? 14 : 12) * k), '#ffffff', 'center', 'middle'); txt(dd(i), px, top - 13 * k, Math.round(11 * k), '#ffd23f', 'center', 'middle'); });
+  // places 4–10 in two columns
+  for (let i = 3; i < 10; i++) { const col = i < 7 ? 0 : 1, row = col ? i - 7 : i - 3, lx = x0 + 18 * k + col * W / 2, ly = base + 22 * k + row * 26 * k;
+    txt((i + 1) + '.', lx, ly, Math.round(12 * k), '#a9aed6', 'left', 'middle'); txt(nm(i), lx + 22 * k, ly, Math.round(12 * k), '#ffffff', 'left', 'middle');
+    if (T[i]) txt(fmtN(T[i].d) + '💎', lx + W / 2 - 30 * k, ly, Math.round(11 * k), '#ffd23f', 'right', 'middle'); }
+}
+function boardObjs(objs, inB) { const z = cam.z; if (z < .06 || !inB(BOARD_AT[0], BOARD_AT[1])) return; objs.push({ d: BOARD_AT[0] + BOARD_AT[1] + 40, f: () => drawBoard(z) }); }   /* drawn after the marketplace bunting */
 const VIP_COUNT = {};
 function assignVIP() {   // who lives where in VIP Hills (sorted by diamonds, biggest first); also marks 100+ supporters
   const C = W3.VIP.C, by = {}; for (const t in VIP_SLOTS) VIP_COUNT[t] = 0;
@@ -10177,7 +10201,7 @@ const LIVE_CLIPS = [
 ];
 // Random buttons: each click plays a different line of the group (never the same twice in a row).
 const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
-const LIVE_FX = [['ladder', '💎 Show gift rewards'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
+const LIVE_FX = [['board', '🏆 Top supporters board'], ['ladder', '💎 Show gift rewards'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
   msg.mid = Date.now() + Math.random();
@@ -10301,6 +10325,7 @@ function liveFx(kind, n) {
   if (kind === 'stars') for (let k = 0; k < 22; k++) { const a = Math.random() * 6.28, sp = 120 + Math.random() * 160; LV.parts.push({ k: 'h', x: 540 + Math.cos(a) * 60, y: 1180 + Math.sin(a) * 30, vx: Math.cos(a) * sp, vy: -140 - Math.random() * 200, r: 0, e: k % 3 ? '✨' : '⭐', s: 26 + Math.random() * 18, life: 1.4 }); }
   if (kind === 'dance') LV.dance = S.T;
   if (kind === 'ladder') LV.ladderUntil = S.T + 15;
+  if (kind === 'board') { const [x, y] = isoW(BOARD_AT[0], BOARD_AT[1]); selected = null; LV.cur = null; target.x = x; target.y = y - 175; target.z = 2.1; LV.holdUntil = S.T + 12; }
   if (kind === 'bang') { liveAlert('❗ Type  !house  in the chat', 'With the ! first → I fly to YOUR house 🏠', '#ffd23f'); liveAlert('✅ !house    ❌ house', 'The ! is the magic part', '#ffd23f'); }
   if (kind === 'vip') { const V = W3.VIP, go = (u, v, z, dy) => { const [x, y] = isoW(u, v); selected = null; LV.cur = null; target.x = x; target.y = y - dy; target.z = z; LV.holdUntil = S.T + 7; }; go(V.C[0], V.C[1], .3, 0); LV.ladderUntil = S.T + 14; liveAt(6, () => go(V.C[0], V.C[1] - 2, .75, 120)); }
   if (kind === 'snow') LV.snow = !LV.snow;
