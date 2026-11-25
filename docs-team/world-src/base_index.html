@@ -7632,7 +7632,7 @@ const LIVE_CLIPS = [
   ['viptease', '🏰 VIP Hills teaser', "Psst... have you seen VIP Hills yet? That's where my biggest supporters live. Villas... castles... and maybe one day, a giant tower!"],
   ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
   ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
-  ['bang', '❗ How !house works', "Wanna see YOUR house? Type ！house in the chat! Not just “house”... the exclamation mark comes first! ！house… and I fly right to your house!", 'short'],
+  ['bang', '❗ How !house works', "Wanna see YOUR house? Type ！house in the chat! Not just “house”... the exclamation mark comes first! ！house… and I fly right to your house!", 'old'],
   ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
   ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!", 'r:hello'],
   ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'r:follow'],
@@ -7992,7 +7992,7 @@ function streetRender() {
   }
 }
 
-const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “!house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
+const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
 function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim bar; big version after every gift / from the control panel
   // nearly invisible while a house is built or shown (new follower, !house, gift at a house) or a big alert is on screen
   const busy = (LV.alerts.length && LV.alerts[0].t !== null) || liveFocusBusy(), full = S.T < (LV.ladderUntil || 0) && !busy;
@@ -8184,8 +8184,8 @@ function liveTikTok(type, d) {
     liveGiftAdd(u, dia); LV.ladderUntil = Math.max(LV.ladderUntil || 0, S.T + 10);
     if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
-  if (type === 'chat' && u && /^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '')) liveEnqueue(u, 'find');
-  else if (type === 'chat' && u && /^\s*(house|haus|my house|where is my house)\s*[?.]*\s*$/i.test(d.comment || '') && !(LV.hint && S.T < LV.hint.until)) LV.hint = { text: '💡 @' + trunc(u, 16) + ': type !house (with the ! first) → I fly to your house', until: S.T + 6 };   // forgot the !
+  // camera flies to the house: "!house …" or a message that is ONLY "house" / "haus" / "my house" (so "nice house" does nothing)
+  if (type === 'chat' && u && (/^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '') || /^\s*(house|haus|my house|where is my house)\s*[?!.🏠]*\s*$/i.test(d.comment || ''))) liveEnqueue(u, 'find');
   if (type === 'like') { const n = Math.max(1, Math.round(Math.sqrt(d.likeCount || 1))); if (LV.parts.length < 900) liveFx('likes', n); } // nur kleiner Herz-Effekt unten rechts, kein Haus, kein Ton
 }
 function startLive() {
