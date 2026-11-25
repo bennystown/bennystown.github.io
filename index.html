@@ -9713,19 +9713,27 @@ function drawBoard(z) {
     emoji(ctx, ic, px, top - 52 * k, Math.round(22 * k)); txt(nm(i), px, top - 30 * k, Math.round((i === 0 ? 14 : 12) * k), '#ffffff', 'center', 'middle'); txt(dd(i), px, top - 13 * k, Math.round(11 * k), '#ffd23f', 'center', 'middle'); });
   // places 4–10 in two columns
   for (let i = 3; i < 10; i++) { const col = i < 7 ? 0 : 1, row = col ? i - 7 : i - 3, lx = x0 + 18 * k + col * W / 2, ly = base + 22 * k + row * 26 * k;
-    txt((i + 1) + '.', lx, ly, Math.round(12 * k), '#a9aed6', 'left', 'middle'); txt(nm(i), lx + 22 * k, ly, Math.round(12 * k), '#ffffff', 'left', 'middle');
+    txt((i + 1) + '.', lx, ly, Math.round(12 * k), '#a9aed6', 'left', 'middle'); txt(T[i] ? '@' + trunc(T[i].n, 10) : '—', lx + 22 * k, ly, Math.round(12 * k), '#ffffff', 'left', 'middle');
     if (T[i]) txt(fmtN(T[i].d) + '💎', lx + W / 2 - 30 * k, ly, Math.round(11 * k), '#ffd23f', 'right', 'middle'); }
 }
 function boardObjs(objs, inB) { const z = cam.z; if (z < .06 || !inB(BOARD_AT[0], BOARD_AT[1])) return; objs.push({ d: BOARD_AT[0] + BOARD_AT[1] + 40, f: () => drawBoard(z) }); }   /* drawn after the marketplace bunting */
 const VIP_COUNT = {};
-function assignVIP() {   // who lives where in VIP Hills (sorted by diamonds, biggest first); also marks 100+ supporters
-  const C = W3.VIP.C, by = {}; for (const t in VIP_SLOTS) VIP_COUNT[t] = 0;
-  for (const h of HOUSES) { const t = giftTier(h.gd || 0); h.sup = t >= 2; if (t >= 3) (by[t] = by[t] || []).push(h); else if (h.vip) { h.i = h.oi; h.j = h.oj; h.vip = null; } }
-  for (const t in by) { const list = by[t].sort((a, b) => b.gd - a.gd || a.idx - b.idx), sl = VIP_SLOTS[t]; VIP_COUNT[t] = list.length;
-    list.forEach((h, k) => { let at = sl.at[k]; if (!at) { const a = k * 2.399, r = 30 + k * .6; at = [Math.cos(a) * r, Math.sin(a) * r]; }
-      if (!h.vip) { h.oi = h.i; h.oj = h.j; }
-      const u0 = C[0] + at[0] * VIP_SC, v0 = C[1] + at[1] * VIP_SC, w = sl.s[0] * VIP_SC, d = sl.s[1] * VIP_SC; h.vip = { t: +t, u0, v0, s: [w, d], base: vipH(u0 + w / 2, v0 + d / 2) / VIP_SC };
-      h.i = u0 + w / 2; h.j = v0 + d / 2; }); }
+// every VIP home gets an equal 3×3 plot somewhere in VIP Hills (random but stable per @name) – no fixed area per stage
+let VIP_PLOTS = null;
+function vipPlots() {
+  if (VIP_PLOTS) return VIP_PLOTS; const C = W3.VIP.C, R = W3.VIP.R, P = [], S6 = 3 * VIP_SC, pl = [C[0] - 1.4, C[1] - 36];
+  for (let u = C[0] - R; u < C[0] + R; u += S6 + 1.4) for (let v = C[1] - R; v < C[1] + R; v += S6 + 1.4) {
+    const cu = u + S6 / 2, cv = v + S6 / 2, d = Math.hypot(cu - C[0], cv - C[1]), dr = Math.hypot(cu - C[0], cv - C[1] + 2);
+    if (d > R - 6.5) continue; if (dr > 13 && dr < 26) continue; if (Math.abs(cu - C[0] + 1.4) < 6.5 && cv < C[1] - 12) continue; if (Math.hypot(cu - pl[0], cv - pl[1]) < 9) continue;
+    P.push([u, v]); }
+  return (VIP_PLOTS = P);
+}
+function assignVIP() {   // who lives where in VIP Hills; also marks 100+ supporters
+  const vip = []; for (const h of HOUSES) { const t = giftTier(h.gd || 0); h.sup = t >= 2; if (t >= 3) vip.push(h); else if (h.vip) { h.i = h.oi; h.j = h.oj; h.vip = null; } }
+  const P = vipPlots(), used = new Set(); vip.sort((a, b) => hashStr(a.name) - hashStr(b.name));
+  for (const h of vip) { const t = giftTier(h.gd); let k = hashStr('vip' + h.name) % P.length; while (used.has(k) && used.size < P.length) k = (k + 1) % P.length; used.add(k);
+    const sz = VIP_SLOTS[t].s, w = sz[0] * VIP_SC, d = sz[1] * VIP_SC, [pu, pv] = P[k], u0 = pu + (3 * VIP_SC - w) / 2, v0 = pv + (3 * VIP_SC - d) / 2;
+    if (!h.vip) { h.oi = h.i; h.oj = h.j; } h.vip = { t, u0, v0, s: [w, d], base: vipH(u0 + w / 2, v0 + d / 2) / VIP_SC }; h.i = u0 + w / 2; h.j = v0 + d / 2; }
 }
 function vipGround(box) {   // gold-fenced hills south of the old town
   const z = cam.z, C = W3.VIP.C, R = W3.VIP.R, S = { K: TW / 2 * z };
@@ -9741,13 +9749,8 @@ function vipGround(box) {   // gold-fenced hills south of the old town
   { const r0 = 18.8, r1 = 21.2; ctx.beginPath(); for (let k = 0; k <= 64; k++) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r1, C[1] - 2 + Math.sin(a) * r1); k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } for (let k = 64; k >= 0; k--) { const a = k / 64 * 6.2832, p = uvS(C[0] + Math.cos(a) * r0, C[1] - 2 + Math.sin(a) * r0); ctx.lineTo(p[0], p[1]); } ctx.fillStyle = '#e8c04a'; ctx.fill(); }
   VIP_DECO.ground(box);
 }
-const VIP_LOT_LABEL = { 3: '🏡 1K 💎', 4: '🌴 VILLA · 2.5K 💎', 5: '🏛️ MANSION · 5K 💎', 6: '🏰 CASTLE · 10K 💎', 7: '🏙️ TOWER · 50K 💎' };
 function vipObjs(objs, inB) {   // the golden gate with the VIP HILLS sign + "reserved" signs on the free lots
   const z = cam.z, g = W3.VIP.gate, C = W3.VIP.C;
-  if (z > .07) for (const t in VIP_SLOTS) { const sl = VIP_SLOTS[t], max = t == 3 ? 6 : sl.at.length; for (let k = VIP_COUNT[t] || 0; k < Math.min(max, sl.at.length); k++) {
-    const u = C[0] + (sl.at[k][0] + sl.s[0] / 2) * VIP_SC, v = C[1] + (sl.at[k][1] + sl.s[1] / 2) * VIP_SC; if (!inB(u, v)) continue; const base = vipH(u, v);
-    objs.push({ d: u + v, f: () => { const [x, y0] = uvS(u, v), y = y0 - base * TW / 2 * z, lbl = VIP_LOT_LABEL[t], fs = Math.round(clamp(40 * z, 13, 30) * (t >= 6 ? 1.25 : 1)), ph = Math.max(26, 60 * z);
-      line(ctx, x, y, x, y - ph, '#7a5300', Math.max(1.5, 3 * z)); ctx.font = F(fs); const w = ctx.measureText(lbl).width + fs; panel(x - w / 2, y - ph - fs * 1.5, w, fs * 1.6, fs * .5, 'rgba(255,246,214,.95)', '#e8b923', Math.max(1.5, 2 * z)); txt(lbl, x, y - ph - fs * .7, fs, '#7a5300', 'center', 'middle'); } }); } }
   VIP_DECO.objs(objs, inB);
 }
 // ---- VIP Hills decoration: white marble wall with gold-domed towers, grand gatehouse, palms + cypresses, lanterns, fountain plaza ----
@@ -9757,7 +9760,7 @@ const VIP_DECO = (() => {
     const C = W3.VIP.C, R = W3.VIP.R, r = seeded(911), gA = -Math.PI / 2, out = { wall: [], towers: [], trees: [], lamps: [], plaza: [C[0] - 1.4, C[1] - 36] };
     const N = 120; for (let k = 0; k < N; k++) { const a0 = k / N * 6.2832, a1 = (k + 1) / N * 6.2832, am = (a0 + a1) / 2; let da = Math.abs(((am - gA + Math.PI) % 6.2832 + 6.2832) % 6.2832 - Math.PI); if (da < .055) continue; out.wall.push([a0, a1]); }
     for (let k = 0; k < 12; k++) { const a = gA + (k + .5) / 12 * 6.2832; out.towers.push([C[0] + Math.cos(a) * R, C[1] + Math.sin(a) * R]); }
-    const lots = []; for (const t in VIP_SLOTS) { const sl = VIP_SLOTS[t]; for (const at of sl.at) lots.push([C[0] + at[0] * VIP_SC - 1.2, C[1] + at[1] * VIP_SC - 1.2, C[0] + (at[0] + sl.s[0]) * VIP_SC + 1.2, C[1] + (at[1] + sl.s[1]) * VIP_SC + 1.2]); }
+    const lots = vipPlots().map(([u, v]) => [u - .6, v - .6, u + 3 * VIP_SC + .6, v + 3 * VIP_SC + .6]);
     const free = (u, v) => { const d = Math.hypot(u - C[0], v - C[1]); if (d > R - 2.5 || d < 4) return false; const dr = Math.hypot(u - C[0], v - C[1] + 2); if (dr > 17.5 && dr < 22.5) return false;
       if (Math.abs(u - C[0] + 1.4) < 3.5 && v < C[1] - 15) return false; if (Math.hypot(u - out.plaza[0], v - out.plaza[1]) < 5.5) return false;
       for (const L of lots) if (u > L[0] && u < L[2] && v > L[1] && v < L[3]) return false; return true; };
@@ -10141,6 +10144,23 @@ const LIVE_CLIPS = [
   ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
   ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
   ['bang', '❗ How !house works', "Wanna see YOUR house? Type ！house in the chat! Not just “house”... the exclamation mark comes first! ！house… and I fly right to your house!", 'old'],
+  ['board1', 'board', "Look at this! These are my top supporters. Legends. Absolute legends!", 'r:board'],
+  ['board2', 'board', "This board is for the people who keep this town alive. Thank you, all of you!", 'r:board'],
+  ['board3', 'board', "Number one... I see you! Thank you so much!", 'r:board'],
+  ['board4', 'board', "Everyone on this board gets a big hug from me. A virtual one... but still!", 'r:board'],
+  ['board5', 'board', "Who will be number one next? The board is waiting...", 'r:board'],
+  ['board6', 'board', "These names will be remembered in Benny's Town... forever.", 'r:board'],
+  ['board7', 'board', "Without you guys, this town wouldn't even exist. Seriously... thank you!", 'r:board'],
+  ['pigeon', '🐦 Pigeon is back', "The pigeon is back on my roof. I think he lives here now."],
+  ['kittencup', '🐱 Kitten chaos', "My kitten just knocked my cup off the table. On purpose. She looked right at me!"],
+  ['sneeze', '🤧 Sneeze', "Sorry! Snow in my nose."],
+  ['hiccup', '😮‍💨 Hiccups', "Oh no... not again!"],
+  ['mayor', '🎩 The mayor', "Some people call me the mayor. Nobody voted... but I'm taking it."],
+  ['noodles', '🍜 Noodles again', "If anyone needs me, I'll be eating noodles. Again. Fifth day in a row."],
+  ['school', '🏫 Fun fact: school', "Fun fact: this town has more neighbors than my old school had students!"],
+  ['treasure', '🤫 Treasure secret', "There's a hidden treasure somewhere in the 3D town... I didn't tell you that."],
+  ['mom', '👋 Hi mom', "Hi mom! ...She's not watching. Hi anyway!"],
+  ['counted', '💰 Fun fact: 10 cents', "Fun fact: I counted every follow. Twice. That's a lot of ten cents!"],
   ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
   ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!", 'r:hello'],
   ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'r:follow'],
@@ -10325,7 +10345,8 @@ function liveFx(kind, n) {
   if (kind === 'stars') for (let k = 0; k < 22; k++) { const a = Math.random() * 6.28, sp = 120 + Math.random() * 160; LV.parts.push({ k: 'h', x: 540 + Math.cos(a) * 60, y: 1180 + Math.sin(a) * 30, vx: Math.cos(a) * sp, vy: -140 - Math.random() * 200, r: 0, e: k % 3 ? '✨' : '⭐', s: 26 + Math.random() * 18, life: 1.4 }); }
   if (kind === 'dance') LV.dance = S.T;
   if (kind === 'ladder') LV.ladderUntil = S.T + 15;
-  if (kind === 'board') { const [x, y] = isoW(BOARD_AT[0], BOARD_AT[1]); selected = null; LV.cur = null; target.x = x; target.y = y - 175; target.z = 2.1; LV.holdUntil = S.T + 12; }
+  if (kind === 'board') { const [x, y] = isoW(BOARD_AT[0], BOARD_AT[1]); selected = null; LV.cur = null; target.x = x; target.y = y - 175; target.z = 2.1; LV.holdUntil = S.T + 12; LV.noBennyUntil = S.T + 12;
+    const pool = LIVE_CLIPS.filter(c => c[3] === 'r:board'), pick = pool.filter(c => c[0] !== LV.lastBoard); if (pick.length) { const c = pick[Math.floor(Math.random() * pick.length)]; LV.lastBoard = c[0]; liveAt(1.2, () => livePlay(c[0])); } }   /* Benny talks but is hidden, so the board stays free */
   if (kind === 'bang') { liveAlert('❗ Type  !house  in the chat', 'With the ! first → I fly to YOUR house 🏠', '#ffd23f'); liveAlert('✅ !house    ❌ house', 'The ! is the magic part', '#ffd23f'); }
   if (kind === 'vip') { const V = W3.VIP, go = (u, v, z, dy) => { const [x, y] = isoW(u, v); selected = null; LV.cur = null; target.x = x; target.y = y - dy; target.z = z; LV.holdUntil = S.T + 7; }; go(V.C[0], V.C[1], .3, 0); LV.ladderUntil = S.T + 14; liveAt(6, () => go(V.C[0], V.C[1] - 2, .75, 120)); }
   if (kind === 'snow') LV.snow = !LV.snow;
@@ -10361,7 +10382,7 @@ let BX_L = 0, BY_L = 0;
 function liveSafe(toY, fromY, k, fn, toX = 540, fromX = 540) { ctx.save(); ctx.translate(toX, toY); ctx.scale(k, k); ctx.translate(-fromX, -fromY); try { fn(); } finally { ctx.restore(); } }
 // While a house is being built or shown, Benny moves small to the left and hides his speech bubble, so the name, the mailbox and the house stay visible.
 function liveFocusBusy() { return ST.active || !!(LV.job && LV.job.h && S.T - LV.job.t < (LV.job.dur || 6)); }
-function liveBennyCamSafe() { const tgt = liveFocusBusy() ? 1 : 0; LV.camF = (LV.camF || 0) + (tgt - (LV.camF || 0)) * .12; const f = LV.camF; LV.bubbleA = clamp(1 - f * 2.5, 0, 1); liveSafe(1380 + (1150 - 1380) * f, 1260, .85 + (.55 - .85) * f, liveBennyCam, 829 + (180 - 829) * f, 880); }
+function liveBennyCamSafe() { if (S.T < (LV.noBennyUntil || 0)) return; const tgt = liveFocusBusy() ? 1 : 0; LV.camF = (LV.camF || 0) + (tgt - (LV.camF || 0)) * .12; const f = LV.camF; LV.bubbleA = clamp(1 - f * 2.5, 0, 1); liveSafe(1380 + (1150 - 1380) * f, 1260, .85 + (.55 - .85) * f, liveBennyCam, 829 + (180 - 829) * f, 880); }
 function liveHUD() {
   panel(200, 262, 680, 206, 44, 'rgba(10,12,26,.9)', 'rgba(70,224,138,.7)', 4);
   txt("BENNY'S BANK", 540, 302, 26, '#9aa3c7', 'center', 'middle');
