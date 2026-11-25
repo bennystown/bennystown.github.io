@@ -10016,22 +10016,27 @@ function buildHouse3D(h, tier) {
   if (tier >= 1) {
     const cols = ['#ff5d8f', '#ffd23f', '#ff8a3d', '#c77dff', '#ffffff', '#ff4d6d', '#7fb2ec'], R = seeded(h.idx * 31 + 7);
     const soil = M('#6e4a2e'), stemM = M('#2f7d3a'), leafM = M('#4b9a5a'), mid = M('#ffd23f'), edge = M('#b9b0a0');
-    const petalG = new T.SphereGeometry(.09, 8, 6), cupG = new T.ConeGeometry(.11, .22, 8, 1, true), midG = new T.SphereGeometry(.06, 8, 6), stemG = new T.CylinderGeometry(.018, .018, 1, 5), leafG = new T.SphereGeometry(.09, 6, 4);
-    const pm = cols.map(c => M(c, { side: T.DoubleSide }));
+    const petalG = new T.SphereGeometry(.09, 6, 4), cupG = new T.ConeGeometry(.11, .22, 7, 1, true), midG = new T.SphereGeometry(.06, 6, 4), stemG = new T.CylinderGeometry(.018, .018, 1, 5), leafG = new T.SphereGeometry(.09, 6, 4);
+    const pm = cols, petalW = M('#ffffff', { side: T.DoubleSide }), IB = {};   /* flowers are drawn as instanced batches (one draw call per part instead of ~1,200 meshes) */
+    const inst = (key, geo, mat, x, y, z, sx, sy, sz, rx, col) => { (IB[key] || (IB[key] = { geo, mat, L: [] })).L.push([x, y, z, sx, sy, sz, rx, col]); };
     const beds = [[-2.15, 2.0, 1.1, .65], [1.0, 2.0, 1.9, .65], [-2.15, 0, .6, 3.2], [2.15, 0, .6, 3.2]];
     for (const [x0, z0, w, d] of beds) {
       box(w + .14, .14, d + .14, edge, x0, .05, z0); box(w, .16, d, soil, x0, .07, z0);
       const n = Math.round(w * d * 30);
       for (let k = 0; k < n; k++) {
         const x = x0 + (R() - .5) * (w - .15), zz = z0 + (R() - .5) * (d - .15), hh = .25 + R() * .3, col = pm[Math.floor(R() * pm.length)];
-        const st = new T.Mesh(stemG, stemM); st.scale.y = hh; st.position.set(x, .15 + hh / 2, zz); g.add(st);
-        const lf = new T.Mesh(leafG, leafM); lf.scale.set(1, .3, .5); lf.position.set(x + .06, .2 + hh * .4, zz); g.add(lf);
+        inst('stem', stemG, stemM, x, .15 + hh / 2, zz, 1, hh, 1, 0);
+        inst('leaf', leafG, leafM, x + .06, .2 + hh * .4, zz, 1, .3, .5, 0);
         const top = .15 + hh;
-        if (R() < .3) { const c = new T.Mesh(cupG, col); c.rotation.x = Math.PI; c.position.set(x, top + .06, zz); g.add(c); }
-        else { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2, pt = new T.Mesh(petalG, col); pt.scale.set(1, .35, 1); pt.position.set(x + Math.cos(a) * .085, top, zz + Math.sin(a) * .085); g.add(pt); } const c = new T.Mesh(midG, mid); c.position.set(x, top + .02, zz); g.add(c); }
+        if (R() < .3) inst('cup', cupG, petalW, x, top + .06, zz, 1, 1, 1, Math.PI, col);
+        else { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2; inst('petal', petalG, petalW, x + Math.cos(a) * .085, top, zz + Math.sin(a) * .085, 1, .35, 1, 0, col); } inst('mid', midG, mid, x, top + .02, zz, 1, 1, 1, 0); }
       }
     }
-    for (const [x, zz] of [[-3.5, 3.4], [3.3, 3.2], [-3.4, -1.6], [3.4, -1.5]]) { const b = new T.Mesh(new T.SphereGeometry(.42, 10, 8), M('#3e8a4c')); b.scale.y = .8; b.position.set(x, .3, zz); b.castShadow = true; g.add(b); for (let p = 0; p < 6; p++) { const f = new T.Mesh(petalG, pm[(p + h.idx) % pm.length]); f.position.set(x + Math.cos(p) * .3, .45 + (p % 2) * .1, zz + Math.sin(p) * .3); g.add(f); } }
+    for (const [x, zz] of [[-3.5, 3.4], [3.3, 3.2], [-3.4, -1.6], [3.4, -1.5]]) { const b = new T.Mesh(new T.SphereGeometry(.42, 10, 8), M('#3e8a4c')); b.scale.y = .8; b.position.set(x, .3, zz); b.castShadow = true; g.add(b); for (let p = 0; p < 6; p++) inst('petal', petalG, petalW, x + Math.cos(p) * .3, .45 + (p % 2) * .1, zz + Math.sin(p) * .3, 1, 1, 1, 0, pm[(p + h.idx) % pm.length]); }
+    const dm = new T.Object3D(), cc = new T.Color();
+    for (const key in IB) { const b = IB[key], im = new T.InstancedMesh(b.geo, b.mat, b.L.length); im.frustumCulled = false;
+      b.L.forEach((e, i) => { dm.position.set(e[0], e[1], e[2]); dm.scale.set(e[3], e[4], e[5]); dm.rotation.set(e[6], 0, 0); dm.updateMatrix(); im.setMatrixAt(i, dm.matrix); if (e[7]) im.setColorAt(i, cc.set(e[7])); });
+      im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; g.add(im); }
   }
   // tier 2: fence + tree
   if (tier >= 2 || GD >= 10) {
@@ -10128,7 +10133,7 @@ function buildHouse3D(h, tier) {
   }
   /* ---- 🎁 gift rewards (a real driveway + garden gate at 10 💎, supporter extras at 100 💎); userData.gs = stage, .go = order → the LIVE upgrade scene animates them in ---- */
   if (GD >= 10) {
-    const gp = GD >= 100, goldM = M('#f2c94c', { metalness: .75, roughness: .25, emissive: '#7a5a10', emissiveIntensity: .3 }), stone = M('#efe4c8', { roughness: .7 }), white = M('#fbf7ee');
+    const gp = GD >= 100, goldM = M('#f2c94c', { metalness: .3, roughness: .35, emissive: '#8a6510', emissiveIntensity: .45 }), stone = M('#efe4c8', { roughness: .7 }), white = M('#fbf7ee');
     const tag = (o, st, go) => { o.userData.gs = st; o.userData.go = go; return o; };
     tag(box(1.6, .06, 3.35, stone, -.6, .03, 3.55), 1, 0);   /* doorstep → road edge */
     for (const sx of [-.82, .82]) tag(box(.12, .1, 3.35, goldM, -.6 + sx, .05, 3.55), 1, .5);
@@ -10334,6 +10339,7 @@ function startControl() {
   h('🧪 Test');
   let r = row(); btn(r, '🧪 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); }, 'big');
   btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
+  r = row(); btn(r, '🧪 10 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 10 }); note('Test 10 💎 (nothing is saved) – FPS shows at the end'); }); btn(r, '🧪 100 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 100 }); note('Test 100 💎 (nothing is saved) – FPS shows at the end'); });
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
   r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
@@ -10444,8 +10450,15 @@ function liveOnMsg(m) {
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
+  if (m.type === 'testgift') liveTestGift(m.dia || 10);
   if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip, m.text); }
   if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
+}
+function liveTestGift(dia) {   /* 🧪 only for testing before a LIVE: the 3D upgrade scene for a pretend neighbour "@TEST" – no gift is counted or saved; the measured FPS shows at the end */
+  const base = HOUSES[Math.floor(Math.random() * Math.min(HOUSES.length, 5000))], h = Object.assign({}, base, { name: 'TEST', gd: dia, og: false }), up = dia >= 100 ? 2 : 1, dur = up === 2 ? 15 : 11;
+  if (!streetUpgrade(h, 0, up, dur)) { liveAlert('🧪 3D is still loading', 'Try again in a few seconds', '#ff6b8b'); return; }
+  LV.fps = { t0: performance.now(), n: 0 };
+  liveAt(dur - .3, () => { const f = LV.fps; LV.fps = null; if (!f) return; const v = Math.round(f.n / ((performance.now() - f.t0) / 1000)); liveAlert('🧪 Test: ' + v + ' FPS', v >= 24 ? '✅ smooth' : '⚠️ choppy – tell Claude', v >= 24 ? '#46e08a' : '#ff6b8b'); });
 }
 function liveTourNext() {
   LV.tick++;
@@ -10569,8 +10582,10 @@ function streetInit() {
     const road = new T.Mesh(new T.PlaneGeometry(160, 2.2), new T.MeshStandardMaterial({ color: '#464b63', roughness: 1 })); road.rotation.x = -Math.PI / 2; road.position.set(0, -.29, 6.3); sc.add(road);
     const stars = new T.Group(), sg = new T.SphereGeometry(.08, 6, 6), sm = new T.MeshBasicMaterial({ color: '#ffffff' }), rr = seeded(5); for (let k = 0; k < 220; k++) { const m = new T.Mesh(sg, sm), a = rr() * Math.PI, e = .15 + rr() * 1.1; m.position.set(Math.cos(a) * 55 * Math.cos(e) * 1.6, 55 * Math.sin(e), -Math.sin(a) * 55 * Math.cos(e)); stars.add(m); } sc.add(stars);
     Object.assign(ST, { T, c, r, sc, cam: cam3, ready: true, loading: false, neigh: [] });
+    try { const base = HOUSES.find(x => x.stand) || HOUSES[0], pre = noLights(buildHouse3D(Object.assign({}, base, { gd: 150, og: true }), 7)); sc.add(pre); cam3.position.set(2, 3, 14); cam3.lookAt(0, 1.5, 2); r.render(sc, cam3); sc.remove(pre); pre.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } catch (e) {}   /* compiles every material once at load, so the first upgrade in the LIVE does not stutter */
   }).catch(() => { ST.loading = false; });
 }
+function noLights(g) { const L = []; g.traverse(o => { if (o.isPointLight) L.push(o); }); L.forEach(o => o.parent.remove(o)); return g; }   /* lamps keep glowing (emissive), only the extra lights go */
 function streetStart(h, dur) {
   if (!ST.ready) return false;
   const T = ST.T;
@@ -10590,7 +10605,7 @@ function streetUpgrade(h, from, to, dur) {
   if (!ST.ready) return false;
   const kill = g => { if (!g) return; ST.sc.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); };
   kill(ST.house); for (const g of ST.neigh) kill(g); ST.neigh = [];
-  const g = buildHouse3D(h, tierOf(h)); ST.sc.add(g); ST.house = g;
+  const g = noLights(buildHouse3D(h, tierOf(h))); ST.sc.add(g); ST.house = g;
   const parts = [], anims = []; g.traverse(o => { if (o.userData.anim) anims.push(o); if (o.userData.gs && o.userData.gs > from && o.userData.gs <= to) parts.push(o); });
   parts.sort((a, b) => (a.userData.gs - b.userData.gs) || (a.userData.go - b.userData.go));
   const n = parts.length; parts.forEach((o, k) => { o.userData.k = k / Math.max(1, n - 1); o.userData.y0 = o.position.y; o.userData.s0 = o.scale.clone(); o.scale.set(.001, .001, .001); if (o.userData.gate != null) o.rotation.y = 0; });
@@ -10599,6 +10614,7 @@ function streetUpgrade(h, from, to, dur) {
   return true;
 }
 function streetUpRender(p) {
+  if (LV.fps) LV.fps.n++;   /* 🧪 dock test: count frames */
   const D = ST.dur, bs = 1.6, be = D * .62, n = ST.parts.length;
   for (const o of ST.parts) { const t0 = bs + o.userData.k * (be - bs), q = clamp((p - t0) / .45, 0, 1), e = q <= 0 ? .001 : eBack(q);
     if (o.userData.gate != null) { o.scale.copy(o.userData.s0); o.rotation.y = o.userData.gate * eOut(clamp((p - t0 - .5) / 1.1, 0, 1)); if (q <= 0) o.scale.set(.001, .001, .001); }
@@ -10856,7 +10872,7 @@ function startLive() {
   requestAnimationFrame(loop);
 }
 
-window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, W3, __tt: (t, d) => liveTikTok(t, d), __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
+window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, W3, __tt: (t, d) => liveTikTok(t, d), __st: () => ST, __bh: (h, t) => buildHouse3D(h, t), __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
 setInterval(() => { try { updateEnvChip(); } catch (e) {} }, 30000);
 function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { loadGifts(); if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); { const [bx, by] = isoW(BHOME[0], BHOME[1]), R = 11; target.x = bx; target.y = by + 10; target.z = clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .12, 1.2); } cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; if (!location.hash || location.hash === '#') GLOBE.enter(true); requestAnimationFrame(frame); }
 
