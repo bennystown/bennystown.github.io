@@ -7979,7 +7979,7 @@ function worldObjs(objs, movers) {
     if (h.vip) { if (inB(h.oi, h.oj)) objs.push({ d: h.oi + h.oj, f: () => drawMovedSign(h, z) }); if (inB(h.i, h.j)) objs.push({ d: h.vip.u0 + h.vip.v0 + h.vip.s[0] + h.vip.s[1] - .6, f: () => drawVIPHouse(h, z) }); continue; }
     if (!inB(h.i, h.j)) continue; const [sx, sy] = uvS(h.i, h.j);
     const fade = sel && h !== sel && Math.hypot(h.i - sel.i, h.j - sel.j) < 1.9 && h.i + h.j > sel.i + sel.j;
-    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const dw = h.gd >= 10 && z > .14 && !fade ? driveway(h) : null; if (dw) drawDriveway(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) drawFlowers(h, z); if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.sup && !fade) drawSupporter(h, z); } }); }
+    objs.push({ d: h.i + h.j, f: () => { const sp_ = sprite(h.v, lo), bk = h.bt ? eBack(clamp((S.T - h.bt) / .9, 0, 1)) : 1; if (bk <= .01) return; const dw = h.gd >= 10 && z > .14 && !fade ? driveway(h) : null; if (z > .14 && (tierOf(h) >= 2 || dw) && !fade) drawFence('back', h, z); const k = z / sp_.sc * bk; ctx.save(); if (fade) ctx.globalAlpha = .35; ctx.translate(sx, sy); if (h.flip) ctx.scale(-1, 1); ctx.drawImage(sp_.c, -sp_.ax * k, -sp_.ay * k, sp_.c.width * k, sp_.c.height * k); ctx.restore(); if (z > .1 && tierOf(h) >= 1 && !fade) { const cl = dw && flowerGap(h, z); drawFlowers(h, z); if (cl) ctx.restore(); } if (dw) { drawDriveway(h, z); drawGate(h, z); } else if (z > .14 && tierOf(h) >= 2 && !fade) drawFence('front', h, z); if (h.trophy && !fade) drawTrophy(h, z); if (h.catbed && !fade) drawHouseCatBed(h, z); if (h.sup && !fade) drawSupporter(h, z); } }); }
   vipObjs(objs, inB); boardObjs(objs, inB);
   if (movers !== false) carObjs(objs);
   d3Objs(objs, inB);
@@ -9551,38 +9551,69 @@ function sundaysSince(d) { let n = 0; for (let t = new Date(d); t <= new Date();
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /* ================= GIFT REWARDS (diamonds from LIVE gifts, per @name, saved in gifts.json) ================= */
 // [diamonds, icon, name, description]. 10 = golden path; 100+ visuals/animations come step by step (VIP Hills from 1,000).
-const GIFT_TIERS = [[10, '✨', 'Golden path', 'Golden stones on the path to your door'], [100, '⭐', 'Supporter', 'Golden mailbox, a gold star on your roof and lanterns'], [1000, '🏡', 'Modern house in VIP Hills', 'You move to VIP Hills: a modern house with a pool'], [2500, '🌴', 'Villa', 'A villa with palms, a pool with a slide and a sports car'], [5000, '🏛️', 'Mansion', 'A mansion with columns, a fountain, a tennis court and a limousine'], [10000, '🏰', 'Castle', 'Your own castle with a moat, and a street with your name'], [50000, '🏙️', 'Tower', 'The tallest tower in town with a penthouse pool and a helipad']];
+const GIFT_TIERS = [[10, '✨', 'Golden driveway', 'A golden driveway and a garden gate'], [100, '⭐', 'Supporter', 'Golden mailbox, a gold star on your roof and lanterns'], [1000, '🏡', 'Modern house in VIP Hills', 'You move to VIP Hills: a modern house with a pool'], [2500, '🌴', 'Villa', 'A villa with palms, a pool with a slide and a sports car'], [5000, '🏛️', 'Mansion', 'A mansion with columns, a fountain, a tennis court and a limousine'], [10000, '🏰', 'Castle', 'Your own castle with a moat, and a street with your name'], [50000, '🏙️', 'Tower', 'The tallest tower in town with a penthouse pool and a helipad']];
 const GIFTS = {}; let GIFT_DELTA = {};
 const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
 function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
-function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { assignVIP(); updateTop10(); } catch (e) {} }
+function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { driveReset(); assignVIP(); assignDrive(); updateTop10(); } catch (e) { console.warn(e); } }
 async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
 function drawGoldPath(h, z) {}   /* replaced by drawDriveway */
-const DW_ROAD = -.04;   /* dist() already stops at the road edge; run a hair onto the asphalt */
-function driveway(h) {   /* door is on the +v side: out through the garden gate, then straight on or round the corner to the nearest street */
-  if (h.dw !== undefined) return h.dw; const T = h.town === 1 ? W3.T1 : h.town === 2 ? W3.T2 : null; if (!T || !T.SH) return (h.dw = null);
-  const dist = (du, dv) => { for (let s = .3; s <= 3.5; s += .03) { const q = T.SH.near(h.i + du * s, h.j + dv * s, .2); if (q.p && q.d < .2) return s; } return 99; };
-  const f = dist(0, 1), r = dist(1, 0), l = dist(-1, 0), bk = dist(0, -1), m = Math.min(f, r, l, bk), G = .62; if (m > 3) return (h.dw = null); let pts;
-  /* the door faces +v, or +u when the house is mirrored: turn the house so the door looks at the street (or at least round the corner from it) */
-  if (m === f) { h.flip = false; pts = [[0, .26], [0, f - DW_ROAD]]; }
-  else if (m === r) { h.flip = true; pts = [[.26, 0], [r - DW_ROAD, 0]]; }
-  else if (m === l) { h.flip = false; pts = [[0, .26], [0, G], [-(l - DW_ROAD), G]]; }
-  else { h.flip = true; pts = [[.26, 0], [G, 0], [G, -(bk - DW_ROAD)]]; }
-  let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
-  return (h.dw = { pts, len });
+/* ✨ 10+ diamonds: a golden driveway straight from the front door through a real garden gate onto the street.
+   Houses only have a door on the +v face (+u when mirrored), so a gold house swaps lots with the nearest neighbour whose street is straight in front of the door. */
+let SUP_DW = null; const DOOR_U = -.11, DOOR_V = .25, DW_W = .085;   /* cottage door: 18–38 % along the +v face */
+function lotFace(h) {   /* street straight ahead of the door? {flip, s = distance to the road edge}; cached per lot */
+  const L = h.L3; if (!L) return null; if (L.face !== undefined) return L.face; const T = h.town === 1 ? W3.T1 : h.town === 2 ? W3.T2 : null; if (!T || !T.SH) return (L.face = null);
+  const ahead = (u, v, du, dv) => { for (let s = .3; s <= 1.8; s += .03) { const q = T.SH.near(u + du * s, v + dv * s, .2); if (q.p && q.d < .2) return s; } return 0; };
+  const f = ahead(L[0] + DOOR_U, L[1], 0, 1), r = ahead(L[0], L[1] + DOOR_U, 1, 0);
+  return (L.face = f && (!r || f <= r) ? { flip: false, s: f } : r ? { flip: true, s: r } : null);
 }
-function drawDriveway(h, z) {   /* ✨ 10+ diamonds: pale stone driveway with gold kerbs and gold tiles, gold posts where it meets the street */
+function driveReset() { for (const h of HOUSES) if (h.sw) { h.i = h.sw.i; h.j = h.sw.j; h.L3 = h.sw.L3; h.flip = h.sw.flip; h.sw = null; h.dw = undefined; } }
+function assignDrive() {   /* run after assignVIP: every 10+ 💎 house in town 1/2 ends up on a lot that faces its street */
+  const keep = x => { if (!x.sw) x.sw = { i: x.i, j: x.j, L3: x.L3, flip: x.flip }; x.dw = undefined; };
+  const want = HOUSES.filter(h => (h.gd || 0) >= 10 && !h.vip && (h.town === 1 || h.town === 2) && h.L3).sort((a, b) => b.gd - a.gd || a.idx - b.idx);
+  for (const h of want) {
+    let F = lotFace(h);
+    if (!F) { const c = []; for (const o of HOUSES) { if (o === h || o.town !== h.town || !o.L3 || o.vip || (o.gd || 0) >= 10 || o.sw || o.bt) continue; const d = (o.i - h.i) ** 2 + (o.j - h.j) ** 2; if (d < 900) c.push([d, o]); }
+      c.sort((a, b) => a[0] - b[0]); const near = c.slice(0, 60), o = (near.find(x => { const F = lotFace(x[1]); return F && F.s <= 1.15; }) || c.find(x => lotFace(x[1])) || [])[1];   /* prefer a short driveway */ if (!o) continue;
+      keep(h); keep(o); [h.i, o.i] = [o.i, h.i]; [h.j, o.j] = [o.j, h.j]; [h.L3, o.L3] = [o.L3, h.L3]; [h.flip, o.flip] = [o.flip, h.flip]; F = lotFace(h); }
+    keep(h); h.flip = F.flip;
+  }
+}
+function driveway(h) { if (h.dw !== undefined) return h.dw; const F = lotFace(h); return (h.dw = F && F.flip === !!h.flip ? { s: F.s, flip: F.flip } : null); }
+function drawDriveway(h, z) {   /* pale stone, gold kerbs, gold tiles, a gold post on each side at the road – grows from the door to the street */
   const D = driveway(h); if (!D) return; const ap = h.goldT ? clamp((S.T - h.goldT) / 1.8, 0, 1) : 1; if (ap <= 0) return;
-  const W = .15, P = (u, v) => uvS(h.i + u, h.j + v), want = D.len * eOut(ap), segs = []; let acc = 0;
-  for (let k = 1; k < D.pts.length && acc < want; k++) { const A = D.pts[k - 1], B = D.pts[k], L = Math.hypot(B[0] - A[0], B[1] - A[1]), t = Math.min(1, (want - acc) / L); segs.push([A, [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t], k > 1, k < D.pts.length - 1 && t >= 1]); acc += L; }
-  const quad = (A, B, w, e0, e1, col) => { const du = B[0] - A[0], dv = B[1] - A[1], L = Math.hypot(du, dv) || 1, a = du / L, b = dv / L, n = [-b * w, a * w], x0 = e0 ? w : 0, x1 = e1 ? w : 0;
-    const A2 = [A[0] - a * x0, A[1] - b * x0], B2 = [B[0] + a * x1, B[1] + b * x1]; poly(ctx, [P(A2[0] + n[0], A2[1] + n[1]), P(B2[0] + n[0], B2[1] + n[1]), P(B2[0] - n[0], B2[1] - n[1]), P(A2[0] - n[0], A2[1] - n[1])], col); };
-  for (const [A, B, e0, e1] of segs) quad(A, B, W + .035, e0, e1, '#c9971a');   /* gold kerb */
-  for (const [A, B, e0, e1] of segs) quad(A, B, W, e0, e1, '#f1e7cf');   /* stone */
-  for (const [A, B] of segs) { const L = Math.hypot(B[0] - A[0], B[1] - A[1]); for (let t = .09; t < L - .04; t += .17) { const c = [A[0] + (B[0] - A[0]) * t / L, A[1] + (B[1] - A[1]) * t / L], s = .045; poly(ctx, [P(c[0] - s, c[1]), P(c[0], c[1] - s), P(c[0] + s, c[1]), P(c[0], c[1] + s)], '#e6b62e'); } }   /* gold tiles */
-  if (ap >= 1 && z > .3) { const A = D.pts[D.pts.length - 2], B = D.pts[D.pts.length - 1], L = Math.hypot(B[0] - A[0], B[1] - A[1]), a = (B[0] - A[0]) / L, b = (B[1] - A[1]) / L;
-    for (const o of [-1, 1]) { const [x, y] = P(B[0] - a * .08 - b * o * (W + .07), B[1] - b * .08 + a * o * (W + .07)); line(ctx, x, y, x, y - 15 * z, '#b8860b', Math.max(1.2, 3.6 * z)); circle(ctx, x, y - 16 * z, Math.max(1, 3 * z), '#ffd23f', '#7a5300', Math.max(.5, z)); } }
-  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = P(D.pts[0][0] * 1.7, D.pts[0][1] * 1.7), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 4 * z, x + r, y - 4 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 4 * z - r, x, y - 4 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
+  const M = (a, b) => D.flip ? uvS(h.i + b, h.j + a) : uvS(h.i + a, h.j + b), b0 = DOOR_V - .02, b1 = b0 + (D.s + .03 - b0) * eOut(ap), A = DOOR_U, W = DW_W, gp = h.gd >= 100;
+  const quad = (a0, a1, c0, c1, col) => poly(ctx, [M(a0, c0), M(a1, c0), M(a1, c1), M(a0, c1)], col);
+  quad(A - W - .03, A + W + .03, b0, b1, '#c9971a'); quad(A - W, A + W, b0, b1, '#f1e7cf');
+  for (let b = b0 + .07; b < b1 - .05; b += .11) { const s = .032; poly(ctx, [M(A - s, b), M(A, b - s), M(A + s, b), M(A, b + s)], gp ? '#ffcf33' : '#e6b62e'); }
+  quad(A - W, A + W, b0, b0 + .05, '#d9cdb0');   /* doorstep */
+  if (ap >= 1 && z > .3) for (const o of [-1, 1]) { const [x, y] = M(A + o * (W + .07), D.s - .02); line(ctx, x, y, x, y - 14 * z, '#b8860b', Math.max(1.2, 3.4 * z)); circle(ctx, x, y - 15 * z, Math.max(1, 2.8 * z), '#ffd23f', '#7a5300', Math.max(.5, z)); }
+  const tw = Math.sin(S.T * 2.3 + h.idx * 1.7); if (tw > .6 && z > .3) { const [x, y] = M(A, (b0 + b1) / 2), r = (tw - .6) * 18 * z; ctx.save(); ctx.globalAlpha = (tw - .6) * 2.5; line(ctx, x - r, y - 4 * z, x + r, y - 4 * z, '#fff6c2', Math.max(.5, 1.4 * z)); line(ctx, x, y - 4 * z - r, x, y - 4 * z + r, '#fff6c2', Math.max(.5, 1.4 * z)); ctx.restore(); }
+}
+function flowerGap(h, z) {   /* clip that keeps the flower beds off the driveway (incl. the flower heads that would stand on it) */
+  const D = driveway(h); if (!D) return false; const M = (a, b) => D.flip ? uvS(h.i + b, h.j + a) : uvS(h.i + a, h.j + b), w = DW_W + .05, pts = [];
+  for (const [a, b] of [[DOOR_U - w, .15], [DOOR_U + w, .15], [DOOR_U + w, .6], [DOOR_U - w, .6]]) { const [x, y] = M(a, b); pts.push([x, y + 3 * z], [x, y - 26 * z]); }
+  pts.sort((p, q) => p[0] - q[0] || p[1] - q[1]); const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], hi = [];
+  for (const p of pts) { while (lo.length > 1 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of pts.slice().reverse()) { while (hi.length > 1 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  const hull = lo.slice(0, -1).concat(hi.slice(0, -1)); ctx.save(); ctx.beginPath(); ctx.rect(-1e4, -1e4, 3e4, 3e4); ctx.moveTo(hull[0][0], hull[0][1]); for (const p of hull.slice(1)) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.clip('evenodd'); return true;
+}
+function drawGate(h, z) {   /* front fence drawn by hand for driveway houses: a real garden gate (two leaves swung open) right in front of the door */
+  const D = driveway(h); if (!D || z < .14) return; const M = (a, b) => D.flip ? uvS(h.i + b, h.j + a) : uvS(h.i + a, h.j + b), R = .47, ph = 11 * z, A = DOOR_U, G = DW_W + .05, gold = h.gd >= 100, ol = 'rgba(60,55,70,.55)';
+  const rail = (p, q) => { for (const hh of [ph * .38, ph * .78]) { ctx.strokeStyle = ol; ctx.lineWidth = Math.max(1.2, 3.2 * z); ctx.beginPath(); ctx.moveTo(p[0], p[1] - hh); ctx.lineTo(q[0], q[1] - hh); ctx.stroke(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(.8, 2 * z); ctx.stroke(); } };
+  const picket = (x, y, H, col) => { ctx.fillStyle = ol; ctx.fillRect(x - 2.2 * z, y - H - 1, 4.4 * z, H + 1); ctx.fillStyle = col || '#ffffff'; ctx.fillRect(x - 1.4 * z, y - H, 2.8 * z, H); ctx.beginPath(); ctx.moveTo(x - 1.4 * z, y - H); ctx.lineTo(x, y - H - 2.6 * z); ctx.lineTo(x + 1.4 * z, y - H); ctx.fill(); };
+  const edge = (a0, b0, a1, b1, n, gap) => { const P = (f) => M(a0 + (a1 - a0) * f, b0 + (b1 - b0) * f); if (gap) { const f0 = (gap[0] - a0) / (a1 - a0), f1 = (gap[1] - a0) / (a1 - a0); rail(P(0), P(f0)); rail(P(f1), P(1)); } else rail(P(0), P(1));
+    for (let q = 0; q <= n; q++) { const f = q / n, a = a0 + (a1 - a0) * f; if (gap && a > gap[0] - .03 && a < gap[1] + .03) continue; const [x, y] = P(f); picket(x, y, ph); } };
+  const side = () => edge(R, -R, R, R, 7), front = () => edge(-R, R, R, R, 7, [A - G, A + G]);
+  if (D.flip) { front(); side(); } else { side(); front(); }
+  const open = h.goldT ? clamp((S.T - h.goldT - 1.4) / 1.2, 0, 1) : 1, th = (.15 + .55 * eOut(open)) * Math.PI;   /* the gate swings open into the garden */
+  for (const o of [-1, 1]) {
+    const ha = A + o * G, Lf = G * .98, ea = ha - o * Math.cos(th) * Lf, eb = R - Math.sin(th) * Lf, H0 = M(ha, R), E0 = M(ea, eb);
+    for (const f of [.2, .5, .8]) { const x = H0[0] + (E0[0] - H0[0]) * f, y = H0[1] + (E0[1] - H0[1]) * f; picket(x, y, ph * .92, gold ? '#ffe27a' : '#ffffff'); }
+    for (const hh of [ph * .3, ph * .72]) line(ctx, H0[0], H0[1] - hh, E0[0], E0[1] - hh, gold ? '#d4a017' : '#ffffff', Math.max(.8, 2.2 * z));
+  }
+  for (const o of [-1, 1]) { const [x, y] = M(A + o * G, R); ctx.fillStyle = ol; ctx.fillRect(x - 3 * z, y - ph * 1.5, 6 * z, ph * 1.5); ctx.fillStyle = '#fbf7ee'; ctx.fillRect(x - 2.2 * z, y - ph * 1.5, 4.4 * z, ph * 1.5); circle(ctx, x, y - ph * 1.5 - 2 * z, Math.max(1, 2.6 * z), '#ffd23f', '#7a5300', Math.max(.5, .8 * z)); }
+  if (gold && z > .5) { const a = M(A - G, R), b = M(A + G, R), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - ph * 2.1]; ctx.beginPath(); ctx.moveTo(a[0], a[1] - ph * 1.5); ctx.quadraticCurveTo(m[0], m[1] - ph * .6, b[0], b[1] - ph * 1.5); ctx.strokeStyle = '#d4a017'; ctx.lineWidth = Math.max(1, 2.4 * z); ctx.stroke(); }   /* golden arch for supporters */
 }
 /* ================= VIP HILLS (gift rewards from 1,000 💎) + Supporter (100 💎) =================
    VIP Hills lies south of the old town (W3.VIP.C, radius W3.VIP.R), on rolling hills, with a golden gate towards the
@@ -9691,7 +9722,8 @@ const VB = (() => {
     if (lt >= 5) cyl(S, u + w - .22, v + d - .25, .12, h, h + .06, '#cfc6b4', 14, '#5fd3ff');
     if (lt >= 7) { box(S, u + .14, v + d - .34, u + .26, v + d - .22, h, h + .12, '#d9d4c8'); cyl(S, u + .2, v + d - .28, .035, h + .12, h + .34, '#bdb6a8', 8); ci(S, P(S, u + .2, v + d - .28, h + .38)[0], P(S, u + .2, v + d - .28, h + .38)[1], S.K * .05, '#bdb6a8'); }
   }
-  function supporter(S, u, v, h) { lantern(S, u - .38, v + .42, h); lantern(S, u + .42, v - .38, h); mailbox(S, u + .34, v + .6, h); }   // around a normal house (u,v = house centre)
+  function supporter(S, u, v, h) { const D = SUP_DW; if (D) { const M = (a, b) => D.flip ? [u + b, v + a] : [u + a, v + b]; const b = Math.min(.62, D.s - .1); lantern(S, ...M(DOOR_U - .3, b), h); lantern(S, ...M(DOOR_U + .3, b), h); mailbox(S, ...M(DOOR_U + .5, b + .02), h); return; }   /* driveway house: lanterns either side of the path, mailbox by the gate */
+    lantern(S, u - .38, v + .42, h); lantern(S, u + .42, v - .38, h); mailbox(S, u + .34, v + .6, h); }   // around a normal house (u,v = house centre)
   // count the pieces of a building once (for build-up animations)
   const TOT = {};
   function total(fn, S) { if (TOT[fn.name]) return TOT[fn.name]; const sv = ctx; ctx = document.createElement('canvas').getContext('2d'); lim = 1e9; n = 0; try { fn(S, 0, 0, 0, 'x'); } finally { ctx = sv; } lim = -1; return (TOT[fn.name] = n); }
@@ -9827,7 +9859,7 @@ function drawVIPHouse(h, z) { const p = h.vip, lt = tierOf(h), S = { K: TW / 2 *
 function drawMovedSign(h, z) { if (z < .14) return; const [x, y] = uvS(h.oi, h.oj); line(ctx, x, y, x, y - 30 * z, '#5b4630', Math.max(1, 3 * z)); panel(x - 34 * z, y - 52 * z, 68 * z, 24 * z, 5 * z, '#fff6d6', '#e8b923', Math.max(1, 2 * z)); if (z > .5) txt('⭐ VIP HILLS →', x, y - 40 * z, Math.max(6, Math.round(8.5 * z)), '#7a5300', 'center', 'middle'); }
 function drawSupporter(h, z) {   // ⭐ 100+: golden mailbox, two lanterns and a gold star over the roof
   if (z < .14) return; const S = { K: TW / 2 * z }, ap = h.supT ? clamp((S_T() - h.supT) / 1.5, 0, 1) : 1; if (ap <= 0) return;
-  VB.draw(VB.supporter, S, h.i, h.j, 0, h.name, ap);
+  SUP_DW = h.gd >= 10 ? driveway(h) : null; VB.draw(VB.supporter, S, h.i, h.j, 0, h.name, ap); SUP_DW = null;
   const [x, y] = uvS(h.i, h.j), r = 9 * z * eBack(ap), sy = y - 70 * z - Math.sin(S_T() * 2 + h.idx) * 3 * z; if (r <= .2) return;
   ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rr, sy + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.strokeStyle = '#7a5300'; ctx.lineWidth = Math.max(.6, 1.5 * z); ctx.stroke();
 }
@@ -9956,7 +9988,7 @@ function buildHouse3D(h, tier) {
   box(8, .32, 1.2, M('#9a9a9f'), 0, -.14, 4.6);
   box(8, .2, 2.2, M('#464b63'), 0, -.2, 6.3);
   for (let x = -3.5; x <= 3.5; x += 1.6) box(.8, .02, .12, M('#ffd25a'), x, -.09, 6.3);
-  box(1, .04, 2.6, M('#c9b48f'), -.6, .02, 2.9);
+  const GD = h.gd || 0; if (GD < 10) box(1, .04, 2.6, M('#c9b48f'), -.6, .02, 2.9);
   // house body
   const wh = tier >= 4 ? 4.2 : 2.2, wall = M(pal[0]), wall2 = M(shade(pal[0], .86));
   box(3.6, wh, 3.2, wall, 0, wh / 2, 0);
@@ -10001,10 +10033,10 @@ function buildHouse3D(h, tier) {
     for (const [x, zz] of [[-3.5, 3.4], [3.3, 3.2], [-3.4, -1.6], [3.4, -1.5]]) { const b = new T.Mesh(new T.SphereGeometry(.42, 10, 8), M('#3e8a4c')); b.scale.y = .8; b.position.set(x, .3, zz); b.castShadow = true; g.add(b); for (let p = 0; p < 6; p++) { const f = new T.Mesh(petalG, pm[(p + h.idx) % pm.length]); f.position.set(x + Math.cos(p) * .3, .45 + (p % 2) * .1, zz + Math.sin(p) * .3); g.add(f); } }
   }
   // tier 2: fence + tree
-  if (tier >= 2) {
+  if (tier >= 2 || GD >= 10) {
     const fm = M('#f4efe4');
-    for (let k = 0; k <= 16; k++) { const t = -3.8 + k * .475; box(.12, .8, .12, fm, t, .4, 3.85); box(.12, .8, .12, fm, -3.85, .4, t); box(.12, .8, .12, fm, 3.85, .4, t); }
-    box(7.7, .1, .06, fm, 0, .6, 3.85); box(.06, .1, 7.7, fm, -3.85, .6, 0); box(.06, .1, 7.7, fm, 3.85, .6, 0);
+    for (let k = 0; k <= 16; k++) { const t = -3.8 + k * .475; if (GD < 10 || Math.abs(t + .6) > .8) box(.12, .8, .12, fm, t, .4, 3.85); box(.12, .8, .12, fm, -3.85, .4, t); box(.12, .8, .12, fm, 3.85, .4, t); }
+    if (GD >= 10) { box(3.15, .1, .06, fm, -2.275, .6, 3.85); box(3.85, .1, .06, fm, 1.925, .6, 3.85); } else box(7.7, .1, .06, fm, 0, .6, 3.85); box(.06, .1, 7.7, fm, -3.85, .6, 0); box(.06, .1, 7.7, fm, 3.85, .6, 0);
     box(.35, 1.6, .35, M('#6b4a2e'), -2.8, .8, -2.6); const crown = new T.Mesh(new T.SphereGeometry(1.1, 14, 10), M('#2f8a45')); crown.position.set(-2.8, 2.3, -2.6); crown.castShadow = true; g.add(crown);
   }
   // tier 3: lantern + bench
@@ -10093,6 +10125,30 @@ function buildHouse3D(h, tier) {
     flag.position.set(-1.17, wh + 2.5, 0); g.add(flag); const fp = flag.geometry.attributes.position, fx0 = Array.from(fp.array);
     anim(flag, t => { for (let k = 0; k < fp.count; k++) { const x = fx0[k * 3] + .55; fp.setZ(k, Math.sin(t * 3 - x * 4) * .08 * x); } fp.needsUpdate = true; });
   }
+  /* ---- 🎁 gift rewards (a real driveway + garden gate at 10 💎, supporter extras at 100 💎); userData.gs = stage, .go = order → the LIVE upgrade scene animates them in ---- */
+  if (GD >= 10) {
+    const gp = GD >= 100, goldM = M('#f2c94c', { metalness: .75, roughness: .25, emissive: '#7a5a10', emissiveIntensity: .3 }), stone = M('#efe4c8', { roughness: .7 }), white = M('#fbf7ee');
+    const tag = (o, st, go) => { o.userData.gs = st; o.userData.go = go; return o; };
+    tag(box(1.1, .06, 3.35, stone, -.6, .03, 3.55), 1, 0);   /* doorstep → road edge */
+    for (const sx of [-.6, .6]) tag(box(.1, .1, 3.35, goldM, -.6 + sx, .05, 3.55), 1, .5);
+    for (let k = 0; k < 7; k++) { const t = tag(box(.26, .08, .26, goldM, -.6, .06, 2.2 + k * .45), 1, 1 + k * .12); t.rotation.y = Math.PI / 4; }
+    for (const sx of [-.72, .72]) { tag(box(.24, 1.3, .24, white, -.6 + sx, .65, 3.85), 1, 2); const b = new T.Mesh(new T.SphereGeometry(.16, 16, 12), goldM); b.position.set(-.6 + sx, 1.42, 3.85); b.castShadow = true; g.add(b); tag(b, 1, 2.3); }
+    for (const sd of [-1, 1]) {   /* two gate leaves hinged at the posts, they swing open into the garden */
+      const lg = new T.Group(), lm = gp ? goldM : white; lg.position.set(-.6 + sd * .6, 0, 3.85); g.add(lg);
+      for (let k = 0; k < 4; k++) { const pk = new T.Mesh(new T.BoxGeometry(.08, .72, .06), lm); pk.position.set(-sd * (.08 + k * .15), .46, 0); pk.castShadow = true; lg.add(pk); }
+      for (const y of [.26, .66]) { const r = new T.Mesh(new T.BoxGeometry(.58, .06, .05), lm); r.position.set(-sd * .3, y, 0); lg.add(r); }
+      lg.userData.gate = -sd * 1.25; lg.rotation.y = lg.userData.gate; tag(lg, 1, 2.6);
+    }
+    for (const sx of [-.95, .95]) { const p = tag(box(.1, .9, .1, goldM, -.6 + sx, .45, 5.05), 1, 3); const b = new T.Mesh(new T.SphereGeometry(.1, 12, 8), goldM); b.position.set(-.6 + sx, .95, 5.05); g.add(b); tag(b, 1, 3.1); }   /* gold posts at the road */
+    if (gp) {
+      for (const sx of [-1.05, 1.05]) { tag(box(.1, 1.9, .1, M('#2b2f45'), -.6 + sx, .95, 4.25), 2, 0); const lb = new T.Mesh(new T.SphereGeometry(.2, 14, 10), M('#ffe08a', { emissive: '#ffd56b', emissiveIntensity: 1.8 })); lb.position.set(-.6 + sx, 2.0, 4.25); g.add(lb); tag(lb, 2, .3); }
+      const pl = new T.PointLight('#ffcf7a', .8, 7); pl.position.set(-.6, 2, 4.4); g.add(pl);
+      const gm = tag(box(.78, .52, .46, goldM, 2.4, 1.3, 3.7), 2, 1); gm.userData.swap = true;   /* golden mailbox over the red one */
+      const st = new T.Shape(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? .22 : .5; i ? st.lineTo(Math.cos(a) * r, -Math.sin(a) * r) : st.moveTo(Math.cos(a) * r, -Math.sin(a) * r); }
+      const star = new T.Mesh(new T.ExtrudeGeometry(st, { depth: .14, bevelEnabled: true, bevelSize: .04, bevelThickness: .04 }), M('#ffd23f', { metalness: .6, roughness: .3, emissive: '#c99a00', emissiveIntensity: .6 }));
+      star.position.set(0, wh + (h.og ? 3.4 : 2.6), 0); g.add(star); tag(star, 2, 2); anim(star, t => { star.rotation.y = t * 1.2; });
+    }
+  }
   // tenant stand
   if (h.stand) {
     const st = new T.Group(); st.position.set(-2.7, 0, 3.0); g.add(st);
@@ -10160,8 +10216,8 @@ const LIVE_CLIPS = [
   ['story', '📖 My story', "You know... not long ago I had nothing. Just my old van. No tires, no home. Then you started following... and every follow became a house. And now look at this! A whole town! I'm still saving up for my own place... ten cents at a time.", 'long'],
   ['loyal', '🌷 Loyalty secret', "Psst... wanna know a secret? The longer you stay my neighbor, the nicer your house gets. Three days? Flowers! One week? A garden fence! One month? A whole second floor! So... please don't move out, okay?", 'long'],
   ['gifts', '🎁 Gifts explained', "Did you know? Gifts light up the whole town! Small gifts make confetti, bigger ones make hearts... and the big ones? FIREWORKS! And soon, gifts will upgrade your house too. Pools, gardens... maybe even a hot tub!", 'old'],
-  ['vipexplain', '💎 Gift rewards explained', "Did you know? Every gift you send counts for YOUR house... forever! Ten diamonds? A golden path to your door. A hundred? You become a Supporter, with a gold star on your roof! A thousand? You move to VIP Hills! And at ten thousand... your own castle. Fifty thousand? Your very own tower. The tallest one in town!", 'long'],
-  ['viptease', '🏰 VIP Hills teaser', "Psst... have you seen VIP Hills yet? That's where my biggest supporters live. Villas... castles... and maybe one day, a giant tower!"],
+  ['vipexplain', '💎 Gift rewards explained', "Did you know? Every gift you send counts for YOUR house... forever! Ten diamonds? A golden path to your door. A hundred? You become a Supporter, with a gold star on your roof! A thousand? You move to VIP Hills! And at ten thousand... your own castle. Fifty thousand? Your very own tower. The tallest one in town!", 'old'],
+  ['viptease', '🏰 VIP Hills teaser', "Psst... have you seen VIP Hills yet? That's where my biggest supporters live. Villas... castles... and maybe one day, a giant tower!", 'old'],
   ['thanks', '🫶 Big thank you', "Hey... I just want to say thank you. Really. A few weeks ago I was all alone out here. Now I have a whole town full of neighbors. And that's... that's you. You built this. Every single house.", 'long'],
   ['bye', '🌙 End of stream', "Okay neighbors... that's it for today. Thank you for every follow, every gift, every little heart. Don't worry, I'll guard your houses tonight. Come back tomorrow and see what we built! Good night, everybody!", 'long'],
   ['bang', '❗ How !house works', "Wanna see YOUR house? Type ！house in the chat! Not just “house”... the exclamation mark comes first! ！house… and I fly right to your house!", 'old'],
@@ -10169,7 +10225,7 @@ const LIVE_CLIPS = [
   ['board2', 'board', "This board is for the people who keep this town alive. Thank you, all of you!", 'r:board'],
   ['board3', 'board', "Number one... I see you! Thank you so much!", 'r:board'],
   ['board4', 'board', "Everyone on this board gets a big hug from me. A virtual one... but still!", 'r:board'],
-  ['board5', 'board', "Who will be number one next? The board is waiting...", 'r:board'],
+  ['board5', 'board', "Who will be number one next? The board is waiting...", 'old'],
   ['board6', 'board', "These names will be remembered in Benny's Town... forever.", 'r:board'],
   ['board7', 'board', "Without you guys, this town wouldn't even exist. Seriously... thank you!", 'r:board'],
   ['pigeon', '🐦 Pigeon is back', "The pigeon is back on my roof. I think he lives here now."],
@@ -10242,7 +10298,7 @@ const LIVE_CLIPS = [
 ];
 // Random buttons: each click plays a different line of the group (never the same twice in a row).
 const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
-const LIVE_FX = [['board', '🏆 Top supporters board'], ['ladder', '💎 Show gift rewards'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
+const LIVE_FX = [['board', '🏆 Top supporters board'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
   msg.mid = Date.now() + Math.random();
@@ -10442,7 +10498,7 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) { if (S.T < a.after || (ST.active && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  if (a.t === null) { if (S.T < a.after || (ST.active && ST.mode !== 'up' && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
@@ -10525,12 +10581,44 @@ function streetStart(h, dur) {
   parts.forEach((o, k) => { o.userData.k = k / Math.max(1, parts.length - 1); o.userData.y0 = o.position.y; o.userData.s0 = o.scale.clone(); o.scale.set(.001, .001, .001); });
   // neighbours left and right (finished houses of other tenants)
   for (const [dx, idx] of [[-9, Math.max(0, h.idx - 1)], [9, Math.max(0, h.idx - 2)]]) { const hn = HOUSES[idx] || HOUSES[0]; const n = buildHouse3D(hn, 0); n.position.x = dx; ST.sc.add(n); ST.neigh.push(n); }
-  ST.parts = parts; ST.h = h; ST.t0 = S.T; ST.dur = dur; ST.active = true;
+  ST.parts = parts; ST.h = h; ST.t0 = S.T; ST.dur = dur; ST.active = true; ST.mode = 'build';
   return true;
+}
+/* 🎁 gift upgrade in 3D (LIVE): the finished house, then the new parts fly in one after another – driveway stones, gold kerbs, the gate posts, the gate swings open, lanterns, star – while the camera walks up the driveway */
+function streetUpgrade(h, from, to, dur) {
+  if (!ST.ready) return false;
+  const kill = g => { if (!g) return; ST.sc.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); };
+  kill(ST.house); for (const g of ST.neigh) kill(g); ST.neigh = [];
+  const g = buildHouse3D(h, tierOf(h)); ST.sc.add(g); ST.house = g;
+  const parts = [], anims = []; g.traverse(o => { if (o.userData.anim) anims.push(o); if (o.userData.gs && o.userData.gs > from && o.userData.gs <= to) parts.push(o); });
+  parts.sort((a, b) => (a.userData.gs - b.userData.gs) || (a.userData.go - b.userData.go));
+  const n = parts.length; parts.forEach((o, k) => { o.userData.k = k / Math.max(1, n - 1); o.userData.y0 = o.position.y; o.userData.s0 = o.scale.clone(); o.scale.set(.001, .001, .001); if (o.userData.gate != null) o.rotation.y = 0; });
+  for (const [dx, idx] of [[-9, Math.max(0, h.idx - 1)], [9, Math.max(0, h.idx - 2)]]) { const hn = HOUSES[idx] || HOUSES[0]; const nb = buildHouse3D(hn, 0); nb.position.x = dx; ST.sc.add(nb); ST.neigh.push(nb); }
+  Object.assign(ST, { mode: 'up', parts, anims, h, t0: S.T, dur, active: true, up: to, popped: 0 });
+  return true;
+}
+function streetUpRender(p) {
+  const D = ST.dur, bs = 1.6, be = D * .62, n = ST.parts.length;
+  for (const o of ST.parts) { const t0 = bs + o.userData.k * (be - bs), q = clamp((p - t0) / .45, 0, 1), e = q <= 0 ? .001 : eBack(q);
+    if (o.userData.gate != null) { o.scale.copy(o.userData.s0); o.rotation.y = o.userData.gate * eOut(clamp((p - t0 - .5) / 1.1, 0, 1)); if (q <= 0) o.scale.set(.001, .001, .001); }
+    else { o.scale.set(o.userData.s0.x * e, o.userData.s0.y * e, o.userData.s0.z * e); o.position.y = o.userData.y0 + (1 - eOut(q)) * 1.6; }
+    if (q > 0 && !o.userData.pp) { o.userData.pp = 1; if (ST.popped++ % 2 === 0) liveBeep(ST.popped % 6 === 1 ? 'coin' : 'pop'); } }
+  for (const o of ST.anims) o.userData.anim(p);
+  /* camera: from the street, slowly up the driveway, at the end a look up to the roof (star) */
+  const w = clamp(p / (D * .8), 0, 1), e = w * w * (3 - 2 * w), sw = Math.sin(p * .4) * .6;
+  const lu = ST.up >= 2 ? eOut(clamp((p - D * .66) / (D * .22), 0, 1)) : 0, L = (a, b) => a + (b - a) * lu;   /* supporter: at the end the camera pulls back so house, star, lanterns and mailbox are all in the picture */
+  ST.cam.position.set(L(-.6 + 2.6 * (1 - e) + sw, .5), L(3.0 - .3 * e, 4.4), L(14 - 3.6 * e, 17)); ST.cam.lookAt(L(-.6, .5), L(2.3, 4.4), L(2, .5));
+  ST.r.render(ST.sc, ST.cam);
+  const a = clamp(Math.min(p / .35, (D - p) / .45), 0, 1); ctx.globalAlpha = a; ctx.drawImage(ST.c, 0, 0, 1080, 1920);
+  for (let k = 0; k < 18; k++) { const ph = (p * .5 + k / 18) % 1, x = 540 + Math.sin(k * 7.3 + p * .6) * 420, y = 1500 - ph * 900; ctx.globalAlpha = a * Math.sin(ph * Math.PI) * .9; emoji(ctx, k % 3 ? '✨' : '⭐', x, y, 34 + (k % 4) * 10); }
+  ctx.globalAlpha = a; const k2 = eBack(clamp((p - .3) / .5, 0, 1)); ctx.save(); ctx.translate(540, 925); ctx.scale(k2, k2);
+  const s = (ST.up >= 2 ? '⭐ ' : '✨ ') + '@' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const wd = ctx.measureText(s).width + 70; panel(-wd / 2, -55, wd, 110, 55, 'rgba(10,12,26,.92)', '#ffd23f', 5); otxt(s, 0, 2, fs, '#ffd23f', 8); ctx.restore();
+  ctx.globalAlpha = 1;
 }
 function streetRender() {
   if (!ST.active) return;
   const p = S.T - ST.t0, D = ST.dur; if (p > D) { ST.active = false; return; }
+  if (ST.mode === 'up') return streetUpRender(p);
   const build = Math.min(3.0, D * .55);
   for (const o of ST.parts) { const t0 = .35 + o.userData.k * build, q = clamp((p - t0) / .35, 0, 1), e = q <= 0 ? .001 : eBack(q); o.scale.set(o.userData.s0.x * e, o.userData.s0.y * e, o.userData.s0.z * e); o.position.y = o.userData.y0 + (1 - eOut(q)) * 2.2; }
   const sw = Math.sin(p * .35) * .9;
@@ -10546,7 +10634,7 @@ function streetRender() {
   }
 }
 
-const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '💎 Gifts upgrade YOUR house forever: 100 = ⭐ Supporter · 1K = VIP Hills', '🏰 10K 💎 = your own castle · 🏙️ 50K = your own tower', '🗳️ You vote what Benny buys next'];
+const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🗳️ You vote what Benny buys next'];
 function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim bar; big version after every gift / from the control panel
   // nearly invisible while a house is built or shown (new follower, !house, gift at a house) or a big alert is on screen
   const busy = (LV.alerts.length && LV.alerts[0].t !== null) || liveFocusBusy(), full = S.T < (LV.ladderUntil || 0) && !busy;
@@ -10606,11 +10694,11 @@ async function giftPush() {   // adds only what came in since the last push onto
 function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold sparkles, coins fly into Benny's bank, Benny says thank you
   const h = BY_NAME.get(norm(j.name)) || null, tot = giftOf(j.name), prevT = giftTier(tot - j.dia), nowT = giftTier(tot), nx = GIFT_TIERS[nowT];
   const pool = LIVE_CLIPS.filter(c => c[3] === (j.dia >= 100 ? 'r:gbig' : 'r:gift')); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]);
-  liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · ' + (nx ? fmtN(tot) + ' / ' + fmtN(nx[0]) + ' to ' + nx[1] + ' ' + nx[2] : 'all gift rewards 👑');
+  liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · you are amazing 💛';   /* no progress to the next reward: TikTok counts that as asking for gifts */
   if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 saved · follow me and your house gets built 🏠', '#ffd23f'); return; }
   j.h = h; j.dur = 9; liveFocus(h, 9.5); LV.giftFx = { h, t0: S.T };
   if (nowT > prevT && nowT >= 2) { LV.giftFx = null; return liveTierShow(h, nowT, j); }   // a new big stage: its own long animation
-  if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) h.goldT = S.T + 2; liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
+  if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) { h.goldT = S.T + 2; if (h.town && streetUpgrade(h, 0, 1, 11)) { j.dur = 11.5; liveFocus(h, 12); h.goldT = S.T + 11; } } liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
   else liveAlert('🎁 THANK YOU @' + trunc(h.name, 16) + '!', sub, '#ffd23f', .4);
   liveAt(2.4, () => { const [x, y] = uvS(h.i, h.j); for (let k = 0; k < 14; k++) { const tx = 540 + (Math.random() - .5) * 60, ty = 410; LV.parts.push({ k: 'o', x: x + (Math.random() - .5) * 60, y: y - 40, vx: (tx - x) / 1.1, vy: (ty - y + 40) / 1.1, r: 0, life: 1.1, delay: k * .06 }); } });
   for (let k = 0; k < 5; k++) liveAt(3.4 + k * .1, () => liveBeep('coin'));
@@ -10627,9 +10715,11 @@ function liveTierShow(h, t, j) {
   liveFx('coins'); liveAlert(ti, sub, '#ffd23f');
   if (t === 2) {   // ⭐ Supporter: at their own house
     h.supT = S.T + 1e6; look(h.i, h.j, 2.1);
-    liveAt(3, () => { h.supT = S.T; liveFx('confetti', .6); liveBeep('chime'); LV.giftFx = { h, t0: S.T }; });
-    liveAt(9, () => say('r:gift'));
-    liveAt(17, () => { liveFx('hearts'); liveAlert('💛 THANK YOU @' + nm + '!', 'Every gift upgrades your house', '#ffd23f'); });
+    const pt = giftTier(giftOf(j.name) - (j.dia || 0)), in3 = h.town && streetUpgrade(h, pt >= 1 ? 1 : 0, 2, 15), t3 = in3 ? 15 : 3;   /* first 15 s in 3D: driveway, gate, lanterns, golden mailbox and the star fly in */
+    if (in3 && pt < 1) h.goldT = S.T + 14;
+    liveAt(t3, () => { h.supT = S.T; liveFx('confetti', .6); liveBeep('chime'); LV.giftFx = { h, t0: S.T }; });
+    liveAt(in3 ? 6 : 9, () => say('r:gift'));
+    liveAt(17, () => { liveFx('hearts'); liveAlert('💛 THANK YOU @' + nm + '!', 'You are the best neighbor 💛', '#ffd23f'); });
     liveAt(22, () => look(h.i, h.j, 1.1));
     return;
   }
@@ -10736,7 +10826,7 @@ function liveTikTok(type, d) {
   if (type === 'gift' && u) {
     if (d.giftType === 1 && !d.repeatEnd) return;
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
-    liveGiftAdd(u, dia); LV.ladderUntil = Math.max(LV.ladderUntil || 0, S.T + 10);
+    liveGiftAdd(u, dia);
     if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
   // camera flies to the house: "!house …" or a message that is ONLY "house" / "haus" / "my house" (so "nice house" does nothing)
@@ -10759,13 +10849,13 @@ function startLive() {
     if (LV.tour && S.T > LV.holdUntil) liveTourNext();
     const k = 1 - Math.exp(-dt * 2.4); cam.x += (target.x - cam.x) * k; cam.y += (target.y - cam.y) * k; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * k);
     draw(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); liveGiftLadder(); liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
+    liveJobs(); liveBuildFx(); liveGiftFx(); streetRender(); liveWeather(dt); liveParts(dt); liveSafe(330, 262, .8, () => { liveHUD(); liveGoal(); liveQueueUI(); liveTips(); /* liveGiftLadder() removed 25.11.: a reward list for gifts on screen counts as gift solicitation on TikTok */ liveBanner(); liveStatus(); }); liveSafe(900, 1000, .85, liveAlerts); liveBennyCamSafe();
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
 }
 
-window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, W3, __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
+window.SITE = { flyTo, search, HOUSES, open3D, target, isoW, W3, __tt: (t, d) => liveTikTok(t, d), __add: n => liveAddHouse(n, true), __enq: n => liveEnqueue(n, 'build'), __ff: t => { const step = .1; while (S.T < LV.__t0 + t) { S.T += step; if (LV.tour && S.T > LV.holdUntil) liveTourNext(); liveJobs(); cam.x += (target.x - cam.x) * .4; cam.y += (target.y - cam.y) * .4; cam.z = Math.exp(Math.log(cam.z) + (Math.log(target.z) - Math.log(cam.z)) * .4); } } };
 setInterval(() => { try { updateEnvChip(); } catch (e) {} }, 30000);
 function start() { try { updateEnvChip(); } catch (e) {} loadLiveJoins(true).then(n => { loadGifts(); if (!n) return; $('sBank').textContent = '€' + (TOWN.bankCents / 100).toFixed(2); $('sTen').textContent = HOUSES.length.toLocaleString('en-US'); }); resize(); initUI(); flashHint(); placeBenny(); addEventListener('resize', placeBenny); { const [bx, by] = isoW(BHOME[0], BHOME[1]), R = 11; target.x = bx; target.y = by + 10; target.z = clamp(Math.min((VW - 20) / (2 * R * TW / Math.SQRT2), (VH * .55) / (2 * R * TH / Math.SQRT2)), .12, 1.2); } cam.x = target.x; cam.y = target.y; cam.z = target.z * .7; if (!location.hash || location.hash === '#') GLOBE.enter(true); requestAnimationFrame(frame); }
 
