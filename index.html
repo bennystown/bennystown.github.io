@@ -10246,7 +10246,7 @@ const LIVE_CLIPS = [
   ['counted', '💰 Fun fact: 10 cents', "Fun fact: I counted every follow. Twice. That's a lot of ten cents!"],
   ['hi', '👋 Welcome', "Welcome to my town! Follow, and you get your own house!", 'r:hello'],
   ['back', '👋 Welcome back', "Oh hey! Welcome back, neighbor! Good to see you again!", 'r:hello'],
-  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'r:follow'],
+  ['follow', '➕ Follow reminder', "If you're not following yet... this is your sign! Hit follow, and watch your house get built. Right here, right now!", 'old'],
   ['share', '📤 Share the live', "Hey, can you do me a favor? Share the live with just one friend. One! More neighbors means more houses... and maybe I finally get a real bed."],
   ['country', '🌍 Where from?', "Where are you all watching from? Type your country in the chat! I wanna see how far my town reaches!"],
   ['quiet', '🤫 So quiet', "Hmm... it's so quiet in here. Is anybody there? Say hi in the chat!"],
@@ -10261,7 +10261,7 @@ const LIVE_CLIPS = [
   ['cents', '💰 10 cents', "Ten cents for every follow... that's how I get off the street."],
   ['buy', '🛒 What to buy', "Okay chat... what should I buy next?"],
   ['stay', '🌷 Stay longer', "Don't forget... the longer you stay, the better your house gets!"],
-  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!"],
+  ['tap', '❤️ Tap tap', "Tap the screen! I can feel it!", 'old'],
   ['hungry', '🍕 Hungry', "I'm sooo hungry. If someone votes for pizza next time... I would NOT say no."],
   ['cold', '🥶 Cold', "Brrr... it's getting cold out here."],
   ['nervous', '😅 Nervous', "Hehe... I'm a little nervous. First time live!"],
@@ -10271,13 +10271,13 @@ const LIVE_CLIPS = [
   ['night', '😴 Good night', "Okay... I'm going to sleep now. Good night, neighbors!"],
   ['gthx1', "gthx1", "Thank you for the gift! You're the best neighbor ever!", 'r:gift'],
   ['gthx2', "gthx2", "Wait, a gift? For me?! Thank you, thank you, thank you!", 'r:gift'],
-  ['gthx3', "gthx3", "Aww, thank you! That goes straight into the house fund!", 'r:gift'],
+  ['gthx3', "gthx3", "Aww, thank you! That goes straight into the house fund!", 'old'],
   ['gthx4', "gthx4", "You just made my day. Thank you so much for the gift!", 'r:gift'],
   ['gthx5', "gthx5", "Another gift?! You guys are spoiling me! Thank you!", 'r:gift'],
   ['gthx6', "gthx6", "Thank you! I'm putting that right... here. In my piggy bank. Safe.", 'r:gift'],
   ['gbig1', "gbig1", "NO WAY! NO WAY! Did you just send THAT?! I... I don't even know what to say! You are officially the MVP of this whole town! THANK YOU!", 'r:gbig'],
   ['gbig2', "gbig2", "Hold on, hold on, HOLD ON! Everybody look at this! That is HUGE! Fireworks for everyone! You're a legend, seriously... thank you so much!", 'r:gbig'],
-  ['gbig3', "gbig3", "Okay... I'm not crying. You're crying. That gift means so much to me. Thank you. Really. One day you're getting the fanciest house on the whole street!", 'r:gbig'],
+  ['gbig3', "gbig3", "Okay... I'm not crying. You're crying. That gift means so much to me. Thank you. Really. One day you're getting the fanciest house on the whole street!", 'old'],
   ['gbig4', "gbig4", "WHAT?! I have to sit down. You're insane! The whole town is going crazy right now! THANK YOUUU!", 'r:gbig'],
   ['hello1', "hello1", "Hey hey hey! Welcome in, neighbor!", 'r:hello'],
   ['hello2', "hello2", "Oh, new faces! Hi! Welcome to Benny's Town!", 'r:hello'],
@@ -10288,10 +10288,10 @@ const LIVE_CLIPS = [
   ['crazy2', "crazy2", "This is insane! What is happening right now?!", 'r:crazy'],
   ['crazy3', "crazy3", "Okay, this chat is on FIRE today! I love you guys!", 'r:crazy'],
   ['crazy4', "crazy4", "I can't keep up! Slow down! No, actually... don't slow down!", 'r:crazy'],
-  ['fpush1', "fpush1", "Every single follow builds a real house. Right here. Live. Try it!", 'r:follow'],
-  ['fpush2', "fpush2", "We're so close to the next goal! Hit follow and help me get there!", 'r:follow'],
-  ['fpush3', "fpush3", "Psst... the follow button is right there. Your house is waiting!", 'r:follow'],
-  ['likes', "❤️ Like goal → dance", "Tap tap tap! If you fill up the screen with hearts... I'll do a little dance for you!"],
+  ['fpush1', "fpush1", "Every single follow builds a real house. Right here. Live. Try it!", 'old'],
+  ['fpush2', "fpush2", "We're so close to the next goal! Hit follow and help me get there!", 'old'],
+  ['fpush3', "fpush3", "Psst... the follow button is right there. Your house is waiting!", 'old'],
+  ['likes', "❤️ Like goal → dance", "Tap tap tap! If you fill up the screen with hearts... I'll do a little dance for you!", 'old'],
   ['street', "🛣️ Name a street", "I need your help! What should I name the next street? Type your ideas in the chat!"],
   ['mvp', "🏆 Top supporters", "Big shoutout to my top supporters today! You know who you are. You keep this town alive!"],
   ['sleepy', "🥱 Sleepy", "Sorry... I was up all night guarding your houses."],
@@ -10303,7 +10303,7 @@ const LIVE_CLIPS = [
   ['dancego', "🕺 Dance (+ effect)", "Okay, okay... you want a dance? Here we go!"],
 ];
 // Random buttons: each click plays a different line of the group (never the same twice in a row).
-const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy'], ['r:follow', '➕ Push follows']];
+const LIVE_RND = [['r:gift', '🎁 Thank you for the gift'], ['r:gbig', '🎆 HUGE gift – big thank you'], ['r:hello', '👋 Hello / welcome'], ['r:crazy', '🤯 You guys are crazy']];
 const LIVE_FX = [['board', '🏆 Top supporters board'], ['vip', '🏰 Fly over VIP Hills'], ['confetti', '🎉 Confetti'], ['hearts', '💖 Hearts'], ['fireworks', '🎆 Fireworks'], ['coins', '🪙 Coin rain'], ['dance', '🕺 Benny dance'], ['snow', '❄️ Snow on/off'], ['rain', '🌧️ Rain on/off'], ['night', '🌙 Night on/off'], ['tour', '🎥 Tour on/off']];
 const CH_NAME = 'benny-live';
 function liveSend(msg) {
@@ -10336,6 +10336,30 @@ function startControl() {
   const btn = (r, label, fn, cls) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; r.appendChild(b); return b; };
   const log = document.createElement('div'); log.className = 'log';
   const note = s => { log.textContent = new Date().toLocaleTimeString() + '  ' + s + '\n' + log.textContent.slice(0, 600); };
+  h('🎙️ Host mode – you talk and show houses');
+  const hs = { on: false, waiting: 0 }, reqs = [], hr1 = row();
+  const hostBtn = btn(hr1, '🎙️ Host mode: OFF', () => liveSend({ type: 'host', on: !hs.on }), 'big');
+  const buildBtn = btn(hr1, '🏗️ Build all waiting (0)', () => { liveSend({ type: 'burst' }); note('Building all waiting houses'); });
+  const hr2 = row(), inp = document.createElement('input'); inp.placeholder = 'name from chat'; hr2.appendChild(inp); const nm = () => inp.value.trim().replace(/^@+/, '');
+  btn(hr2, '📍 Show', () => { if (nm()) { liveSend({ type: 'findnow', name: nm() }); note('Showing @' + nm()); } });
+  btn(hr2, '🧊 3D', () => { if (nm()) { liveSend({ type: 'show3d', name: nm() }); note('3D: @' + nm()); } });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && nm()) { liveSend({ type: 'findnow', name: nm() }); note('Showing @' + nm()); } });
+  const hr3 = row(); [['➕', 'in'], ['➖', 'out'], ['⬅️', 'l'], ['⬆️', 'u'], ['⬇️', 'd'], ['➡️', 'r'], ['🗺️ Overview', 'home'], ['✖ Close 3D', 'x3d']].forEach(([l, a]) => btn(hr3, l, () => liveSend({ type: 'cam', a })));
+  const reqBox = document.createElement('div'); reqBox.className = 'log'; reqBox.style.marginTop = '6px'; cp.appendChild(reqBox);
+  const drawReqs = () => { reqBox.innerHTML = ''; const t = document.createElement('div'); t.textContent = reqs.length ? '📬 Want to see their house (newest first):' : '📬 In host mode, chat "house" requests show up here.'; reqBox.appendChild(t);
+    const rr = document.createElement('div'); rr.className = 'row'; reqBox.appendChild(rr);
+    reqs.slice(0, 14).forEach(n => { btn(rr, '📍 @' + n, () => { liveSend({ type: 'findnow', name: n }); inp.value = n; note('Showing @' + n); }); btn(rr, '🧊', () => { liveSend({ type: 'show3d', name: n }); note('3D: @' + n); }); btn(rr, '✓', () => { reqs.splice(reqs.indexOf(n), 1); drawReqs(); }); }); };
+  drawReqs();
+  const tip = document.createElement('div'); tip.className = 'log'; tip.style.marginTop = '4px';
+  tip.textContent = 'Host mode: new houses do not build right away, they wait (counter above). Take a build break now and then with "Build all waiting". Talk yourself: greet people by name, show their houses, thank gifts in your own voice. OBS: right-click the town source → Interact to zoom with mouse/trackpad.';
+  cp.appendChild(tip);
+  liveListen(m => { if (m.type === 'hoststate') { hs.on = !!m.on; hs.waiting = m.waiting || 0; hostBtn.textContent = '🎙️ Host mode: ' + (hs.on ? 'ON' : 'OFF'); hostBtn.style.background = hs.on ? '#46e08a' : ''; hostBtn.style.borderColor = hs.on ? '#46e08a' : ''; hostBtn.style.color = hs.on ? '#0b2a18' : ''; buildBtn.textContent = '🏗️ Build all waiting (' + hs.waiting + ')'; }
+    if (m.type === 'req' && m.name && !reqs.includes(m.name)) { reqs.unshift(m.name); drawReqs(); } });
+  liveSend({ type: 'hostping' });
+  let autoT = (() => { try { return localStorage.getItem('benny-autothanks') === '1'; } catch (e) { return false; } })();
+  const atRow = row(), atBtn = btn(atRow, '', () => { autoT = !autoT; try { localStorage.setItem('benny-autothanks', autoT ? '1' : '0'); } catch (e) {} liveSend({ type: 'autothanks', on: autoT }); paintAT(); });
+  function paintAT() { atBtn.textContent = '🤖 Benny thanks gifts by himself: ' + (autoT ? 'ON' : 'OFF – you thank them yourself'); }
+  paintAT();
   h('🧪 Test');
   let r = row(); btn(r, '🧪 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); }, 'big');
   btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
@@ -10357,7 +10381,7 @@ function startControl() {
 }
 
 /* ---------- the LIVE scene ---------- */
-const LV = { q: [], job: null, ws: null, wsOk: false, wsTry: 0, msShown: {}, tour: true, snow: false, rain: false, night: 0, nightT: 0, stopT: 0, holdUntil: 0, cur: null, banner: '', bannerT: 0, alerts: [], parts: [], dance: -9, talk: null, talkT: 0, audio: {}, analyser: null, level: 0, joins: [], tick: 0 };
+const LV = { host: false, burst: false, autoThanks: (() => { try { return localStorage.getItem('benny-autothanks') === '1'; } catch (e) { return false; } })(), q: [], job: null, ws: null, wsOk: false, wsTry: 0, msShown: {}, tour: true, snow: false, rain: false, night: 0, nightT: 0, stopT: 0, holdUntil: 0, cur: null, banner: '', bannerT: 0, alerts: [], parts: [], dance: -9, talk: null, talkT: 0, audio: {}, analyser: null, level: 0, joins: [], tick: 0 };
 function liveAudioCtx() { if (!LV.ac) { try { LV.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (LV.ac && LV.ac.state === 'suspended') LV.ac.resume(); return LV.ac; }
 function liveBeep(kind) {
   const ac = liveAudioCtx(); if (!ac) return; const t0 = ac.currentTime;
@@ -10445,14 +10469,31 @@ function liveOnMsg(m) {
   if (m.type === 'find' && m.name) liveEnqueue(m.name, 'find');
   if (m.type === 'findnow' && m.name) {
     const h = liveFindHouse(m.name);
-    if (h) { liveFocus(h, 10); liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
+    if (h) { liveFocus(h, LV.host ? 3600 : 10); liveBeep('pop'); liveAlert('📍 @' + h.name, 'House #' + (h.idx + 1).toLocaleString('en-US') + (h.og ? ' · 👑 OG' : ''), '#ffd23f'); }
     else liveAlert('🔍 Not found yet', '“' + m.name + '” · follow = your house gets built 🏠', '#ff6b8b');
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
   if (m.type === 'testgift') liveTestGift(m.dia || 10);
+  if (m.type === 'host') { LV.host = !!m.on; if (LV.host) { LV.tourWas = LV.tour; LV.tour = false; LV.holdUntil = S.T + 3600; } else { LV.tour = LV.tourWas !== false; LV.holdUntil = S.T + 2; } liveHostState(true); }
+  if (m.type === 'burst') { LV.burst = true; liveHostState(true); }
+  if (m.type === 'hostping') liveHostState(true);
+  if (m.type === 'autothanks') LV.autoThanks = !!m.on;
+  if (m.type === 'show3d' && m.name) { const h = liveFindHouse(m.name); if (!h) liveAlert('🔍 Not found yet', '“' + m.name + '”', '#ff6b8b'); else if (streetShow(h, LV.host ? 20 : 14)) liveBeep('pop'); }
+  if (m.type === 'cam') liveCam(m.a);
   if (m.type === 'clip') { if (m.clip === 'stop') { for (const k in LV.audio) LV.audio[k].pause(); LV.talkUntil = 0; } else livePlay(m.clip, m.text); }
   if (m.type === 'banner') { LV.banner = m.text || ''; LV.bannerT = S.T; }
+}
+function liveHostState(force) {   /* tells the dock: host mode on/off + how many new neighbours are waiting */
+  const w = LV.q.filter(x => x.kind === 'build').length; if (!force && w === LV.lastWait && LV.host === LV.lastHost) return;
+  LV.lastWait = w; LV.lastHost = LV.host; liveSend({ type: 'hoststate', on: LV.host, waiting: w });
+}
+function liveCam(a) {   /* 🎙️ the host moves the camera from the dock */
+  if (a === 'x3d') { if (ST.active) ST.dur = Math.min(ST.dur, S.T - ST.t0 + .45); return; }
+  selected = null; LV.cur = null; LV.holdUntil = S.T + (LV.host ? 3600 : 20);
+  if (a === 'home') { target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; return; }
+  if (a === 'in') target.z = Math.min(4, target.z * 1.4); if (a === 'out') target.z = Math.max(.06, target.z / 1.4);
+  const st = 260 / target.z; if (a === 'l') target.x -= st; if (a === 'r') target.x += st; if (a === 'u') target.y -= st; if (a === 'd') target.y += st;
 }
 function liveTestGift(dia) {   /* 🧪 only for testing before a LIVE: the 3D upgrade scene for a pretend neighbour "@TEST" – no gift is counted or saved; the measured FPS shows at the end */
   const base = HOUSES[Math.floor(Math.random() * Math.min(HOUSES.length, 5000))], h = Object.assign({}, base, { name: 'TEST', gd: dia, og: false }), up = dia >= 100 ? 2 : 1, dur = up === 2 ? 15 : 11;
@@ -10564,6 +10605,7 @@ function liveEnqueue(name, kind) {
   name = String(name || '').replace(/^@+/, '').trim(); if (!name) return;
   if (LV.q.some(j => norm(j.name) === norm(name) && j.kind === kind) || (LV.job && norm(LV.job.name) === norm(name) && LV.job.kind === kind)) return;
   if (kind === 'build' && BY_NAME.get(norm(name)) && !LV.q.length && !LV.job) kind = 'find';
+  if (kind === 'find' && LV.host) { liveSend({ type: 'req', name }); LV.hint = { text: '📬 @' + trunc(name, 18) + ' wants to see their house', until: S.T + 5 }; return; }   /* host mode: the host picks and shows it */
   LV.q.push({ name, kind });
 }
 
@@ -10632,10 +10674,29 @@ function streetUpRender(p) {
   const s = (ST.up >= 2 ? '⭐ ' : '✨ ') + '@' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const wd = ctx.measureText(s).width + 70; panel(-wd / 2, -55, wd, 110, 55, 'rgba(10,12,26,.92)', '#ffd23f', 5); otxt(s, 0, 2, fs, '#ffd23f', 8); ctx.restore();
   ctx.globalAlpha = 1;
 }
+function streetShow(h, dur) {   /* 🎙️ host mode: a neighbour's finished house in 3D, the camera swings slowly in front of it */
+  if (!ST.ready) return false;
+  const kill = g => { if (!g) return; ST.sc.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); };
+  kill(ST.house); for (const g of ST.neigh) kill(g); ST.neigh = [];
+  const g = noLights(buildHouse3D(h, tierOf(h))); ST.sc.add(g); ST.house = g; const anims = []; g.traverse(o => { if (o.userData.anim) anims.push(o); });
+  for (const [dx, idx] of [[-9, Math.max(0, h.idx - 1)], [9, Math.max(0, h.idx - 2)]]) { const hn = HOUSES[idx] || HOUSES[0]; const nb = buildHouse3D(hn, 0); nb.position.x = dx; ST.sc.add(nb); ST.neigh.push(nb); }
+  Object.assign(ST, { mode: 'show', parts: [], anims, h, t0: S.T, dur, active: true });
+  return true;
+}
+function streetShowRender(p) {
+  for (const o of ST.anims) o.userData.anim(p);
+  const a = Math.sin(p * .3) * .8, r = 15.5; ST.cam.position.set(Math.sin(a) * r - .3, 4.3 + Math.sin(p * .21) * .5, Math.cos(a) * r + 1); ST.cam.lookAt(-.2, 2.5, .8);
+  ST.r.render(ST.sc, ST.cam);
+  const al = clamp(Math.min(p / .35, (ST.dur - p) / .45), 0, 1); ctx.globalAlpha = al; ctx.drawImage(ST.c, 0, 0, 1080, 1920);
+  const k = eBack(clamp((p - .2) / .5, 0, 1)); ctx.save(); ctx.translate(540, 925); ctx.scale(k, k);
+  const s = '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', '#46e08a', 5); otxt(s, 0, 2, fs, '#46e08a', 8); ctx.restore();
+  ctx.globalAlpha = 1;
+}
 function streetRender() {
   if (!ST.active) return;
   const p = S.T - ST.t0, D = ST.dur; if (p > D) { ST.active = false; return; }
   if (ST.mode === 'up') return streetUpRender(p);
+  if (ST.mode === 'show') return streetShowRender(p);
   const build = Math.min(3.0, D * .55);
   for (const o of ST.parts) { const t0 = .35 + o.userData.k * build, q = clamp((p - t0) / .35, 0, 1), e = q <= 0 ? .001 : eBack(q); o.scale.set(o.userData.s0.x * e, o.userData.s0.y * e, o.userData.s0.z * e); o.position.y = o.userData.y0 + (1 - eOut(q)) * 2.2; }
   const sw = Math.sin(p * .35) * .9;
@@ -10651,7 +10712,7 @@ function streetRender() {
   }
 }
 
-const LIVE_TIPS = ['🏠 Follow = you get a FREE house in my town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Stay longer = better house: 3 days flowers · 1 week fence · 1 month 2nd floor', '💰 Every follow = 10¢ for Benny', '🔍 Find your house: bennystown.github.io', '🗳️ You vote what Benny buys next'];
+const LIVE_TIPS = ['🏠 Every follower has their own house in Benny\'s Town', '📍 Type “house” in chat → I fly to YOUR house', '🌷 Houses grow with time: flowers · fence · 2nd floor', '🔍 Find your house: bennystown.github.io', '🗳️ You vote what Benny buys next'];
 function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim bar; big version after every gift / from the control panel
   // nearly invisible while a house is built or shown (new follower, !house, gift at a house) or a big alert is on screen
   const busy = (LV.alerts.length && LV.alerts[0].t !== null) || liveFocusBusy(), full = S.T < (LV.ladderUntil || 0) && !busy;
@@ -10666,16 +10727,17 @@ function liveGiftLadder() {   // 🎁 gift rewards: always on screen as a slim b
 }
 function liveTips() {
   if (LV.hint && S.T < LV.hint.until) { panel(40, 772, 1000, 60, 30, 'rgba(255,46,99,.92)', 'rgba(255,255,255,.35)', 2); txt(LV.hint.text, 540, 803, fitSize(LV.hint.text, 30, 940), '#ffffff', 'center', 'middle'); return; }
-  const k = Math.floor(S.T / 7) % LIVE_TIPS.length, ph = S.T % 7, a = clamp(Math.min(ph / .4, (7 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
-  panel(40, 772, 1000, 60, 30, 'rgba(10,12,26,.88)', 'rgba(255,255,255,.25)', 2);
-  ctx.save(); ctx.globalAlpha = a; txt(s, 540, 803, fitSize(s, 30, 940), '#ffffff', 'center', 'middle'); ctx.restore();
+  const P = 30, ph = S.T % P; if (ph > 8) return;   /* a tip shows for 8 s every 30 s – no permanent loop */
+  const k = Math.floor(S.T / P) % LIVE_TIPS.length, a = clamp(Math.min(ph / .4, (8 - ph) / .4), 0, 1), s = LIVE_TIPS[k];
+  ctx.save(); ctx.globalAlpha = a; panel(40, 772, 1000, 60, 30, 'rgba(10,12,26,.88)', 'rgba(255,255,255,.25)', 2);
+  txt(s, 540, 803, fitSize(s, 30, 940), '#ffffff', 'center', 'middle'); ctx.restore();
 }
 function liveJobs() {
-  liveRunSched();
+  liveRunSched(); liveHostState();
   if (LV.ms && S.T < LV.ms.until) return;
   const busy = LV.job && S.T - LV.job.t < (LV.job.dur || (LV.q.length > 8 ? 2.6 : LV.q.length > 3 ? 3.6 : 5.2)) + .15;
   if (busy || !LV.q.length) { if (LV.job && !busy) LV.job = null; return; }
-  const bi = LV.q.findIndex(x => x.kind === 'build'), j = LV.q.splice(bi >= 0 ? bi : 0, 1)[0]; j.t = S.T; LV.job = j; // new followers always before !house requests
+  let bi = LV.q.findIndex(x => x.kind === 'build'); if (bi < 0) bi = 0; if (LV.host && !LV.burst) { bi = LV.q.findIndex(x => x.kind === 'gift'); if (bi < 0) return; } /* host mode: houses wait, gifts still play */ const j = LV.q.splice(bi, 1)[0]; j.t = S.T; LV.job = j; if (LV.burst && !LV.q.some(x => x.kind === 'build')) LV.burst = false; // new followers always before !house requests
   if (j.kind === 'build') {
     const { h, isNew } = liveAddHouse(j.name);
     liveFocus(h, 6); j.h = h;
@@ -10710,9 +10772,9 @@ async function giftPush() {   // adds only what came in since the last push onto
 }
 function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold sparkles, coins fly into Benny's bank, Benny says thank you
   const h = BY_NAME.get(norm(j.name)) || null, tot = giftOf(j.name), prevT = giftTier(tot - j.dia), nowT = giftTier(tot), nx = GIFT_TIERS[nowT];
-  const pool = LIVE_CLIPS.filter(c => c[3] === (j.dia >= 100 ? 'r:gbig' : 'r:gift')); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]);
+  const pool = LIVE_CLIPS.filter(c => c[3] === (j.dia >= 100 ? 'r:gbig' : 'r:gift')); if (LV.autoThanks && pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]);   /* off by default: robotic auto-thanks look non-interactive to TikTok */
   liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · you are amazing 💛';   /* no progress to the next reward: TikTok counts that as asking for gifts */
-  if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 saved · follow me and your house gets built 🏠', '#ffd23f'); return; }
+  if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 · you are amazing 💛', '#ffd23f'); return; }
   j.h = h; j.dur = 9; liveFocus(h, 9.5); LV.giftFx = { h, t0: S.T };
   if (nowT > prevT && nowT >= 2) { LV.giftFx = null; return liveTierShow(h, nowT, j); }   // a new big stage: its own long animation
   if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) { h.goldT = S.T + 2; if (h.town && streetUpgrade(h, 0, 1, 11)) { j.dur = 11.5; liveFocus(h, 12); h.goldT = S.T + 11; } } liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
@@ -10727,7 +10789,7 @@ function liveTierShow(h, t, j) {
   const L = TIER_LEN[t] || 25, nm = trunc(h.name, 14), [ti, sub] = TIER_TITLE[t].map(x => x.replace(/@N/g, '@' + nm)), at = (f, fn) => liveAt(f * L, fn);
   j.h = h; j.dur = L; LV.holdUntil = S.T + L + 1; selected = null; LV.cur = null;
   const look = (u, v, z, dy) => { const [x, y] = isoW(u, v); target.x = x; target.y = y - (dy == null ? 30 : dy); target.z = z; LV.holdUntil = Math.max(LV.holdUntil, S.T + 4); };
-  const say = g => { const pool = LIVE_CLIPS.filter(c => c[3] === g); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]); };
+  const say = g => { if (!LV.autoThanks) return; const pool = LIVE_CLIPS.filter(c => c[3] === g); if (pool.length) livePlay(pool[Math.floor(Math.random() * pool.length)][0]); };
   for (let k = 0; k < 6; k++) liveAt(k * .12, () => liveBeep('pop'));
   liveFx('coins'); liveAlert(ti, sub, '#ffd23f');
   if (t === 2) {   // ⭐ Supporter: at their own house
@@ -10746,7 +10808,7 @@ function liveTierShow(h, t, j) {
   look(h.oi, h.oj, 2.1);
   at(.1, () => liveAlert('🚚 Moving day!', '@' + nm + ' leaves the old street', '#ffd23f'));
   at(.16, () => look(V.gate[0], V.gate[1] - 6, .9, 20));
-  at(.22, () => { look(V.C[0], V.C[1], .32, 0); liveAlert('⭐ VIP HILLS', 'Only for Benny\'s biggest supporters', '#ffd23f'); });
+  at(.22, () => { look(V.C[0], V.C[1], .32, 0); liveAlert('⭐ VIP HILLS', 'The fanciest district in Benny\'s Town', '#ffd23f'); });
   at(.3, () => look(cu, cv, zF, dy));
   at(.32, () => { const dur = L * .3; h.vipAnim = { t0: S.T, dur }; for (let k = 0; k < Math.floor(dur / 1.3); k++) liveAt(k * 1.3, () => liveBeep('pop')); });
   at(.47, () => say('r:gbig'));
@@ -10795,7 +10857,7 @@ function liveGoal() {
 function liveQueueUI() {
   const list = LV.q.filter(j => j.kind === 'build'); if (!list.length) return;
   const shown = list.slice(0, 4).map(j => '@' + trunc(j.name, 14)).join('  ·  ') + (list.length > 4 ? '  +' + (list.length - 4) : '');
-  const s = '🔨 Next: ' + shown, fs = fitSize(s, 28, 900); ctx.font = F(fs); const w = Math.min(980, ctx.measureText(s).width + 48);
+  const s = (LV.host && !LV.burst ? '🏗️ Moving in soon: ' : '🔨 Next: ') + shown, fs = fitSize(s, 28, 900); ctx.font = F(fs); const w = Math.min(980, ctx.measureText(s).width + 48);
   panel(540 - w / 2, 708, w, 50, 25, 'rgba(70,224,138,.92)'); txt(s, 540, 734, fs, '#0b2a18', 'center', 'middle');
 }
 function liveStatus() {
