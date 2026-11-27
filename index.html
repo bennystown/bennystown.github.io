@@ -9555,7 +9555,7 @@ const GIFT_TIERS = [[10, '✨', 'Golden driveway', 'A golden driveway and a gard
 const GIFTS = {}; let GIFT_DELTA = {};
 const giftTier = d => GIFT_TIERS.filter(t => d >= t[0]).length;
 function giftOf(name) { const g = GIFTS[norm(name)]; return g ? g.d : 0; }
-function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) h.gd = GIFTS[k].d; } try { driveReset(); assignVIP(); assignDrive(); updateTop10(); } catch (e) { console.warn(e); } }
+function applyGifts(only) { for (const k of only ? [only] : Object.keys(GIFTS)) { const h = BY_NAME.get(k); if (h) { h.gd = GIFTS[k].d; h.custom = GIFTS[k].gx > 0 ? (GIFTS[k].ct || true) : null; } } try { driveReset(); assignVIP(); assignDrive(); updateTop10(); } catch (e) { console.warn(e); } }
 async function loadGifts() { try { const j = await fetch('gifts.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null); if (j && j.users) for (const k in j.users) GIFTS[norm(k)] = j.users[k]; } catch (e) {} applyGifts(); }
 function drawGoldPath(h, z) {}   /* replaced by drawDriveway */
 /* ✨ 10+ diamonds: a golden driveway straight from the front door through a real garden gate onto the street.
@@ -9783,7 +9783,7 @@ function vipPlots() {
   return (VIP_PLOTS = P);
 }
 function assignVIP() {   // who lives where in VIP Hills; also marks 100+ supporters
-  const vip = []; for (const h of HOUSES) { const t = giftTier(h.gd || 0); h.sup = t >= 2; if (t >= 3) vip.push(h); else if (h.vip) { h.i = h.oi; h.j = h.oj; h.vip = null; } }
+  const vip = []; for (const h of HOUSES) { const t = giftTier(h.gd || 0); h.sup = t >= 2; if (t >= 3 && !h.custom) vip.push(h); else if (h.vip) { h.i = h.oi; h.j = h.oj; h.vip = null; } }
   const P = vipPlots(), used = new Set(); vip.sort((a, b) => hashStr(a.name) - hashStr(b.name));
   for (const h of vip) { const t = giftTier(h.gd); let k = hashStr('vip' + h.name) % P.length; while (used.has(k) && used.size < P.length) k = (k + 1) % P.length; used.add(k);
     const sz = VIP_SLOTS[t].s, w = sz[0] * VIP_SC, d = sz[1] * VIP_SC, [pu, pv] = P[k], u0 = pu + (3 * VIP_SC - w) / 2, v0 = pv + (3 * VIP_SC - d) / 2;
@@ -9863,6 +9863,7 @@ function drawSupporter(h, z) {   // ⭐ 100+: golden mailbox, two lanterns and a
   SUP_DW = h.gd >= 10 ? driveway(h) : null; VB.draw(VB.supporter, S, h.i, h.j, 0, h.name, ap); SUP_DW = null;
   const [x, y] = uvS(h.i, h.j), r = 9 * z * eBack(ap), sy = y - 70 * z - Math.sin(S_T() * 2 + h.idx) * 3 * z; if (r <= .2) return;
   ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rr, sy + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = '#ffd23f'; ctx.fill(); ctx.strokeStyle = '#7a5300'; ctx.lineWidth = Math.max(.6, 1.5 * z); ctx.stroke();
+  if (h.custom && z > .3) emoji(ctx, '🎨', x + 15 * z, sy + 3 * z, 14 * z);   /* 🌌 Galaxy: Custom Touch coming */
 }
 const S_T = () => (typeof S !== 'undefined' && S.T) || performance.now() / 1000;
 
@@ -9894,7 +9895,7 @@ function showCard(h) {
   const loyal = '<div class="upL"><span class="more">All rewards ›</span>' + (prev ? 'Unlocked: ' + prev[1] + '<br>' : '') + (next ? 'Next upgrade: <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') + '<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * dF / next[0])) + '%"></i></div>' : 'All upgrades unlocked 🏆') + '</div>';
   const loyalSmall = '<div class="upL small">🏆 Loyalty: ' + (next ? 'next <b>' + next[1] + '</b> in ' + (next[0] - dF) + (next[0] - dF === 1 ? ' day' : ' days') : 'all unlocked') + ' <span class="more">›</span></div>';
   const gd = h.gd || 0, gt = giftTier(gd), gn = GIFT_TIERS[gt];
-  const giftBig = '<div class="upG big"><span class="more">Gift rewards ›</span>🎁 <b>' + fmtN(gd) + ' 💎</b>' + (gt ? ' · ' + GIFT_TIERS[gt - 1][1] + ' ' + GIFT_TIERS[gt - 1][2] : '') + '<br>' + (gn ? 'Next: <b>' + gn[1] + ' ' + gn[2] + '</b> · ' + fmtN(gn[0] - gd) + ' 💎 to go<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * gd / gn[0])) + '%"></i></div>' : 'All gift rewards unlocked 👑') + '</div>';
+  const giftBig = '<div class="upG big"><span class="more">Gift rewards ›</span>🎁 <b>' + fmtN(gd) + ' 💎</b>' + (gt ? ' · ' + (h.custom && gt >= 3 ? '🎨 Custom Touch' : GIFT_TIERS[gt - 1][1] + ' ' + GIFT_TIERS[gt - 1][2]) : '') + (h.custom ? '<br>🎨 Custom Touch: <b>' + (h.custom === true ? 'coming soon' : h.custom) + '</b>' : '') + '<br>' + (gn && !(h.custom && gt >= 3) ? 'Next: <b>' + gn[1] + ' ' + gn[2] + '</b> · ' + fmtN(gn[0] - gd) + ' 💎 to go<div class="bar"><i style="width:' + Math.max(3, Math.round(100 * gd / gn[0])) + '%"></i></div>' : (h.custom && gt >= 3 ? '' : 'All gift rewards unlocked 👑')) + '</div>';
   const giftSmall = '<div class="upG small">🎁 Gift rewards <span class="more">›</span></div>';
   $('cardUp').innerHTML = gd > 0 ? giftBig + loyalSmall : loyal + giftSmall;   // loyalty stays big unless this neighbour has gifted
   $('cardUp').onclick = null; $('cardUp').querySelector('.upL').onclick = () => openRewards(h); $('cardUp').querySelector('.upG').onclick = () => openGiftRewards(h);
@@ -10363,7 +10364,7 @@ function startControl() {
   h('🧪 Test');
   let r = row(); btn(r, '🧪 5 follows at once', () => { for (let k = 1; k <= 5; k++) liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('5 test follows'); }, 'big');
   btn(r, '🧪 1 follow', () => { liveSend({ type: 'welcome', name: 'test_neighbor_' + Math.floor(Math.random() * 9000 + 1000) }); note('1 test follow'); });
-  r = row(); btn(r, '🧪 10 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 10 }); note('Test 10 💎 (nothing is saved) – FPS shows at the end'); }); btn(r, '🧪 100 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 100 }); note('Test 100 💎 (nothing is saved) – FPS shows at the end'); });
+  r = row(); btn(r, '🧪 10 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 10 }); note('Test 10 💎 (nothing is saved) – FPS shows at the end'); }); btn(r, '🧪 100 💎 animation + FPS', () => { liveSend({ type: 'testgift', dia: 100 }); note('Test 100 💎 (nothing is saved) – FPS shows at the end'); }); btn(r, '🧪 🌌 Galaxy (Custom Touch)', () => { liveSend({ type: 'testgift', dia: 1000, galaxy: true }); note('Test Galaxy (nothing is saved)'); });
   h('✨ Effects');
   r = row(); LIVE_FX.forEach(([k, l]) => btn(r, l, () => { liveSend({ type: 'fx', fx: k }); note(l); }));
   r = row(); btn(r, '⏹️ Stop Benny talking', () => { liveSend({ type: 'clip', clip: 'stop' }); note('Benny stopped'); });
@@ -10474,7 +10475,7 @@ function liveOnMsg(m) {
   }
   if (m.type === 'gift') { liveFx(m.fx || 'confetti'); liveAlert('🎁 THANK YOU' + (m.name ? ' @' + m.name : '') + '!', m.fx === 'fireworks' ? 'Fireworks for the whole town 🎆' : m.fx === 'hearts' ? 'Benny feels the love 💖' : 'Confetti for everyone 🎉', '#ff6b8b'); }
   if (m.type === 'fx') liveFx(m.fx);
-  if (m.type === 'testgift') liveTestGift(m.dia || 10);
+  if (m.type === 'testgift') liveTestGift(m.dia || 10, m.galaxy);
   if (m.type === 'host') { LV.host = !!m.on; if (LV.host) { LV.tourWas = LV.tour; LV.tour = false; LV.holdUntil = S.T + 3600; } else { LV.tour = LV.tourWas !== false; LV.holdUntil = S.T + 2; } liveHostState(true); }
   if (m.type === 'burst') { LV.burst = true; liveHostState(true); }
   if (m.type === 'hostping') liveHostState(true);
@@ -10495,8 +10496,17 @@ function liveCam(a) {   /* 🎙️ the host moves the camera from the dock */
   if (a === 'in') target.z = Math.min(4, target.z * 1.4); if (a === 'out') target.z = Math.max(.06, target.z / 1.4);
   const st = 260 / target.z; if (a === 'l') target.x -= st; if (a === 'r') target.x += st; if (a === 'u') target.y -= st; if (a === 'd') target.y += st;
 }
-function liveTestGift(dia) {   /* 🧪 only for testing before a LIVE: the 3D upgrade scene for a pretend neighbour "@TEST" – no gift is counted or saved; the measured FPS shows at the end */
+function liveCustomShow(h, j) {   /* 🌌 Galaxy = 🎨 Custom Touch: their own house in 3D with sparkles; they write their wish in the chat; same plot, same size, up to 2 floors */
+  const nm = trunc(h.name, 14), L = 22; j.h = h; j.dur = L; LV.holdUntil = S.T + L + 1;
+  const in3 = h.town && streetShow(h, 14, '🎨 @' + h.name, '#c77dff');
+  for (let k = 0; k < 8; k++) liveAt(k * .15, () => liveBeep('pop'));
+  liveAt(in3 ? 6.5 : 0, () => liveAlert('🎨 CUSTOM TOUCH for @' + nm + '!', 'Your house, your idea – write it in the chat 👇', '#c77dff'));   /* after the name had its moment */
+  liveAt(in3 ? 14.2 : 1, () => { liveFocus(h, 8); liveFx('confetti'); liveBeep('chime'); });
+  liveAt(in3 ? 16 : 4, () => liveAlert('💜 THANK YOU @' + nm + '!', 'Same plot · same size · up to 2 floors', '#c77dff'));
+}
+function liveTestGift(dia, galaxy) {   /* 🧪 only for testing before a LIVE: the 3D upgrade scene for a pretend neighbour "@TEST" – no gift is counted or saved; the measured FPS shows at the end */
   const base = HOUSES[Math.floor(Math.random() * Math.min(HOUSES.length, 5000))], h = Object.assign({}, base, { name: 'TEST', gd: dia, og: false }), up = dia >= 100 ? 2 : 1, dur = up === 2 ? 15 : 11;
+  if (galaxy) { liveCustomShow(h, {}); LV.fps = { t0: performance.now(), n: 0 }; liveAt(13.7, () => { const f = LV.fps; LV.fps = null; if (f) liveAlert('🧪 Test: ' + Math.round(f.n / ((performance.now() - f.t0) / 1000)) + ' FPS', 'Galaxy test – nothing saved', '#46e08a'); }); return; }
   if (!streetUpgrade(h, 0, up, dur)) { liveAlert('🧪 3D is still loading', 'Try again in a few seconds', '#ff6b8b'); return; }
   LV.fps = { t0: performance.now(), n: 0 };
   liveAt(dur - .3, () => { const f = LV.fps; LV.fps = null; if (!f) return; const v = Math.round(f.n / ((performance.now() - f.t0) / 1000)); liveAlert('🧪 Test: ' + v + ' FPS', v >= 24 ? '✅ smooth' : '⚠️ choppy – tell Claude', v >= 24 ? '#46e08a' : '#ff6b8b'); });
@@ -10553,7 +10563,7 @@ function liveParts(dt) {
 }
 function liveAlerts() {
   const a = LV.alerts[0]; if (!a) return;
-  if (a.t === null) { if (S.T < a.after || (ST.active && ST.mode !== 'up' && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
+  if (a.t === null) { if (S.T < a.after || (ST.active && ST.mode === 'build' && !/moved in|lives here/.test(a.title))) return; a.t = S.T; } /* gift/other alerts wait until the build scene with the name is over */ const dur = LV.alerts.length > 2 ? 2.6 : 4.2, p = S.T - a.t; if (p > dur) { LV.alerts.shift(); return; }
   const k = eBack(clamp(p / .35, 0, 1)), al = clamp((dur - p) / .3, 0, 1);
   ctx.save(); ctx.globalAlpha = al; ctx.translate(540, 1000); ctx.scale(k, k);
   panel(-470, -95, 940, 190, 40, 'rgba(10,12,26,.94)', a.col, 5);
@@ -10674,13 +10684,13 @@ function streetUpRender(p) {
   const s = (ST.up >= 2 ? '⭐ ' : '✨ ') + '@' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const wd = ctx.measureText(s).width + 70; panel(-wd / 2, -55, wd, 110, 55, 'rgba(10,12,26,.92)', '#ffd23f', 5); otxt(s, 0, 2, fs, '#ffd23f', 8); ctx.restore();
   ctx.globalAlpha = 1;
 }
-function streetShow(h, dur) {   /* 🎙️ host mode: a neighbour's finished house in 3D, the camera swings slowly in front of it */
+function streetShow(h, dur, label, col) {   /* 🎙️ host mode: a neighbour's finished house in 3D, the camera swings slowly in front of it */
   if (!ST.ready) return false;
   const kill = g => { if (!g) return; ST.sc.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); };
   kill(ST.house); for (const g of ST.neigh) kill(g); ST.neigh = [];
   const g = noLights(buildHouse3D(h, tierOf(h))); ST.sc.add(g); ST.house = g; const anims = []; g.traverse(o => { if (o.userData.anim) anims.push(o); });
   for (const [dx, idx] of [[-9, Math.max(0, h.idx - 1)], [9, Math.max(0, h.idx - 2)]]) { const hn = HOUSES[idx] || HOUSES[0]; const nb = buildHouse3D(hn, 0); nb.position.x = dx; ST.sc.add(nb); ST.neigh.push(nb); }
-  Object.assign(ST, { mode: 'show', parts: [], anims, h, t0: S.T, dur, active: true });
+  Object.assign(ST, { mode: 'show', parts: [], anims, h, t0: S.T, dur, active: true, label: label || null, col: col || '#46e08a' });
   return true;
 }
 function streetShowRender(p) {
@@ -10689,7 +10699,8 @@ function streetShowRender(p) {
   ST.r.render(ST.sc, ST.cam);
   const al = clamp(Math.min(p / .35, (ST.dur - p) / .45), 0, 1); ctx.globalAlpha = al; ctx.drawImage(ST.c, 0, 0, 1080, 1920);
   const k = eBack(clamp((p - .2) / .5, 0, 1)); ctx.save(); ctx.translate(540, 925); ctx.scale(k, k);
-  const s = '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', '#46e08a', 5); otxt(s, 0, 2, fs, '#46e08a', 8); ctx.restore();
+  const s = ST.label || '🏠 @' + ST.h.name, fs = fitSize(s, 64, 900); ctx.font = F(fs); const w = ctx.measureText(s).width + 70; panel(-w / 2, -55, w, 110, 55, 'rgba(10,12,26,.92)', ST.col, 5); otxt(s, 0, 2, fs, ST.col, 8); ctx.restore();
+  if (ST.label) for (let q = 0; q < 16; q++) { const ph = (p * .45 + q / 16) % 1; ctx.globalAlpha = al * Math.sin(ph * Math.PI) * .9; emoji(ctx, q % 3 ? '✨' : '🎨', 540 + Math.sin(q * 5.1 + p * .5) * 430, 1550 - ph * 950, 36 + (q % 4) * 9); }
   ctx.globalAlpha = 1;
 }
 function streetRender() {
@@ -10753,9 +10764,9 @@ function liveJobs() {
     else { LV.job = null; LV.hint = { text: '🔍 @' + trunc(j.name, 18) + ': no house yet – follow and it gets built! 🏠', until: S.T + 5 }; } // small hint in the tip bar, no big alert
   }
 }
-function liveGiftAdd(name, dia) {
-  const k = norm(name); if (!k || !(dia > 0)) return; const g = GIFTS[k] || (GIFTS[k] = { d: 0, n: 0 }); g.d += dia; g.n = (g.n || 0) + 1; g.last = new Date().toISOString();
-  const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += dia; dl.n++; LV.giftDirty = true; applyGifts(k);
+function liveGiftAdd(name, dia, gx) {
+  const k = norm(name); if (!k || !(dia > 0)) return; const g = GIFTS[k] || (GIFTS[k] = { d: 0, n: 0 }); g.d += dia; g.n = (g.n || 0) + 1; g.last = new Date().toISOString(); if (gx) g.gx = (g.gx || 0) + gx;
+  const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += dia; dl.n++; if (gx) dl.gx = (dl.gx || 0) + gx; LV.giftDirty = true; applyGifts(k);
 }
 async function giftPush() {   // adds only what came in since the last push onto the file on GitHub, so nothing is counted twice
   if (!LV.gh || !LV.giftDirty || LV.giftPushing) return; LV.giftPushing = true; LV.giftDirty = false; const delta = GIFT_DELTA; GIFT_DELTA = {};
@@ -10763,11 +10774,11 @@ async function giftPush() {   // adds only what came in since the last push onto
   try {
     const cur = await fetch(api + '?ref=main&t=' + Date.now(), { headers: H, cache: 'no-store' }).then(r => r.ok ? r.json() : null);
     let base = { users: {} }; if (cur && cur.content) base = JSON.parse(decodeURIComponent(escape(atob(cur.content.replace(/\s/g, ''))))); base.users = base.users || {};
-    for (const k in delta) { const b = base.users[k] || (base.users[k] = { d: 0, n: 0 }); b.d += delta[k].d; b.n = (b.n || 0) + delta[k].n; b.last = new Date().toISOString(); }
+    for (const k in delta) { const b = base.users[k] || (base.users[k] = { d: 0, n: 0 }); b.d += delta[k].d; b.n = (b.n || 0) + delta[k].n; if (delta[k].gx) b.gx = (b.gx || 0) + delta[k].gx; b.last = new Date().toISOString(); }
     base.updated = new Date().toISOString();
     const body = { message: 'gifts: +' + Object.values(delta).reduce((a, x) => a + x.d, 0) + ' 💎', branch: 'main', content: b64u(JSON.stringify(base, null, 0)) }; if (cur && cur.sha) body.sha = cur.sha;
     const r = await fetch(api, { method: 'PUT', headers: H, body: JSON.stringify(body) }); if (!r.ok) throw new Error('put ' + r.status); LV.ghOk = true;
-  } catch (e) { for (const k in delta) { const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += delta[k].d; dl.n += delta[k].n; } LV.giftDirty = true; LV.ghOk = false; }
+  } catch (e) { for (const k in delta) { const dl = GIFT_DELTA[k] || (GIFT_DELTA[k] = { d: 0, n: 0 }); dl.d += delta[k].d; dl.n += delta[k].n; if (delta[k].gx) dl.gx = (dl.gx || 0) + delta[k].gx; } LV.giftDirty = true; LV.ghOk = false; }
   LV.giftPushing = false;
 }
 function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold sparkles, coins fly into Benny's bank, Benny says thank you
@@ -10776,6 +10787,7 @@ function liveGiftJob(j) {   // 🎁 10+ diamonds: ~9 s at their house – gold s
   liveFx(j.fx); const sub = '+' + fmtN(j.dia) + ' 💎 · you are amazing 💛';   /* no progress to the next reward: TikTok counts that as asking for gifts */
   if (!h) { j.dur = 4.5; liveAlert('🎁 THANK YOU @' + trunc(j.name, 16) + '!', '+' + fmtN(j.dia) + ' 💎 · you are amazing 💛', '#ffd23f'); return; }
   j.h = h; j.dur = 9; liveFocus(h, 9.5); LV.giftFx = { h, t0: S.T };
+  if (j.galaxy) { LV.giftFx = null; return liveCustomShow(h, j); }   /* 🌌 Galaxy: Custom Touch instead of VIP Hills */
   if (nowT > prevT && nowT >= 2) { LV.giftFx = null; return liveTierShow(h, nowT, j); }   // a new big stage: its own long animation
   if (nowT > prevT) { const t = GIFT_TIERS[nowT - 1]; if (nowT === 1) { h.goldT = S.T + 2; if (h.town && streetUpgrade(h, 0, 1, 11)) { j.dur = 11.5; liveFocus(h, 12); h.goldT = S.T + 11; } } liveAlert(t[1] + ' @' + trunc(h.name, 14) + ' unlocked ' + t[2] + '!', sub, '#ffd23f', .4); }
   else liveAlert('🎁 THANK YOU @' + trunc(h.name, 16) + '!', sub, '#ffd23f', .4);
@@ -10905,8 +10917,9 @@ function liveTikTok(type, d) {
   if (type === 'gift' && u) {
     if (d.giftType === 1 && !d.repeatEnd) return;
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
-    liveGiftAdd(u, dia);
-    if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
+    const gx = /galaxy/i.test(d.giftName || '') ? (d.repeatCount || 1) : 0;   /* 🌌 Galaxy = 🎨 Custom Touch */
+    liveGiftAdd(u, dia, gx);
+    if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx, galaxy: gx > 0 }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
   // camera flies to the house: "!house …" or a message that is ONLY "house" / "haus" / "my house" (so "nice house" does nothing)
   if (type === 'chat' && u && (/^\s*!\s*(house|haus|my house|where is my house)\b/i.test(d.comment || '') || /^\s*(house|haus|my house|where is my house)\s*[?!.🏠]*\s*$/i.test(d.comment || ''))) liveEnqueue(u, 'find');
