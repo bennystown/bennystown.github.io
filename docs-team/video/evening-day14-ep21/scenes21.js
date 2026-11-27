@@ -138,13 +138,14 @@ function sceneSalt(t) {
 function sceneMove(t) {
   const a = T.look - .3, c = P.newC, k = ss(vprog(t, T.everyone, T.welcome + .4));
   camXY(lerp(c[0], P.edgeC[0], k), lerp(c[1], P.edgeC[1], k), Math.exp(lerp(Math.log(1.25), Math.log(.42), k)));
-  setHash('hour=12&weather=clear'); S.T = 500 + t; draw(); OC.drawImage(cv, 0, 0, 1080, 1920);
+  setHash('hour=12&weather=snow'); S.T = 500 + t; draw(); OC.drawImage(cv, 0, 0, 1080, 1920);
   withCtx(OC, () => {
-    const melt = 1 - vprog(t, a, a + 1.6); if (melt > 0) { ctx.fillStyle = `rgba(245,248,252,${.6 * melt})`; ctx.fillRect(0, 0, 1080, 1920); }
+    
     const n = Math.floor(P.newH.length * vprog(t, T.everyone - .2, T.n144 + .4));
     if (t < T.everyone + 1.2) P.newH.slice(0, 26).forEach((h, q) => { const tq = T.everyone - .2 + q * .05; if (t < tq) return; const [x, y] = uvS(h.i, h.j); if (x < 60 || x > 1020 || y < 220 || y > 1480) return;
       const kk = eBack(vprog(t, tq, tq + .25)); ctx.save(); ctx.translate(x, y - 75 * cam.z); ctx.scale(1.6 * kk, 1.6 * kk); tag(0, 0, '🏠 @' + trunc(h.name, 14), q % 3 ? '#ffffff' : '#ffd23f', 1); ctx.restore(); });
     for (let q = 0; q < n; q++) { const h = P.newH[q], [x, y] = uvS(h.i, h.j); if (x < -50 || x > 1130 || y < -50 || y > 1970) continue; const p = 1 + .25 * Math.sin(t * 6 + q); circle(ctx, x, y - 20 * cam.z, Math.max(12, 22 * cam.z) * p, '#ff2e63', '#fff', 3); }
+    snowfall(t, 140, 'rgba(255,255,255,.95)', .8);
     vstamp('🚪 THE GATE IS OPEN!', 540, 330, t, a + .1, T.everyone, 80, '#ffd23f', -.02, 'rgba(10,12,26,.92)');
     vstamp('🧳 EVERYONE MOVES IN!', 540, 330, t, T.everyone, T.n144 - .2, 76, '#ffffff', .02, 'rgba(10,12,26,.92)');
     vstamp('+' + P.newN + ' NEW NEIGHBORS 🏠', 540, 330, t, T.n144 - .2, T.hod - .3, 80, '#ffd23f', -.02, 'rgba(10,12,26,.92)');
@@ -155,10 +156,11 @@ function sceneMove(t) {
 function sceneHod(t) {
   const h = P.hod, a = T.hod - .3, k = ss(vprog(t, a, a + 1.4)), [x, y] = isoW(h.i, h.j);
   camXY(x, y - 30, Math.exp(lerp(Math.log(.6), Math.log(2.6), k)));
-  setHash('hour=12&weather=clear'); S.T = 500 + t; draw(); OC.drawImage(cv, 0, 0, 1080, 1920);
+  setHash('hour=12&weather=snow'); S.T = 500 + t; draw(); OC.drawImage(cv, 0, 0, 1080, 1920);
   withCtx(OC, () => {
     if (t > T.hod + 1.1) { const [sx, sy] = uvS(h.i, h.j), kk = eBack(vprog(t, T.hod + 1.1, T.hod + 1.4)); ctx.save(); ctx.translate(sx, sy - 125 * cam.z); ctx.scale(2.4 * kk, 2.4 * kk); tag(0, 0, '🏆 @' + h.name, '#ffd23f', 1); ctx.restore();
       for (let s = 0; s < 18; s++) { const ph = (t * .8 + rnd(s)) % 1; ctx.save(); ctx.globalAlpha = Math.sin(ph * Math.PI); emoji(ctx, '✨', 200 + rnd(s + 3) * 680, 600 + rnd(s + 9) * 800 - ph * 60, 44); ctx.restore(); } }
+    snowfall(t, 120, 'rgba(255,255,255,.95)', .8);
     vstamp('🏆 HOUSE OF THE DAY', 540, 300, t, T.hod - .2, T.mittens - .3, 86, '#ffd23f', -.02, 'rgba(10,12,26,.9)');
     vstamp('⏳ WAITED SINCE WEDNESDAY', 540, 440, t, T.waited - .1, T.mittens - .3, 54, '#ffffff', .02, 'rgba(10,12,26,.9)');
   });
