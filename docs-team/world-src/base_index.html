@@ -174,8 +174,11 @@ function shade(hex, k) {
 
 /* ---------------------------------------------------------- draw helpers */
 // ❄️ first snow (day 5): snow lies on the ground for two days (18.–19.11.2026), test with #snowcover
-const SNOWY = (() => { if (/snowcover/.test(location.hash)) return true; if (/nosnow/.test(location.hash)) return false; const d = new Date(), k = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); return k >= 20261118 && k <= 20261119; })();
+const SNOWY = (() => { if (/snowcover/.test(location.hash)) return true; if (/nosnow/.test(location.hash)) return false; const d = new Date(), k = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); return (k >= 20261118 && k <= 20261119) || (k >= 20261127 && k <= 20261201); })();   /* snow lies 27.11.–01.12. (Kieran) */
 const SNOW_MAP = { '#4f985c': '#e7eef5', '#3f8a4e': '#d9e3ec', '#4b9a5a': '#e0e8f0', '#5aa868': '#eef3f8', '#3e8fc9': '#a9cbe3', '#2b6f9e': '#8fb6d2', '#4fa3d9': '#b9d8ec' };
+/* snow on the ground while SNOWY (Kieran 27.11.: snow lies 27.11.–01.12.): grass colours of the 2D world and the 3D ground turn white */
+const SNOW_FILL = { '#4f985c': '#e7eef5', '#62a35a': '#eef3f8', '#66a95b': '#eef3f8', '#4b8848': '#dbe4ee', '#5d9e57': '#e9eff6', '#5aa868': '#eef3f8', '#3f8a4e': '#d9e3ec', '#5fa55a': '#eef3f8' };
+if (SNOWY) { const d = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'fillStyle'); Object.defineProperty(CanvasRenderingContext2D.prototype, 'fillStyle', { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, typeof v === 'string' && SNOW_FILL[v] || v); } }); }
 function poly(c, pts, fill, stroke, lw) { if (SNOWY && fill && SNOW_MAP[fill]) fill = SNOW_MAP[fill]; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) c.lineTo(pts[k][0], pts[k][1]); c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); } if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); } }
 function rrect(c, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 function panel(x, y, w, h, r, fill, stroke, lw) { rrect(ctx, x, y, w, h, r); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.stroke(); } }
@@ -6853,7 +6856,7 @@ const WEATHER_TABLE = {   // by month: chance of each weather (random, but fits 
 };
 function weatherNow() {
   const o = location.hash.match(/weather=(\w+)/); if (o) return o[1];
-  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .55], ['cloudy', .25], ['clear', .2]] : WEATHER_TABLE[[10, 11, 0, 1].includes(m) ? 'w' : [2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
+  const d = new Date(), m = d.getMonth(), tab = SNOWY ? [['snow', .7], ['cloudy', .2], ['clear', .1]] : WEATHER_TABLE[[10, 11, 0, 1].includes(m) ? 'w' : [2].includes(m) ? 't' : [3, 4, 9].includes(m) ? 's' : 'u'];
   const slot = Math.floor(d.getHours() / 3), r = seeded(d.getFullYear() * 10000 + (m + 1) * 100 * 10 + d.getDate() * 10 + slot + 7)();   // same weather for everyone, changes every 3 hours
   let acc = 0; for (const [w, p] of tab) { acc += p; if (r < acc) return w; } return 'clear';
 }

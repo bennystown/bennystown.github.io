@@ -9,7 +9,7 @@ function initCore3D() {
   Object.assign(renderer.domElement.style, { position: 'fixed', left: 0, top: 0, zIndex: 1, touchAction: 'none', display: 'none' });
   document.body.appendChild(renderer.domElement);
   const scene = new T3.Scene();
-  const CC = new Map(); const col = c => { if (c && c.isColor) return c; let x = CC.get(c); if (!x) CC.set(c, x = new T3.Color(c)); return x; };
+  const CC = new Map(); const col = c => { if (c && c.isColor) return c; let x = CC.get(c); if (!x) CC.set(c, x = new T3.Color(SNOWY && SNOW_FILL[c] || c)); return x; };
   // flat colours like the 2D drawing; SHADE gives every side the fixed 2D shade (front-left 100 %, front-right 78 %, top 100 %), from any camera angle;
   // TOON is a soft two-tone cartoon light for characters. All share fog + the night tint (lit windows and lamps keep glowing).
   const SU = { uTint: { value: new T3.Color(1, 1, 1) }, uFogColor: { value: new T3.Color('#a9dcf5') }, uFogNear: { value: 1e4 }, uFogFar: { value: 2e4 } };
