@@ -7854,7 +7854,7 @@ function startControl() {
   const log = document.createElement('div'); log.className = 'log';
   const note = s => { log.textContent = new Date().toLocaleTimeString() + '  ' + s + '\n' + log.textContent.slice(0, 600); };
   h('🎙️ Host mode – you talk and show houses');
-  const hs = { on: false, waiting: 0 }, reqs = [], hr1 = row();
+  const hs = { on: false, waiting: 0 }, reqs = [], roses = new Set(), hr1 = row();
   const hostBtn = btn(hr1, '🎙️ Host mode: OFF', () => liveSend({ type: 'host', on: !hs.on }), 'big');
   const buildBtn = btn(hr1, '🏗️ Build all waiting (0)', () => { liveSend({ type: 'burst' }); note('Building all waiting houses'); });
   const hr2 = row(), inp = document.createElement('input'); inp.placeholder = 'name from chat'; hr2.appendChild(inp); const nm = () => inp.value.trim().replace(/^@+/, '');
@@ -7863,15 +7863,15 @@ function startControl() {
   inp.addEventListener('keydown', e => { if (e.key === 'Enter' && nm()) { liveSend({ type: 'findnow', name: nm() }); note('Showing @' + nm()); } });
   const hr3 = row(); [['➕', 'in'], ['➖', 'out'], ['⬅️', 'l'], ['⬆️', 'u'], ['⬇️', 'd'], ['➡️', 'r'], ['🗺️ Overview', 'home'], ['✖ Close 3D', 'x3d']].forEach(([l, a]) => btn(hr3, l, () => liveSend({ type: 'cam', a })));
   const reqBox = document.createElement('div'); reqBox.className = 'log'; reqBox.style.marginTop = '6px'; cp.appendChild(reqBox);
-  const drawReqs = () => { reqBox.innerHTML = ''; const t = document.createElement('div'); t.textContent = reqs.length ? '📬 Want to see their house (newest first):' : '📬 In host mode, chat "house" requests show up here.'; reqBox.appendChild(t);
+  const drawReqs = () => { reqBox.innerHTML = ''; const t = document.createElement('div'); t.textContent = reqs.length ? '📬 Want to see their house (newest first, 🌹 = sent a rose → 🧊 3D):' : '📬 Roses 🌹 and (in host mode) chat "house" requests show up here.'; reqBox.appendChild(t);
     const rr = document.createElement('div'); rr.className = 'row'; reqBox.appendChild(rr);
-    reqs.slice(0, 14).forEach(n => { btn(rr, '📍 @' + n, () => { liveSend({ type: 'findnow', name: n }); inp.value = n; note('Showing @' + n); }); btn(rr, '🧊', () => { liveSend({ type: 'show3d', name: n }); note('3D: @' + n); }); btn(rr, '✓', () => { reqs.splice(reqs.indexOf(n), 1); drawReqs(); }); }); };
+    reqs.slice(0, 14).forEach(n => { btn(rr, (roses.has(n) ? '🌹' : '📍') + ' @' + n, () => { liveSend({ type: 'findnow', name: n }); inp.value = n; note('Showing @' + n); }); btn(rr, '🧊', () => { liveSend({ type: 'show3d', name: n }); note('3D: @' + n); }); btn(rr, '✓', () => { reqs.splice(reqs.indexOf(n), 1); drawReqs(); }); }); };
   drawReqs();
   const tip = document.createElement('div'); tip.className = 'log'; tip.style.marginTop = '4px';
   tip.textContent = 'Host mode: new houses do not build right away, they wait (counter above). Take a build break now and then with "Build all waiting". Talk yourself: greet people by name, show their houses, thank gifts in your own voice. OBS: right-click the town source → Interact to zoom with mouse/trackpad.';
   cp.appendChild(tip);
   liveListen(m => { if (m.type === 'hoststate') { hs.on = !!m.on; hs.waiting = m.waiting || 0; hostBtn.textContent = '🎙️ Host mode: ' + (hs.on ? 'ON' : 'OFF'); hostBtn.style.background = hs.on ? '#46e08a' : ''; hostBtn.style.borderColor = hs.on ? '#46e08a' : ''; hostBtn.style.color = hs.on ? '#0b2a18' : ''; buildBtn.textContent = '🏗️ Build all waiting (' + hs.waiting + ')'; }
-    if (m.type === 'req' && m.name && !reqs.includes(m.name)) { reqs.unshift(m.name); drawReqs(); } });
+    if (m.type === 'req' && m.name) { const i = reqs.indexOf(m.name); if (i >= 0) reqs.splice(i, 1); reqs.unshift(m.name); if (m.rose) roses.add(m.name); drawReqs(); } });
   liveSend({ type: 'hostping' });
   let autoT = (() => { try { return localStorage.getItem('benny-autothanks') === '1'; } catch (e) { return false; } })();
   const atRow = row(), atBtn = btn(atRow, '', () => { autoT = !autoT; try { localStorage.setItem('benny-autothanks', autoT ? '1' : '0'); } catch (e) {} liveSend({ type: 'autothanks', on: autoT }); paintAT(); });
@@ -8009,6 +8009,10 @@ function liveCam(a) {   /* 🎙️ the host moves the camera from the dock */
   if (a === 'home') { target.x = BX_L; target.y = BY_L - 60; target.z = 1.1; return; }
   if (a === 'in') target.z = Math.min(4, target.z * 1.4); if (a === 'out') target.z = Math.max(.06, target.z / 1.4);
   const st = 260 / target.z; if (a === 'l') target.x -= st; if (a === 'r') target.x += st; if (a === 'u') target.y -= st; if (a === 'd') target.y += st;
+}
+function liveRose(name) {   /* 🌹 camera flies to the gifter's house and stays; the dock gets a 🌹 button so the host can open 3D and talk about it */
+  liveSend({ type: 'req', name, rose: true }); const h = liveFindHouse(name); if (!h) return;
+  liveFocus(h, LV.host ? 3600 : 60); liveBeep('pop');
 }
 function liveCustomShow(h, j) {   /* 🌌 Galaxy = 🎨 Custom Touch: their own house in 3D with sparkles; they write their wish in the chat; same plot, same size, up to 2 floors */
   const nm = trunc(h.name, 14), L = 22; j.h = h; j.dur = L; LV.holdUntil = S.T + L + 1;
@@ -8432,6 +8436,7 @@ function liveTikTok(type, d) {
     const dia = (d.diamondCount || 1) * (d.repeatCount || 1), fx = dia >= 100 ? 'fireworks' : dia >= 10 ? 'hearts' : 'confetti';
     const gx = /galaxy/i.test(d.giftName || '') ? (d.repeatCount || 1) : 0;   /* 🌌 Galaxy = 🎨 Custom Touch */
     liveGiftAdd(u, dia, gx);
+    if (/^roses?$/i.test(String(d.giftName || '').trim())) liveRose(u);   /* 🌹 Rose = "Your house in 3D" (Zuschauer*innen-Wünsche) */
     if (dia >= 10) LV.q.push({ name: u, kind: 'gift', dia, fx, galaxy: gx > 0 }); else liveOnMsg({ type: 'gift', name: u, fx });   // 10+ 💎: own mini animation at their house
   }
   // camera flies to the house: "!house …" or a message that is ONLY "house" / "haus" / "my house" (so "nice house" does nothing)
