@@ -27,14 +27,19 @@ export async function session(ctx) {
 
   const client = new TikTokLiveClient(USER).maxRetries(10).staleTimeout(90_000);
   if (PROXY) client.proxy(PROXY);
+  // Merkt sich, ob überhaupt Daten aus dem LIVE ankommen. Fliegt der anonyme Zuschauer immer wieder raus,
+  // ohne je etwas zu empfangen (typisch bei PRIVATEN LIVEs), gibt es eine klare Meldung und nach 3 Versuchen
+  // wechselt der Listener automatisch auf die andere Bibliothek.
+  let alive = false, rc = 0, finish = null;
+  const em = (ev, data) => { alive = true; emit(ev, data); };
 
-  client.on(EventType.follow, d => emitFollow(userOf(d), mid(d)));
-  client.on(EventType.share, d => emit('share', { _id: mid(d), user: userOf(d) }));
-  client.on(EventType.chat, d => emit('chat', { _id: mid(d), user: userOf(d), comment: String(d.content ?? '') }));
-  client.on(EventType.like, d => emit('like', { _id: mid(d), user: userOf(d), likeCount: num(d.count) || 1, totalLikeCount: num(d.total) }));
+  client.on(EventType.follow, d => { alive = true; emitFollow(userOf(d), mid(d)); });
+  client.on(EventType.share, d => em('share', { _id: mid(d), user: userOf(d) }));
+  client.on(EventType.chat, d => em('chat', { _id: mid(d), user: userOf(d), comment: String(d.content ?? '') }));
+  client.on(EventType.like, d => em('like', { _id: mid(d), user: userOf(d), likeCount: num(d.count) || 1, totalLikeCount: num(d.total) }));
   client.on(EventType.gift, d => {
     const g = d.gift || {};
-    emit('gift', {
+    em('gift', {
       _id: mid(d),
       user: userOf(d),
       giftId: num(d.giftId ?? g.id),
@@ -46,9 +51,12 @@ export async function session(ctx) {
       groupId: d.groupId != null ? String(d.groupId) : undefined
     });
   });
-  client.on(EventType.join, d => emit('join', { _id: mid(d), user: userOf(d) }));
-  client.on(EventType.roomUserSeq, d => emit('viewers', { viewerCount: num(d.viewerCount), totalUser: num(d.totalUser) }));
-  client.on(EventType.reconnecting, () => setState('reconnecting', 'Verbindung kurz weg – Bibliothek verbindet neu'));
+  client.on(EventType.join, d => em('join', { _id: mid(d), user: userOf(d) }));
+  client.on(EventType.roomUserSeq, d => em('viewers', { viewerCount: num(d.viewerCount), totalUser: num(d.totalUser) }));
+  client.on(EventType.reconnecting, () => {
+    rc++; setState('reconnecting', 'Verbindung kurz weg – Bibliothek verbindet neu' + (rc > 1 ? ' (' + rc + '. Versuch)' : ''));
+    if (rc >= 4 && !alive && finish) finish('noaccess');
+  });
   client.on(EventType.connected, () => { if (ctx.S.state === 'reconnecting') setState('connected', null); });
   client.on('error', e => { ctx.S.lastError = String(e?.message || e); });
 
@@ -64,10 +72,15 @@ export async function session(ctx) {
   onConnected(String(roomId), null);
 
   const reason = await new Promise(resolve => {
+    finish = resolve;
     client.on(EventType.liveEnded, () => resolve('streamEnd'));
     client.on(EventType.disconnected, () => resolve('disconnected'));
     const iv = setInterval(() => { if (isStopping()) { clearInterval(iv); resolve('stop'); } }, 1000);
   });
   try { client.disconnect(); } catch {}
+  if (reason === 'noaccess') {
+    setState('error', 'LIVE gefunden, aber TikTok lässt den anonymen Zuschauer nicht in den Stream. Ist das LIVE PRIVAT bzw. nur für Freunde? Der Listener liest wie ein ausgeloggter Zuschauer – private LIVEs gehen nicht. Teste mit einem öffentlichen LIVE.');
+    return 30_000;
+  }
   return ctx.onDisconnected(reason);
 }
